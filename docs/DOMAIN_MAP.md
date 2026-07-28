@@ -81,7 +81,9 @@ precios, descuentos, impuestos, propina, tenant, mesa, identidad visible y expir
 ### 7. Pagos
 
 Normaliza intentos, eventos del proveedor, confirmación verificable, reembolsos y contracargos.
-El estado se deriva de eventos inmutables. Tablio nunca custodia fondos.
+El estado se deriva de eventos inmutables. Cada operación se ejecuta en el comercio directo
+del bar; Tablio nunca custodia fondos, cobra una comisión de plataforma ni distribuye ventas.
+El proveedor entra mediante `PaymentGateway`.
 
 ### 8. Pedidos
 
@@ -118,7 +120,9 @@ Toda diferencia queda como excepción accionable.
 ### 14. Billing de Tablio
 
 Cobra setup y suscripción SaaS por separado del dinero del bar. La morosidad nunca corta una
-noche de alto flujo sin aviso y horario controlado.
+noche de alto flujo sin aviso y horario controlado. Este dominio tendrá credenciales, puerto,
+ledger y conciliación propios en Sprint 8; no reutiliza `PaymentGateway` ni la cuenta de
+pasarela de un bar.
 
 ## Límites importantes
 
@@ -127,6 +131,7 @@ noche de alto flujo sin aviso y horario controlado.
 - Cada efecto asíncrono acepta mensajes repetidos.
 - Todo acceso de negocio se limita por tenant.
 - Pasarela, proveedor DTE e impresora se conectan mediante adaptadores reemplazables.
+- Pago del comensal al bar y suscripción del bar a Tablio son flujos financieros distintos.
 
 ## Decisiones abiertas relacionadas
 

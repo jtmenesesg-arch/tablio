@@ -19,6 +19,8 @@
 - **KDS:** pantalla de producción que organiza comandas para barra o cocina.
 - **Monorepo:** un repositorio que contiene aplicaciones y paquetes relacionados.
 - **Outbox transaccional:** tabla donde el evento se guarda en la misma transacción que el cambio de negocio.
+- **PaymentGateway:** puerto neutral por el que el núcleo financiero opera con la pasarela
+  propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.
 - **PWA:** sitio web con comportamiento similar a una app, sin exigir instalación.
 - **Realtime:** canal de aviso inmediato; no reemplaza a PostgreSQL como fuente de verdad.
@@ -29,6 +31,8 @@
 - **SLO:** objetivo medible de confiabilidad o velocidad que el sistema se compromete a vigilar.
 - **Spool de impresión:** cola persistente de trabajos pendientes para una impresora.
 - **Tenant:** local o cliente cuyos datos deben quedar aislados de los demás.
+- **Modo demo:** adaptador y pantalla que ejercitan el protocolo sin credenciales, tarjetas ni
+  movimiento de dinero real; nunca es una configuración válida de producción.
 - **Transactional outbox:** nombre en inglés de outbox transaccional.
 - **Visibility timeout:** período durante el que un mensaje leído queda oculto a otros consumidores.
 - **Webhook:** aviso server-side enviado por un proveedor a una URL controlada por Tablio.

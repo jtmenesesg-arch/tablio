@@ -5,13 +5,21 @@ se implementa antes de su momento.
 
 ## OI-001 — Pasarela primaria y Oneclick
 
-- **Estado:** abierto; ADR-001 pendiente.
-- **Decidir antes de:** implementar el pago real en Sprint 1.
+- **Estado:** bloqueante antes del piloto; ADR-001 propuesto, no decidido.
+- **Decidir antes de:** reemplazar el adaptador simulado por un proveedor real.
 - **Opciones:** Webpay/Transbank y Mercado Pago; Fintoc puede evaluarse como medio adicional.
-- **Evidencia requerida:** onboarding por bar, confirmación server-side, Apple Pay web/PWA,
-  pertenencia de tokens Oneclick, reembolsos, webhooks/consulta, conciliación, liquidaciones y
-  comportamiento ante demoras.
+- **Evidencia actual:** sólo investigación documental, marcada íntegramente como hipótesis no
+  verificada en `docs/adr/ADR-001-payment-gateway-spike.md`.
+- **Bloqueante:** crear cuenta de desarrollador de Tablio en la pasarela elegida; es necesaria
+  para probar y ofrecer el botón de conexión OAuth.
+- **Bloqueante:** validar con credenciales reales onboarding OAuth, Apple Pay en PWA, medio
+  guardado, reembolso real y datos de liquidación.
+- **Evidencia requerida adicional:** confirmar que cada bar recibe directo sus fondos,
+  firmas/callbacks, duplicados, eventos tardíos/fuera de orden, ambiente de prueba y
+  conciliación hasta el abono.
 - **Riesgo:** elegir por comisión o documentación sin ejecutar el flujo completo.
+- **Riesgo de promesa de producto:** si ninguna pasarela entrega datos de liquidación por API,
+  la promesa “el cierre explica cada peso” no se puede cumplir como está escrita en el brief.
 
 ## OI-002 — Proveedor DTE
 
@@ -31,7 +39,7 @@ se implementa antes de su momento.
 
 ## OI-004 — UX para conectar la pasarela del bar
 
-- **Estado:** abierto.
+- **Estado:** abierto; bloqueante antes del piloto.
 - **Decidir antes de:** onboarding de producción.
 - **Debe incluir:** conexión segura de credenciales, verificación de comercio/ambiente, venta de
   prueba, reversa/reembolso de prueba y comparación con liquidación.
@@ -102,11 +110,11 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 - **Evidencia requerida:** `pg_stat_user_indexes`, planes de consulta y carga de piloto.
 - **Referencia:** <https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index>
 
-## Limitaciones actuales de Sprint 0
+## Pendientes acumulados
 
-- Aún no existe aplicación, `package.json` ni CI; se construyen en Sprint 1.
+- La aplicación y `package.json` ya existen desde Sprint 1; CI y despliegue siguen pendientes.
 - El control negativo rojo → verde queda diferido a staging aislado, a más tardar antes del
   piloto.
 - El objetivo KDS p95 ≤ 2 s sigue sin verificar hasta tener instrumentación end-to-end.
-- El proyecto Vercel está vinculado, pero su configuración actual debe cambiar de Vite/raíz a
-  Next.js con `apps/web` como Root Directory cuando exista la aplicación.
+- El proyecto Vercel está vinculado, pero su configuración debe verificarse con
+  `apps/web` como Root Directory antes del primer despliegue.
