@@ -5,6 +5,7 @@
 - **Backoff:** espera que aumenta entre reintentos para no insistir de forma destructiva.
 - **BFF:** backend adaptado a las necesidades de una interfaz concreta.
 - **CheckoutQuote:** fotografía inmutable de todo lo que una persona va a pagar.
+- **Chargeback:** desconocimiento o disputa que revierte un cargo después de la venta.
 - **CI:** verificación automática que corre en cada cambio antes de aceptarlo.
 - **Comanda:** instrucción de producción enviada a una estación, como barra o cocina.
 - **Constraint:** regla de PostgreSQL que impide guardar datos inválidos o duplicados.
@@ -16,9 +17,18 @@
 - **Fail-closed:** si falta identidad o contexto válido, se niega acceso en vez de abrirlo por
   defecto.
 - **Idempotencia:** propiedad que permite repetir un mensaje sin repetir su efecto comercial.
+- **Inventory reservation:** unidades apartadas por un quote; en Tablio usa exactamente el
+  mismo vencimiento del quote y sólo aplica a productos con seguimiento de stock.
 - **KDS:** pantalla de producción que organiza comandas para barra o cocina.
 - **Monorepo:** un repositorio que contiene aplicaciones y paquetes relacionados.
 - **Outbox transaccional:** tabla donde el evento se guarda en la misma transacción que el cambio de negocio.
+- **ProcessedEvent:** registro de lease y finalización que impide a un consumidor ejecutar dos
+  veces el mismo mensaje.
+- **ProviderPaymentEvent:** evidencia inmutable recibida de una pasarela, válida o inválida.
+- **ReconciliationException:** diferencia financiera idempotente que exige investigación o
+  decisión operativa.
+- **Settlement:** reporte de liquidación que compara venta bruta, reembolsos, contracargos,
+  comisión del proveedor, neto y abono real.
 - **PaymentGateway:** puerto neutral por el que el núcleo financiero opera con la pasarela
   propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.

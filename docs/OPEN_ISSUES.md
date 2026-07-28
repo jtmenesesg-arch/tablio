@@ -102,13 +102,24 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 
 ## OI-008 — Índices sin uso observado
 
-- **Estado:** abierto, informativo; no bloquea Sprint 1.
-- **Hallazgo:** los Performance Advisors marcan cinco índices de claves foráneas como
-  `unused_index` porque el proyecto todavía no tiene carga real.
+- **Estado:** abierto, informativo; no bloquea Sprint 2.
+- **Hallazgo:** después de indexar todas las claves foráneas del núcleo financiero, los
+  Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
+  varios índices nuevos todavía registran cero usos.
 - **Acción:** conservarlos para evitar scans y bloqueos costosos en deletes/updates de tablas
   referenciadas. Revisar estadísticas con tráfico representativo antes de retirar alguno.
 - **Evidencia requerida:** `pg_stat_user_indexes`, planes de consulta y carga de piloto.
 - **Referencia:** <https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index>
+
+## OI-009 — Resolución operativa de cobro aprobado tras expirar
+
+- **Estado:** abierto; la detección y alerta están implementadas, la acción de caja no.
+- **Decidir antes de:** Sprint de panel de cajero y primer piloto.
+- **Implementado:** no se crea pedido; la excepción aparece crítica e inmediata con opciones
+  `refund` y `produce_manually`.
+- **Pendiente:** permisos finales, UX, motivo obligatorio, confirmación, ejecución del
+  reembolso o producción manual, ajuste de inventario y auditoría completa.
+- **Riesgo:** resolver fuera de Tablio deja dinero, stock y pedido sin trazabilidad.
 
 ## Pendientes acumulados
 
@@ -118,3 +129,5 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 - El objetivo KDS p95 ≤ 2 s sigue sin verificar hasta tener instrumentación end-to-end.
 - El proyecto Vercel está vinculado, pero su configuración debe verificarse con
   `apps/web` como Root Directory antes del primer despliegue.
+- Las decisiones manuales sobre aprobaciones tardías deben cerrarse en el panel del cajero
+  antes del piloto (OI-009).

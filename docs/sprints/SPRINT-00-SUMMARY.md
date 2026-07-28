@@ -31,14 +31,14 @@ Se activó exclusivamente `public.custom_access_token_hook` en Supabase Auth.
 La prueba utilizó cuentas y datos temporales y autenticó por el endpoint real
 `/auth/v1/token`:
 
-| Caso | Resultado |
-|---|---|
-| Usuario con membresía, antes de seleccionar tenant | JWT sin `tenant_id`; 0 filas visibles |
-| `set_active_tenant` con membresía activa | HTTP `204` |
-| Nuevo token después de seleccionar tenant | JWT con el `tenant_id` esperado |
-| Lectura con ese JWT | Sólo 1 zona propia; ninguna del otro tenant |
-| Usuario sin tenant | JWT sin `tenant_id`; 0 filas visibles |
-| Escritura sin tenant | Rechazada con HTTP `403` |
+| Caso                                               | Resultado                                   |
+| -------------------------------------------------- | ------------------------------------------- |
+| Usuario con membresía, antes de seleccionar tenant | JWT sin `tenant_id`; 0 filas visibles       |
+| `set_active_tenant` con membresía activa           | HTTP `204`                                  |
+| Nuevo token después de seleccionar tenant          | JWT con el `tenant_id` esperado             |
+| Lectura con ese JWT                                | Sólo 1 zona propia; ninguna del otro tenant |
+| Usuario sin tenant                                 | JWT sin `tenant_id`; 0 filas visibles       |
+| Escritura sin tenant                               | Rechazada con HTTP `403`                    |
 
 Los logs de Auth registraron `Hook ran successfully` en las tres emisiones. Después de la
 prueba se eliminaron las dos cuentas, contraseñas, contextos y datos temporales; la consulta de

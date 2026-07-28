@@ -170,3 +170,43 @@ lógica de negocio a una pasarela.
   fijaron `sharp@0.35.3` y `postcss@8.5.23`, se repitió el build y el audit terminó con cero
   vulnerabilidades conocidas.
 - No se crearon cuentas, credenciales, cobros, clientes ni cambios remotos en Supabase.
+
+## 2026-07-28 — Sprint 2, núcleo financiero
+
+### Qué cambió
+
+- Se aplicó el esquema financiero con quotes inmutables, evidencia append-only, estados
+  separados, pedidos, comandas, stock selectivo, reembolsos, conciliación y auditoría.
+- ADR-002 aprobó reserva al crear quote sólo para productos con `track_stock`, un único reloj
+  de 10 minutos y liberación inmediata en rechazo/cancelación/abandono.
+- La confirmación server-side crea pedido, ítems, una comanda por estación, consumo de reserva
+  y cuatro mensajes de outbox en una sola transacción.
+- Una aprobación posterior al vencimiento no produce y crea una excepción crítica inmediata
+  para el cajero: “requiere decisión: reembolsar o producir manualmente”.
+- Se instalaron colas PGMQ `financial_effects` y `financial_effects_dlq`; los reintentos usan
+  backoff exponencial con jitter, máximo configurable, DLQ y replay auditado.
+- `ProcessedEvent` y el consumidor TypeScript entregan idempotencia; cada adaptador externo
+  recibe además la clave durable para cubrir un crash entre efecto y ACK.
+- Se agregaron RPCs de worker ejecutables sólo por `service_role`. No existe acceso desde
+  `anon` o `authenticated`.
+
+### Por qué
+
+Ésta es la cadena que impide cobrar sin producir, producir sin cobrar o duplicar un efecto:
+persona → carrito → quote inmutable → aprobación verificable → pedido → comandas.
+
+### Verificación
+
+- pgTAP remoto: `1..33`, 33 controles en verde con comentario de riesgo en español.
+- Duplicado entregado diez veces: un evento, un pedido, dos comandas y cuatro outbox.
+- Prueba de persistencia en transacciones independientes: después de cerrar la conexión de
+  confirmación seguían presentes 1 pedido, 2 comandas, 4 outbox y 1 evidencia del proveedor.
+- Los datos sintéticos se eliminaron al terminar (`synthetic_tenants_remaining = 0`).
+- Security Advisors finales: cero hallazgos.
+- Performance Advisors: cero claves foráneas sin índice; sólo `unused_index` informativos
+  esperables antes de tener tráfico, registrados en OI-008.
+- Quality gate: 18 Vitest verdes, TypeScript estricto, ESLint, Prettier y build Next.js
+  exitosos; `pnpm audit --prod` terminó sin vulnerabilidades conocidas.
+- Las migraciones remotas son `sprint_02_financial_core`, `sprint_02_worker_rpcs`,
+  `sprint_02_database_recorded_clock`, `sprint_02_advisor_fixes` y
+  `sprint_02_retry_policy_alignment`.

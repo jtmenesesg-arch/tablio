@@ -1,11 +1,14 @@
 # Modelo de datos
 
-- **Estado:** esquema fundacional y RLS aplicados al proyecto Supabase `tablio`
+- **Estado:** fundación multi-tenant y núcleo financiero de Sprint 2 aplicados
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
   `20260728035253_explicit_private_context_deny_policy.sql`
 - **Suite repetible:** `supabase/tests/database/001_tenant_isolation.test.sql`
+- **Núcleo financiero:** `20260728064954_sprint_02_financial_core.sql` y migraciones de
+  hardening `20260728065005`, `20260728065130`, `20260728065508`, `20260728070001`
+- **Suite financiera:** `supabase/tests/database/002_financial_core.test.sql` (`1..33` verde)
 
 ## Convenciones obligatorias
 
@@ -133,22 +136,72 @@ Campos: `id`, `tenant_id`, `actor_type`, `actor_user_id`, `actor_employee_id`, `
 No se permite update/delete desde roles normales. Reembolso, anulación, cambio de precio,
 cierre, reapertura e impersonación siempre producen entrada.
 
-## Tablas previstas por dominio
+## Núcleo financiero implementado en Sprint 2
 
-Estas tablas se diseñarán en sprints posteriores, pero sus límites ya están reservados:
+### Catálogo e inventario
 
-| Dominio | Entidades principales |
-|---|---|
-| Sesión/presencia | `table_sessions`, `table_session_members`, `presence_codes` |
-| Catálogo | `categories`, `products`, `variants`, `modifiers`, `prices`, `stock` |
-| Checkout | `carts`, `cart_items`, `checkout_quotes`, `checkout_quote_items` |
-| Pago | `payments`, `payment_attempts`, `provider_payment_events`, `refunds`, `chargebacks` |
-| Pedido | `orders`, `order_items`, `production_tickets`, `production_ticket_items` |
-| Propina | `tips`, `tip_allocations` |
-| Tributación | `tax_documents`, `tax_document_attempts` |
-| Conciliación | `settlements`, `provider_fees`, `reconciliation_exceptions` |
-| Durabilidad | `outbox_events`, `outbox_deliveries`, `processed_events`, colas `pgmq` |
-| Impresión | `print_jobs`, `printer_endpoints`, `print_attempts` |
+- `products` y `product_variants` guardan precio CLP entero, impuesto, estación y activación.
+- `products.track_stock` decide si se controla por unidades; vale `false` por defecto.
+- `inventory_levels` separa `on_hand_quantity` y `reserved_quantity`.
+- `tenant_checkout_settings.quote_ttl_seconds` vale 600 por defecto y admite 300–1200.
+
+### Sesión, carrito y quote
+
+- `table_sessions`: `ACTIVE → PAUSED → CLOSED | EXPIRED`.
+- `carts`: uno por dispositivo/persona; `OPEN → CHECKOUT_STARTED → EXPIRED |
+CONVERTED_TO_ORDER`.
+- `cart_items`: selección mutable previa al checkout.
+- `checkout_quotes` y `checkout_quote_items`: snapshot inmutable de tenant, mesa, persona,
+  ítems, variantes, estaciones, precios, descuentos, impuesto, propina, total y expiración.
+- `inventory_reservations`: sólo existe para snapshots con stock controlado. No tiene TTL:
+  utiliza exclusivamente `checkout_quotes.expires_at`.
+
+El quote inicial vive 10 minutos. Rechazo, cancelación o abandono libera al instante; el
+barrido sólo atiende expiración silenciosa. Ver ADR-002.
+
+### Evidencia de pago y pedido
+
+- `payment_intents` más `payment_intent_events`: intento y máquina de estados append-only.
+- `payments`: identidad estable; su estado se deriva en `payment_current_status`.
+- `provider_payment_events`: evidencia inmutable, incluso si es duplicada, tardía o inválida.
+- `orders`/`order_items`: sólo una función transaccional privilegiada puede crearlos tras una
+  aprobación firmada y consultada server-side.
+- `order_state_events`: historia separada del estado operativo actual.
+- `tickets`/`ticket_items`/`ticket_state_events`: una comanda por estación, creada en la misma
+  transacción del pedido.
+
+Una restricción/trigger impide insertar un pedido confirmado sin evento aprobado,
+`signature_verified = true`, `server_verified = true`, quote, monto y moneda coincidentes.
+
+### Reembolsos y conciliación
+
+- `refunds`: total/parcial e idempotente por tenant.
+- `chargebacks`, `settlements`, `provider_fees`.
+- `reconciliation_exceptions`: diferencia idempotente y accionable.
+- `cashier_attention_queue`: vista RLS de excepciones abiertas. Un pago aprobado después del
+  vencimiento aparece crítico con “requiere decisión: reembolsar o producir manualmente”.
+
+### Durabilidad
+
+- `outbox_messages` se escribe junto con el pedido.
+- `processed_events` da lease y deduplicación a cada consumidor.
+- `outbox_delivery_attempts` conserva intentos y replays.
+- `durable_effect_receipts` conserva el efecto externo idempotente.
+- PGMQ contiene `financial_effects` y `financial_effects_dlq`.
+
+El reintento usa la tabla aprobada de ADR-000 (5 s, 15 s, 45 s, 2 min, 5 min, 15 min, 30 min,
+60 min) con full jitter, ocho intentos por defecto y DLQ. Un replay exige razón y produce
+`audit_log`.
+
+## Tablas todavía previstas
+
+| Dominio          | Entidades principales                               |
+| ---------------- | --------------------------------------------------- |
+| Sesión/presencia | `table_session_members`, `presence_codes`           |
+| Catálogo         | `categories`, `modifiers`, historiales de precio    |
+| Propina          | `tips`, `tip_allocations`                           |
+| Tributación      | `tax_documents`, `tax_document_attempts`            |
+| Impresión        | `print_jobs`, `printer_endpoints`, `print_attempts` |
 
 ## Defensa contra referencias cruzadas
 
@@ -165,14 +218,14 @@ incluso desde código privilegiado.
 
 ## Política RLS
 
-| Identidad | Lectura/escritura permitida |
-|---|---|
-| Comensal anónimo | Solo datos mínimos asociados a su sesión de mesa validada |
-| Personal autenticado | Filas de tenants con membresía activa y permiso explícito |
-| KDS | Comandas/estado de sus estaciones; sin permisos financieros de escritura |
-| Dueño/admin | Alcance de su tenant según permisos; nunca otro tenant |
-| Superadmin | Camino separado, motivo obligatorio e impersonación auditada |
-| Worker | Funciones mínimas; tenant derivado del evento persistido |
+| Identidad            | Lectura/escritura permitida                                              |
+| -------------------- | ------------------------------------------------------------------------ |
+| Comensal anónimo     | Solo datos mínimos asociados a su sesión de mesa validada                |
+| Personal autenticado | Filas de tenants con membresía activa y permiso explícito                |
+| KDS                  | Comandas/estado de sus estaciones; sin permisos financieros de escritura |
+| Dueño/admin          | Alcance de su tenant según permisos; nunca otro tenant                   |
+| Superadmin           | Camino separado, motivo obligatorio e impersonación auditada             |
+| Worker               | Funciones mínimas; tenant derivado del evento persistido                 |
 
 Las requests normales usan el JWT del usuario para mantener RLS activo. La clave privilegiada
 no se usa como atajo para operaciones de tenant.

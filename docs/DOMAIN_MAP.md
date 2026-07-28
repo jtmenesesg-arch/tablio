@@ -1,6 +1,6 @@
 # Mapa de dominios
 
-- **Estado:** vivo, versión inicial de Sprint 0
+- **Estado:** vivo, núcleo financiero de Sprint 2 implementado
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -66,7 +66,8 @@ permisos, pertenencia a tenant e historial obligatorio de acciones sensibles.
 ### 4. Catálogo y disponibilidad
 
 Contiene categorías, productos, variantes, modificadores, precios, impuestos, alérgenos, stock
-y asignación a estaciones. Todo es configurable por tenant.
+y asignación a estaciones. Todo es configurable por tenant. El seguimiento unitario es
+optativo por producto: sólo los productos con `track_stock` reservan disponibilidad.
 
 ### 5. Sesión de mesa y presencia
 
@@ -76,7 +77,8 @@ corto y reglas configurables de presencia. Una sesión contiene pedidos independ
 ### 6. Carrito y CheckoutQuote
 
 Cada persona tiene su carrito. Antes de pagar se crea un snapshot inmutable con cantidades,
-precios, descuentos, impuestos, propina, tenant, mesa, identidad visible y expiración.
+precios, descuentos, impuestos, propina, tenant, mesa, identidad visible y expiración. El quote
+vive 10 minutos por defecto y es el único reloj de cualquier reserva asociada.
 
 ### 7. Pagos
 
@@ -115,7 +117,8 @@ por el mismo hecho y relaciona notas de crédito con reembolsos/anulaciones.
 ### 13. Conciliación
 
 Compara CheckoutQuote/pedido, transacción de pasarela, documento tributario y liquidación real.
-Toda diferencia queda como excepción accionable.
+Toda diferencia queda como excepción accionable. Una aprobación posterior al vencimiento no
+produce: abre una alerta crítica visible al cajero para reembolsar o producir manualmente.
 
 ### 14. Billing de Tablio
 
@@ -132,6 +135,23 @@ pasarela de un bar.
 - Todo acceso de negocio se limita por tenant.
 - Pasarela, proveedor DTE e impresora se conectan mediante adaptadores reemplazables.
 - Pago del comensal al bar y suscripción del bar a Tablio son flujos financieros distintos.
+- El orden de ingestión usa el reloj de PostgreSQL; `occurred_at` del proveedor se conserva
+  como evidencia, pero no puede hacer retroceder una máquina de estados.
+
+## Transacción de confirmación implementada
+
+```text
+evento → persistir evidencia inmutable/deduplicar
+       → consultar verdad server-side antes de entrar
+       → bloquear intento + quote + reservas
+       → validar firma, tenant, comercio, monto, moneda y expiración
+       → crear pedido + ítems + comandas + consumir reservas + outbox
+       → COMMIT
+       → Realtime avisa al KDS; PGMQ garantiza los efectos
+```
+
+Un resultado `PENDING` o un retorno del navegador sólo agrega evidencia. Si una validación
+comercial falla se crea una excepción idempotente; nunca se crea parcialmente un pedido.
 
 ## Decisiones abiertas relacionadas
 

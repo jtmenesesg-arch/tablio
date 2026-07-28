@@ -6,9 +6,10 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto cerró **Sprint 1 — Spike de pasarelas sin credenciales**. El esquema multi-tenant,
-RLS y Auth real de Sprint 0 siguen aplicados; ahora existe además el puerto abstracto
-`PaymentGateway`, una pasarela simulada y una pantalla demostrable.
+El proyecto cerró **Sprint 2 — Núcleo financiero**. El esquema remoto ya implementa carrito,
+quote inmutable, confirmación server-side, pedido, comandas por estación, reserva selectiva de
+stock, outbox, colas, reembolsos y conciliación con RLS. `PaymentGateway`, la pasarela
+simulada y su pantalla demostrable siguen siendo el proveedor usado; no hay pasarela real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -35,7 +36,7 @@ brief/             constitución del producto y decisiones posteriores
 docs/              documentación viva, ADRs, revisiones y resúmenes de sprint
 apps/web/          aplicación Next.js y laboratorio visual de pagos
 packages/          puerto de aplicación y adaptador de pagos simulado
-supabase/          migraciones, configuración y tests de aislamiento
+supabase/          migraciones, configuración y tests financieros/aislamiento
 tests/             integración y recorridos completos (pendiente)
 ```
 
@@ -73,7 +74,7 @@ pnpm build
 ```
 
 En incrementos que cambien PostgreSQL se agregan `supabase test db`; en recorridos de
-navegador se agrega `pnpm test:e2e`. Sprint 1 no modifica el esquema remoto.
+navegador se agrega `pnpm test:e2e`. La suite financiera de Sprint 2 pasó 33 controles remotos.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,

@@ -20,19 +20,19 @@ proveedor DTE, y no implementa pantallas de producto.
 
 ## Decisión resumida
 
-| Área | Elección |
-|---|---|
-| Lenguaje | TypeScript estricto para web, API, contratos y workers; SQL para esquema e invariantes |
-| Framework | Next.js con App Router sobre Node.js 24.x |
-| Repositorio | Monorepo liviano con `pnpm` workspaces; una aplicación web desplegable y paquetes modulares |
-| Hosting web | Un proyecto Vercel para la aplicación Next.js |
-| Datos y autenticación | Supabase Postgres, Auth, Storage y Realtime |
-| Acceso a datos | Migraciones SQL, funciones RPC para transacciones críticas y tipos generados por Supabase; sin ORM |
-| UI | Tailwind CSS, Radix Primitives y componentes propios basados en shadcn/ui |
-| Pruebas | Vitest, pgTAP sobre Supabase local y Playwright |
-| Trabajo asíncrono | Outbox transaccional + Supabase Queues (`pgmq`) + Supabase Cron + Edge Functions |
-| Aislamiento | `tenant_id` obligatorio, RLS por membresía/sesión, contexto validado en cada request |
-| Entrega al KDS | Realtime para aviso rápido, outbox/Queues para efectos durables y consulta a PostgreSQL para recuperación |
+| Área                  | Elección                                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| Lenguaje              | TypeScript estricto para web, API, contratos y workers; SQL para esquema e invariantes                    |
+| Framework             | Next.js con App Router sobre Node.js 24.x                                                                 |
+| Repositorio           | Monorepo liviano con `pnpm` workspaces; una aplicación web desplegable y paquetes modulares               |
+| Hosting web           | Un proyecto Vercel para la aplicación Next.js                                                             |
+| Datos y autenticación | Supabase Postgres, Auth, Storage y Realtime                                                               |
+| Acceso a datos        | Migraciones SQL, funciones RPC para transacciones críticas y tipos generados por Supabase; sin ORM        |
+| UI                    | Tailwind CSS, Radix Primitives y componentes propios basados en shadcn/ui                                 |
+| Pruebas               | Vitest, pgTAP sobre Supabase local y Playwright                                                           |
+| Trabajo asíncrono     | Outbox transaccional + Supabase Queues (`pgmq`) + Supabase Cron + Edge Functions                          |
+| Aislamiento           | `tenant_id` obligatorio, RLS por membresía/sesión, contexto validado en cada request                      |
+| Entrega al KDS        | Realtime para aviso rápido, outbox/Queues para efectos durables y consulta a PostgreSQL para recuperación |
 
 ## 1. Framework y lenguaje
 
@@ -42,7 +42,7 @@ Usar **Next.js App Router con TypeScript en modo estricto**, ejecutado en Node.j
 desplegado en Vercel.
 
 - Las páginas, layouts y Route Handlers viven en la misma aplicación.
-- Los Route Handlers forman una capa BFF (*backend for frontend*: backend adaptado a las
+- Los Route Handlers forman una capa BFF (_backend for frontend_: backend adaptado a las
   necesidades de esta web), pero la lógica de negocio no vive dentro del framework.
 - La lógica de dominio será TypeScript puro, sin importar módulos de Next.js, Supabase ni UI.
 - Las operaciones financieras o que cambian varios registros se ejecutarán mediante funciones
@@ -341,17 +341,17 @@ Tablio será **entrega al menos una vez + efectos idempotentes**.
 La política por defecto es explícita y versionada:
 
 | Intento fallido | Próxima espera máxima |
-|---|---:|
-| 1 | 5 segundos |
-| 2 | 15 segundos |
-| 3 | 45 segundos |
-| 4 | 2 minutos |
-| 5 | 5 minutos |
-| 6 | 15 minutos |
-| 7 | 30 minutos |
-| 8 | 60 minutos |
+| --------------- | --------------------: |
+| 1               |            5 segundos |
+| 2               |           15 segundos |
+| 3               |           45 segundos |
+| 4               |             2 minutos |
+| 5               |             5 minutos |
+| 6               |            15 minutos |
+| 7               |            30 minutos |
+| 8               |            60 minutos |
 
-- Se usa backoff exponencial con *full jitter*: cada espera real se sortea entre cero y el
+- Se usa backoff exponencial con _full jitter_: cada espera real se sortea entre cero y el
   máximo de la tabla para evitar que todos los workers reintenten juntos.
 - Timeouts, errores de red, límites temporales y respuestas `5xx` son reintentables.
 - Payload inválido, versión desconocida, permiso imposible o configuración ausente pasan
