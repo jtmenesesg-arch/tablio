@@ -137,3 +137,36 @@ amplios y claves foráneas sin índices de soporte.
 - Security Advisors finales: 0 hallazgos.
 - Performance Advisors: cinco avisos informativos `unused_index`, registrados como OI-008.
 - El objetivo KDS p95 ≤ 2 s sigue declarado como no verificado hasta instrumentarlo.
+
+## 2026-07-28 — Sprint 1, spike documental y pasarela simulada
+
+### Qué cambió
+
+- Se documentaron Mercado Pago y Transbank sólo desde fuentes oficiales en
+  `ADR-001-payment-gateway-spike.md`; todas las capacidades quedaron rotuladas como hipótesis
+  no verificadas y el ADR quedó PROPUESTO, NO DECIDIDO.
+- Se separaron explícitamente venta del bar y suscripción SaaS de Tablio.
+- Se creó el puerto neutral `PaymentGateway` con conexión por comercio, intento, firma,
+  confirmación/consulta server-side, reembolso, medio guardado y liquidación.
+- Se implementó un adaptador simulado con HMAC, aislamiento por comercio, idempotencia,
+  duplicados, rechazos, eventos tardíos/fuera de orden, reembolsos y datos de conciliación.
+- Se creó `/demo/payments`, una pantalla visible como modo demo que no recibe ni mueve plata.
+- Se inicializó el workspace pnpm y la aplicación Next.js sin implementar checkout real.
+
+### Por qué
+
+No existen cuentas ni credenciales y el proveedor real se integrará al final. El núcleo debe
+poder avanzar y demostrarse sin convertir hipótesis documentales en decisiones ni acoplar la
+lógica de negocio a una pasarela.
+
+### Verificación
+
+- Suite Vitest: ocho entregas idénticas producen un evento y un outbox; firma alterada o
+  expirada falla; evento antiguo no degrada estado; se prueban rechazo, tardanza, refunds
+  múltiples, comercio de medios guardados y campos de conciliación.
+- TypeScript estricto, lint, formato y build de producción se ejecutan como puerta del
+  incremento.
+- `pnpm audit --prod` detectó versiones transitivas vulnerables de `sharp` y `postcss`; se
+  fijaron `sharp@0.35.3` y `postcss@8.5.23`, se repitió el build y el audit terminó con cero
+  vulnerabilidades conocidas.
+- No se crearon cuentas, credenciales, cobros, clientes ni cambios remotos en Supabase.
