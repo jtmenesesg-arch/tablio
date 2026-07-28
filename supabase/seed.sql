@@ -1,0 +1,2 @@
+-- No shared seed data yet.
+-- Roles and permissions are deterministic reference data created by the migration.
