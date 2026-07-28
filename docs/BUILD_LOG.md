@@ -210,3 +210,45 @@ persona → carrito → quote inmutable → aprobación verificable → pedido �
 - Las migraciones remotas son `sprint_02_financial_core`, `sprint_02_worker_rpcs`,
   `sprint_02_database_recorded_clock`, `sprint_02_advisor_fixes` y
   `sprint_02_retry_policy_alignment`.
+
+## 2026-07-28 — Sprint 3, PWA del comensal
+
+### Qué cambió
+
+- Se construyó `/mesa/demo-mesa-8`: código de presencia, carta, detalle, variantes, notas,
+  alérgenos, carrito por dispositivo, nombre opcional, propina, quote, pago simulado,
+  confirmación, comandas independientes, otra ronda y acciones de mesa.
+- La interfaz usa la marca aprobada, Plus Jakarta Sans local, fondos sólidos sin gradientes y
+  limita glass a navegación/modal. Totales, botón de pago y resultados financieros siempre
+  son opacos.
+- El diccionario de alias usa animales u objetos no bebibles más colores. Una prueba compara
+  todas sus palabras contra vocabulario típico de productos/categorías de bar.
+- La sesión demo usa cookie `HttpOnly`, 4 horas de inactividad y 12 horas absolutas.
+- `payment.start` llama el adaptador simulado en servidor. El webhook HMAC se verifica y la
+  consulta server-side termina el pago; una acción inventada `payment.confirm` devuelve 400.
+- “Pagar con el garzón” muestra que sigue impago y no crea pedido ni comandas.
+- Se aplicaron las migraciones remotas `sprint_03_diner_pwa` y
+  `sprint_03_advisor_fixes`: catálogo, sesiones, identidad congelada, acciones, solicitudes,
+  RLS, índices y publicaciones Realtime.
+- ADR-003 fijó recuperación desde servidor y Broadcast privado para producción.
+- Las cuatro fotos demo de Unsplash y Plus Jakarta Sans se sirven localmente; sus créditos
+  están en `docs/ASSET_SOURCES.md`.
+
+### Por qué
+
+La experiencia debe sobrevivir una noche de bar real sin confiar en el navegador para precios,
+pagos o identidad de entrega. El alias por sí solo no basta en una mesa grande, pero pedir una
+cuenta sería fricción innecesaria. Realtime acelera; la consulta recupera.
+
+### Verificación
+
+- Playwright en Pixel 5: 6 de 6 recorridos verdes, incluyendo dos contextos de navegador
+  independientes, recarga, agotado, falsificación financiera y pago con garzón.
+- Vitest: 27 controles verdes, incluidos diccionario de alias y ratios de contraste.
+- pgTAP Sprint 3: 17 controles versionados; la ejecución remota comprobó el último control
+  `ok 17` y no dejó fixtures por usar transacción con rollback.
+- TypeScript estricto, ESLint, Prettier y build Next.js exitosos.
+- `pnpm audit --prod`: cero vulnerabilidades conocidas.
+- Security Advisors: 0 hallazgos.
+- Performance Advisors: se corrigió la FK de categoría sin índice y las policies SELECT
+  solapadas. Permanecen sólo índices sin uso, esperables sin tráfico y registrados en OI-008.

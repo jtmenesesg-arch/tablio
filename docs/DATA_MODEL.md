@@ -1,6 +1,6 @@
 # Modelo de datos
 
-- **Estado:** fundación multi-tenant y núcleo financiero de Sprint 2 aplicados
+- **Estado:** fundación multi-tenant, núcleo financiero y modelo PWA de Sprint 3 aplicados
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
@@ -9,6 +9,9 @@
 - **Núcleo financiero:** `20260728064954_sprint_02_financial_core.sql` y migraciones de
   hardening `20260728065005`, `20260728065130`, `20260728065508`, `20260728070001`
 - **Suite financiera:** `supabase/tests/database/002_financial_core.test.sql` (`1..33` verde)
+- **PWA comensal:** `20260728173000_sprint_03_diner_pwa.sql` y
+  `20260728173500_sprint_03_advisor_fixes.sql`
+- **Suite PWA:** `supabase/tests/database/003_diner_pwa.test.sql` (`1..17`)
 
 ## Convenciones obligatorias
 
@@ -193,12 +196,70 @@ El reintento usa la tabla aprobada de ADR-000 (5 s, 15 s, 45 s, 2 min, 5 min, 15
 60 min) con full jitter, ocho intentos por defecto y DLQ. Un replay exige razón y produce
 `audit_log`.
 
+## PWA del comensal implementada en Sprint 3
+
+### Catálogo configurable
+
+- `menu_categories`: categorías por tenant y venue, ordenables, activables y preparadas para
+  traducciones ES/EN.
+- `products` incorpora categoría, imagen, texto alternativo, alérgenos, traducciones y
+  disponibilidad operativa. No se fija una carta de bar en el esquema.
+- `cart_items.customer_note` limita la nota libre a 140 caracteres y la congela dentro de
+  `checkout_quote_items.selected_modifiers`.
+
+### Sesión anónima por dispositivo
+
+`diner_device_sessions` enlaza un teléfono con una sesión de mesa después de validar QR y
+código de presencia. Guarda hash SHA-256 del token, no el token en claro.
+
+- vencimiento por inactividad: 4 horas por defecto;
+- máximo absoluto: 12 horas por defecto;
+- el vencimiento de inactividad se renueva sin superar el máximo;
+- cerrar/expirar la sesión de mesa invalida la sesión de dispositivo;
+- alias único entre sesiones activas de la misma mesa;
+- nombre o apodo opcional, máximo 60 caracteres.
+
+`tenant_diner_settings` permite configurar idioma y sugerencias de propina; conserva los
+valores aprobados 4 h/12 h como defaults.
+
+`carts.diner_device_session_id` hace explícito que dos teléfonos de una misma mesa no comparten
+carrito.
+
+### Identidad congelada y entrega
+
+Al crear el quote, un trigger copia `diner_device_session_id`, alias y nombre opcional. Al
+confirmar, otro trigger copia esa identidad al pedido. `orders.order_number` entrega el número
+humano que acompaña al alias/nombre hacia KDS y garzón.
+
+La identidad del quote/pedido no cambia aunque la sesión edite el nombre después.
+
+### Acciones y pago con garzón
+
+- `service_action_types`: acciones configurables por venue, icono, orden y cooldown.
+- `diner_service_requests`: solicitud deduplicada y estados notificado, visto, completado o
+  cancelado.
+- `diner_waiter_payment_requests`: aviso separado para pagar con el garzón.
+
+La última tabla no contiene `order_id` ni `ticket_id`. Insertarla no ejecuta la transacción de
+confirmación: no existe pedido ni comanda hasta comprobar el pago.
+
+### Acceso y Realtime
+
+Las seis tablas nuevas tienen `tenant_id`, RLS habilitado y forzado. `anon` no recibe acceso
+directo a hashes de sesión, quotes, pagos, pedidos o comandas. El personal autenticado usa los
+permisos `catalog.*` y `orders.*`; las operaciones del dispositivo pasan por una frontera
+server-side estrecha.
+
+Categorías, disponibilidad y solicitudes están publicadas para avisos Realtime. El diseño de
+producción usa Broadcast privado y vuelve a consultar PostgreSQL al recibir un aviso o
+reconectar. Ver ADR-003.
+
 ## Tablas todavía previstas
 
 | Dominio          | Entidades principales                               |
 | ---------------- | --------------------------------------------------- |
-| Sesión/presencia | `table_session_members`, `presence_codes`           |
-| Catálogo         | `categories`, `modifiers`, historiales de precio    |
+| Sesión/presencia | `presence_code_rotations`, historial de revocación  |
+| Catálogo         | `modifiers`, historiales de precio                  |
 | Propina          | `tips`, `tip_allocations`                           |
 | Tributación      | `tax_documents`, `tax_document_attempts`            |
 | Impresión        | `print_jobs`, `printer_endpoints`, `print_attempts` |

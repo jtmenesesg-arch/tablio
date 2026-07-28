@@ -1,6 +1,6 @@
 # Mapa de dominios
 
-- **Estado:** vivo, núcleo financiero de Sprint 2 implementado
+- **Estado:** vivo, núcleo financiero y PWA del comensal de Sprint 3 implementados
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -25,12 +25,14 @@ flowchart LR
 
   tenant --> access["Identidad, roles y permisos"]
   table --> session["Sesión de mesa"]
-  session --> cart["Carrito por persona"]
+  session --> device["Sesión de dispositivo"]
+  device --> cart["Carrito por persona"]
   cart --> quote["CheckoutQuote inmutable"]
   quote --> payment["Pago y eventos del proveedor"]
   payment --> order["Pedido confirmado"]
   order --> ticket["Comanda por estación"]
   station --> ticket
+  device --> action["Acciones y avisos"]
 
   payment --> tip["Propina"]
   payment --> tax["Documento tributario"]
@@ -72,7 +74,9 @@ optativo por producto: sólo los productos con `track_stock` reservan disponibil
 ### 5. Sesión de mesa y presencia
 
 Abre el contexto físico en el que interactúan varias personas. Valida QR no predecible, código
-corto y reglas configurables de presencia. Una sesión contiene pedidos independientes.
+corto y reglas configurables de presencia. Una sesión contiene dispositivos con token opaco,
+alias y carrito independientes. La sesión de dispositivo vence tras 4 horas de inactividad,
+12 horas absolutas o antes si la mesa se cierra.
 
 ### 6. Carrito y CheckoutQuote
 
@@ -98,6 +102,12 @@ comandas iniciales se crean atómicamente antes de avisar al KDS.
 Divide un pedido en comandas por estación dentro de la transacción de confirmación. KDS recibe
 avisos rápidos, reconstruye su estado desde PostgreSQL y nunca espera a la cola para mostrar
 trabajo ya confirmado.
+
+### 9.1 Acciones de mesa
+
+Las acciones son datos configurables por tenant/venue y aplican cooldown más clave de
+deduplicación. “Pagar con el garzón” es sólo una solicitud visible: no crea pedido, comanda ni
+estado que parezca pagado.
 
 ### 10. Durabilidad y efectos
 
@@ -137,6 +147,8 @@ pasarela de un bar.
 - Pago del comensal al bar y suscripción del bar a Tablio son flujos financieros distintos.
 - El orden de ingestión usa el reloj de PostgreSQL; `occurred_at` del proveedor se conserva
   como evidencia, pero no puede hacer retroceder una máquina de estados.
+- El alias y nombre opcional se congelan en quote/pedido para que la entrega siga siendo
+  inequívoca aunque el dispositivo cambie después.
 
 ## Transacción de confirmación implementada
 

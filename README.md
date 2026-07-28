@@ -6,10 +6,11 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto cerró **Sprint 2 — Núcleo financiero**. El esquema remoto ya implementa carrito,
-quote inmutable, confirmación server-side, pedido, comandas por estación, reserva selectiva de
-stock, outbox, colas, reembolsos y conciliación con RLS. `PaymentGateway`, la pasarela
-simulada y su pantalla demostrable siguen siendo el proveedor usado; no hay pasarela real.
+El proyecto cerró **Sprint 3 — PWA del comensal**. La persona ya puede entrar por QR/código,
+ver la carta, mantener su carrito propio, dejar propina, pagar con el adaptador simulado y
+seguir comandas independientes por estación. El esquema remoto conserva carrito, quote
+inmutable, confirmación server-side, pedido, stock, outbox, RLS y ahora sesiones anónimas,
+catálogo visible y acciones de mesa. No hay pasarela real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -34,10 +35,10 @@ La fuente completa de estas reglas es [`AGENTS.md`](AGENTS.md) y el
 AGENTS.md          reglas de operación de Codex
 brief/             constitución del producto y decisiones posteriores
 docs/              documentación viva, ADRs, revisiones y resúmenes de sprint
-apps/web/          aplicación Next.js y laboratorio visual de pagos
+apps/web/          PWA Next.js y laboratorio visual de pagos
 packages/          puerto de aplicación y adaptador de pagos simulado
 supabase/          migraciones, configuración y tests financieros/aislamiento
-tests/             integración y recorridos completos (pendiente)
+tests/             recorridos completos Playwright
 ```
 
 ## Herramientas acordadas
@@ -59,8 +60,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Luego abre `http://localhost:3000/demo/payments`. La franja roja debe decir siempre
+Luego abre `http://localhost:3000/mesa/demo-mesa-8` y usa el código `4826`. La franja debe decir
 “MODO DEMO · NO MUEVE DINERO REAL”.
+
+El laboratorio financiero separado sigue en `http://localhost:3000/demo/payments`.
 
 ## Cómo correr las verificaciones
 
@@ -70,24 +73,33 @@ La puerta completa acordada para CI será:
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm e2e
 pnpm build
 ```
 
-En incrementos que cambien PostgreSQL se agregan `supabase test db`; en recorridos de
-navegador se agrega `pnpm test:e2e`. La suite financiera de Sprint 2 pasó 33 controles remotos.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 3 suma 17 controles
+pgTAP y 6 recorridos E2E en un perfil Pixel 5.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
 a más tardar antes del piloto.
 
-## Demo de pagos
+## PWA demo
+
+La PWA permite recorrer mesa → carta → carrito → quote → pago → pedido → comandas. Cada
+dispositivo tiene cookie y carrito propios. La sesión se recupera al recargar y la pantalla
+consulta nuevamente el estado al reconectar.
+
+“Pagar con el garzón” sólo crea un aviso visual y operativo: la pantalla declara que no está
+pagado y que nada fue enviado a la barra.
+
+## Laboratorio de pagos
 
 La demo permite ejecutar aprobado, rechazado, webhook duplicado, evento tardío/fuera de orden
 y reembolso total/parcial. El backend verifica una firma simulada y consulta el estado
 server-side antes de registrar evento + outbox.
 
-Es un laboratorio en memoria: no es checkout, no persiste al reiniciar y nunca debe conectarse
-a datos reales.
+Es un laboratorio en memoria y nunca debe conectarse a datos reales.
 
 ## Cómo desplegar
 

@@ -102,8 +102,8 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 
 ## OI-008 — Índices sin uso observado
 
-- **Estado:** abierto, informativo; no bloquea Sprint 2.
-- **Hallazgo:** después de indexar todas las claves foráneas del núcleo financiero, los
+- **Estado:** abierto, informativo; no bloquea Sprint 3.
+- **Hallazgo:** después de indexar las claves foráneas del núcleo financiero y de la PWA, los
   Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
   varios índices nuevos todavía registran cero usos.
 - **Acción:** conservarlos para evitar scans y bloqueos costosos en deletes/updates de tablas
@@ -121,9 +121,21 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
   reembolso o producción manual, ajuste de inventario y auditoría completa.
 - **Riesgo:** resolver fuera de Tablio deja dinero, stock y pedido sin trazabilidad.
 
+## OI-010 — Realtime privado e instrumentación PWA
+
+- **Estado:** arquitectura decidida en ADR-003; validación de producción pendiente.
+- **Decidir antes de:** piloto con concurrencia real.
+- **Implementado:** recuperación por consulta al servidor en arranque, recarga, reconexión y
+  timer corto del modo demo; tablas relevantes publicadas en Supabase Realtime.
+- **Pendiente:** emitir autorización temporal desde la sesión opaca, conectar Broadcast
+  privado por mesa, medir p50/p95/p99 y probar reconexión/pérdida de avisos bajo carga.
+- **Criterio:** un aviso nunca contiene autoridad financiera; sólo invalida la lectura y
+  PostgreSQL reconstruye el estado.
+- **Riesgo:** declarar “en vivo” sin medir teléfonos/redes reales de un bar lleno.
+
 ## Pendientes acumulados
 
-- La aplicación y `package.json` ya existen desde Sprint 1; CI y despliegue siguen pendientes.
+- La PWA y sus pruebas existen; CI y despliegue siguen pendientes.
 - El control negativo rojo → verde queda diferido a staging aislado, a más tardar antes del
   piloto.
 - El objetivo KDS p95 ≤ 2 s sigue sin verificar hasta tener instrumentación end-to-end.
@@ -131,3 +143,4 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
   `apps/web` como Root Directory antes del primer despliegue.
 - Las decisiones manuales sobre aprobaciones tardías deben cerrarse en el panel del cajero
   antes del piloto (OI-009).
+- El canal Broadcast privado y su prueba de carga deben cerrarse antes del piloto (OI-010).

@@ -2,6 +2,8 @@
 
 - **ADR:** documento que registra una decisión técnica, sus alternativas y consecuencias.
 - **API:** puerta controlada por la que dos sistemas intercambian datos o acciones.
+- **Alias de comensal:** nombre generado y legible, como “Zorro Azul”, que identifica una
+  persona sin registro y evita palabras que suenan a productos de la carta.
 - **Backoff:** espera que aumenta entre reintentos para no insistir de forma destructiva.
 - **BFF:** backend adaptado a las necesidades de una interfaz concreta.
 - **CheckoutQuote:** fotografía inmutable de todo lo que una persona va a pagar.
@@ -33,6 +35,12 @@
   propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.
 - **PWA:** sitio web con comportamiento similar a una app, sin exigir instalación.
+- **Código de presencia:** número corto impreso/mostrado en la mesa que demuestra cercanía
+  física antes de abrir una sesión de dispositivo.
+- **Sesión de dispositivo:** identidad anónima y recuperable de un teléfono dentro de una
+  sesión de mesa; tiene carrito, alias y vencimientos propios.
+- **Broadcast privado:** canal Realtime autorizado por topic. Sólo avisa que algo cambió; el
+  cliente vuelve a consultar PostgreSQL.
 - **Realtime:** canal de aviso inmediato; no reemplaza a PostgreSQL como fuente de verdad.
 - **RLS:** políticas de PostgreSQL que deciden qué filas puede leer o modificar cada identidad.
 - **RPC:** función de PostgreSQL invocada como una operación remota y transaccional.
