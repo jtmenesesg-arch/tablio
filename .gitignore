@@ -1,2 +1,6 @@
 .vercel
 .env*
+node_modules/
+.next/
+coverage/
+*.tsbuildinfo

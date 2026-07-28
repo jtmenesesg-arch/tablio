@@ -6,18 +6,19 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto cerró **Sprint 0 — Fundación**. El stack fue aprobado en
-[`docs/adr/ADR-000-stack.md`](docs/adr/ADR-000-stack.md) y la estructura documental está
-creada. El esquema multi-tenant, RLS y el Custom Access Token Hook están aplicados y
-verificados en el proyecto Supabase actual; la aplicación ejecutable comienza en Sprint 1.
+El proyecto cerró **Sprint 1 — Spike de pasarelas sin credenciales**. El esquema multi-tenant,
+RLS y Auth real de Sprint 0 siguen aplicados; ahora existe además el puerto abstracto
+`PaymentGateway`, una pasarela simulada y una pantalla demostrable.
 
-Esto significa que hoy se puede revisar la arquitectura, las migraciones y los tests de base,
-pero aún no hay pantallas ni despliegue web funcional que probar.
+[`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
+Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
+hipótesis hasta probarlo con cuentas reales antes del piloto.
 
 ## Principios que no se cambian sin aprobación
 
 - Cada persona paga su propio pedido antes de que el local lo produzca.
 - Tablio no recibe, retiene ni reparte el dinero de las ventas del bar.
+- La mensualidad que el bar paga a Tablio es un flujo separado, planificado para Sprint 8.
 - Todos los datos de negocio llevan `tenant_id` y están protegidos con Row Level Security.
 - El frontend nunca confirma un pago.
 - Los mensajes repetidos no pueden crear efectos comerciales repetidos.
@@ -32,8 +33,8 @@ La fuente completa de estas reglas es [`AGENTS.md`](AGENTS.md) y el
 AGENTS.md          reglas de operación de Codex
 brief/             constitución del producto y decisiones posteriores
 docs/              documentación viva, ADRs, revisiones y resúmenes de sprint
-apps/              aplicaciones web (se crea en el próximo incremento técnico)
-packages/          dominio y componentes compartidos (pendiente)
+apps/web/          aplicación Next.js y laboratorio visual de pagos
+packages/          puerto de aplicación y adaptador de pagos simulado
 supabase/          migraciones, configuración y tests de aislamiento
 tests/             integración y recorridos completos (pendiente)
 ```
@@ -51,19 +52,14 @@ quedarán fijadas en el repositorio y el lockfile.
 
 ## Cómo levantar el proyecto
 
-Estos serán los comandos oficiales una vez creado el esqueleto ejecutable en Sprint 1:
-
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Luego se abrirá la dirección local que imprima `pnpm dev`.
-
-**Estado hoy:** `supabase/config.toml` y las migraciones ya existen. `pnpm dev` sigue pendiente
-porque aún no existen `package.json` ni `pnpm-lock.yaml`. Las limitaciones están registradas en
-[`docs/OPEN_ISSUES.md`](docs/OPEN_ISSUES.md).
+Luego abre `http://localhost:3000/demo/payments`. La franja roja debe decir siempre
+“MODO DEMO · NO MUEVE DINERO REAL”.
 
 ## Cómo correr las verificaciones
 
@@ -73,22 +69,29 @@ La puerta completa acordada para CI será:
 pnpm lint
 pnpm typecheck
 pnpm test
-supabase test db
 pnpm build
-pnpm test:e2e
 ```
 
-El test de base debe demostrar que tenant A no puede leer ni modificar datos de tenant B. Una
-entrega no se considera terminada si alguna verificación falla.
+En incrementos que cambien PostgreSQL se agregan `supabase test db`; en recorridos de
+navegador se agrega `pnpm test:e2e`. Sprint 1 no modifica el esquema remoto.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
 a más tardar antes del piloto.
 
+## Demo de pagos
+
+La demo permite ejecutar aprobado, rechazado, webhook duplicado, evento tardío/fuera de orden
+y reembolso total/parcial. El backend verifica una firma simulada y consulta el estado
+server-side antes de registrar evento + outbox.
+
+Es un laboratorio en memoria: no es checkout, no persiste al reiniciar y nunca debe conectarse
+a datos reales.
+
 ## Cómo desplegar
 
-El repositorio local ya está vinculado al proyecto Vercel `tablio`, pero todavía no se
-despliega porque no existe aplicación.
+El repositorio local está vinculado al proyecto Vercel `tablio`. Antes del primer despliegue se
+debe verificar que Root Directory apunte a `apps/web`; Sprint 1 no publica producción.
 
 Cuando `apps/web` esté creado y la configuración de Vercel apunte a ese directorio:
 
