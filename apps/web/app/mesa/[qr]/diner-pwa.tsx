@@ -219,6 +219,19 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
     };
   }, [data?.authenticated, refresh, screen]);
 
+  useEffect(() => {
+    if (!data?.authenticated) return;
+    const events = new EventSource("/api/kds/events");
+    const refreshFromEvent = () => void refresh(true);
+    events.addEventListener("product", refreshFromEvent);
+    events.addEventListener("ticket", refreshFromEvent);
+    return () => {
+      events.removeEventListener("product", refreshFromEvent);
+      events.removeEventListener("ticket", refreshFromEvent);
+      events.close();
+    };
+  }, [data?.authenticated, refresh]);
+
   async function mutate(
     mutation: DinerMutation,
     options?: { nextScreen?: Screen },

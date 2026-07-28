@@ -15,6 +15,9 @@ export default function Home() {
       <Link className="solidButton" href="/mesa/demo-mesa-8">
         Entrar a Mesa 8
       </Link>
+      <Link className="primaryLink" href="/kds">
+        Abrir KDS de Barra y Cocina
+      </Link>
     </main>
   );
 }

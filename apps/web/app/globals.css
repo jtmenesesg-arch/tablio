@@ -1959,3 +1959,516 @@ input {
     animation-duration: 1.8s;
   }
 }
+
+/* KDS: superficie operativa sólida, sin transparencias ni blur. */
+.kdsShell {
+  min-height: 100vh;
+  background: #090909;
+  color: #fefefe;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+.kdsTopbar {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.8fr) minmax(420px, 1.6fr) minmax(
+      250px,
+      0.9fr
+    );
+  align-items: center;
+  gap: 20px;
+  min-height: 92px;
+  padding: 14px 22px;
+  background: #111110;
+  border-bottom: 3px solid #2b2b29;
+}
+
+.kdsBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kdsBrandMark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  background: #e8531d;
+  border-radius: 12px;
+  color: #111110;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.kdsBrand div,
+.kdsConnection div {
+  display: grid;
+  gap: 3px;
+}
+
+.kdsBrand strong {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.kdsBrand span:last-child,
+.kdsConnection span {
+  color: #c9c9c5;
+  font-size: 13px;
+}
+
+.kdsStationTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.kdsStationTabs button,
+.kdsSoundButton,
+.kdsOfflineWarning button,
+.kdsInlineError button {
+  min-height: 54px;
+  padding: 0 18px;
+  background: #242422;
+  border: 2px solid #3a3a37;
+  border-radius: 10px;
+  color: #fefefe;
+  font: inherit;
+  font-weight: 800;
+}
+
+.kdsStationTabs button.isActive {
+  background: #fefefe;
+  border-color: #fefefe;
+  color: #111110;
+}
+
+.kdsConnection {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 12px;
+  min-width: 235px;
+  padding: 12px 16px;
+  background: #181817;
+  border: 2px solid #323230;
+  border-radius: 10px;
+}
+
+.kdsConnectionDot {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #1a6b45;
+  box-shadow: 0 0 0 5px #123d2b;
+}
+
+.kdsConnection.isBad {
+  border-color: #c0280f;
+  background: #2a0c08;
+}
+
+.kdsConnection.isBad .kdsConnectionDot {
+  background: #fefefe;
+  box-shadow: 0 0 0 5px #c0280f;
+}
+
+.kdsOfflineWarning {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.8fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 104px;
+  padding: 16px 24px;
+  background: #c0280f;
+  border-bottom: 5px solid #fefefe;
+  color: #fefefe;
+}
+
+.kdsOfflineWarning strong {
+  font-size: clamp(20px, 2vw, 30px);
+}
+
+.kdsOfflineWarning span {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.kdsOfflineWarning button {
+  background: #fefefe;
+  border-color: #fefefe;
+  color: #111110;
+}
+
+.kdsDegradedWarning {
+  padding: 13px 22px;
+  background: #b87c10;
+  border-bottom: 3px solid #f5c85c;
+  color: #111110;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.kdsSummary {
+  display: grid;
+  grid-template-columns: 145px 145px minmax(280px, 1fr) auto;
+  gap: 10px;
+  padding: 14px 22px;
+  background: #111110;
+  border-bottom: 1px solid #2f2f2c;
+}
+
+.kdsSummary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-height: 58px;
+  padding: 10px 14px;
+  background: #1d1d1b;
+  border: 2px solid #333330;
+  border-radius: 10px;
+}
+
+.kdsSummary > div > strong {
+  font-size: 30px;
+}
+
+.kdsSummary > div > span {
+  color: #d8d8d3;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kdsSummary > div.isLate {
+  background: #3e2602;
+  border-color: #b87c10;
+}
+
+.kdsLatencyReadout {
+  justify-content: space-between;
+}
+
+.kdsLatencyReadout strong {
+  font-size: 22px !important;
+}
+
+.kdsSoundButton {
+  min-width: 165px;
+}
+
+.kdsSoundButton.isActive {
+  background: #173e2e;
+  border-color: #1a6b45;
+}
+
+.kdsInlineError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 14px 22px 0;
+  padding: 14px 18px;
+  background: #3a100a;
+  border: 2px solid #c0280f;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.kdsInlineError button {
+  min-height: 42px;
+}
+
+.kdsBoard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(355px, 1fr));
+  align-items: start;
+  gap: 14px;
+  min-height: 420px;
+  padding: 18px 22px 24px;
+}
+
+.kdsTicket {
+  overflow: hidden;
+  background: #f8f7f3;
+  border: 4px solid #d4d3cd;
+  border-radius: 12px;
+  color: #111110;
+}
+
+.kdsTicket--ready {
+  border-color: #1a6b45;
+}
+
+.kdsTicket__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  background: #fefefe;
+  border-bottom: 2px solid #d9d8d2;
+}
+
+.kdsTicket__header h2 {
+  margin: 4px 0 0;
+  font-size: clamp(21px, 2.2vw, 30px);
+  line-height: 1.1;
+}
+
+.kdsEyebrow {
+  margin: 0;
+  color: #5a5a55;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kdsTimer {
+  min-width: 104px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #fefefe;
+  font-size: clamp(27px, 2.8vw, 42px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.kdsTimer--ontime {
+  background: #1a6b45;
+}
+
+.kdsTimer--late {
+  background: #b87c10;
+  color: #111110;
+}
+
+.kdsTimer--critical {
+  background: #c0280f;
+}
+
+.kdsTicket__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #e9e8e2;
+  border-bottom: 1px solid #d0cfc8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kdsTicket__meta > span:not(.kdsPaidSeal) {
+  padding: 4px 8px;
+  background: #d7d6cf;
+  border-radius: 6px;
+}
+
+.kdsPaidSeal {
+  padding: 5px 9px;
+  background: #1a6b45;
+  border-radius: 6px;
+  color: #fefefe;
+}
+
+.kdsItems {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kdsItems li {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 10px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #d7d6d0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.kdsItems li > strong {
+  color: #e8531d;
+  font-size: 25px;
+}
+
+.kdsItems li span {
+  display: grid;
+  gap: 7px;
+  font-weight: 800;
+}
+
+.kdsItems em {
+  padding: 7px 9px;
+  background: #fff0cf;
+  border-left: 5px solid #b87c10;
+  color: #372503;
+  font-size: 14px;
+  font-style: normal;
+}
+
+.kdsTicket__actions {
+  display: grid;
+  grid-template-columns: 0.75fr 1.35fr;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  background: #fefefe;
+}
+
+.kdsPrimaryButton,
+.kdsSecondaryButton {
+  min-height: 64px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.kdsPrimaryButton {
+  background: #e8531d;
+  border: 3px solid #b83e10;
+  color: #111110;
+}
+
+.kdsTicket--ready .kdsPrimaryButton {
+  background: #1a6b45;
+  border-color: #145438;
+  color: #fefefe;
+}
+
+.kdsSecondaryButton {
+  background: #fefefe;
+  border: 3px solid #383835;
+  color: #111110;
+}
+
+.kdsPrimaryButton:disabled,
+.kdsSecondaryButton:disabled {
+  opacity: 0.45;
+}
+
+.kdsEmpty {
+  display: grid;
+  min-height: 300px;
+  grid-column: 1 / -1;
+  place-content: center;
+  gap: 10px;
+  background: #111110;
+  border: 3px dashed #3a3a37;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.kdsEmpty strong {
+  font-size: 34px;
+}
+
+.kdsEmpty span {
+  color: #bcbcb7;
+  font-size: 17px;
+}
+
+.kdsAvailability {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 18px;
+  padding: 20px 22px;
+  background: #151514;
+  border-top: 3px solid #2d2d2b;
+  border-bottom: 3px solid #2d2d2b;
+}
+
+.kdsAvailability h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.kdsProductToggles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 9px;
+}
+
+.kdsProductToggles button {
+  display: grid;
+  gap: 5px;
+  min-height: 66px;
+  padding: 10px 14px;
+  background: #173e2e;
+  border: 2px solid #1a6b45;
+  border-radius: 9px;
+  color: #fefefe;
+  font: inherit;
+  text-align: left;
+}
+
+.kdsProductToggles button span {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kdsProductToggles button strong {
+  font-size: 15px;
+}
+
+.kdsProductToggles button.isSoldOut {
+  background: #3a100a;
+  border-color: #c0280f;
+}
+
+.kdsFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 22px 18px;
+  background: #090909;
+  color: #a7a7a2;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 920px) {
+  .kdsTopbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .kdsStationTabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .kdsConnection {
+    min-width: 220px;
+  }
+
+  .kdsSummary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kdsLatencyReadout {
+    grid-column: 1 / -1;
+  }
+
+  .kdsAvailability {
+    grid-template-columns: 1fr;
+  }
+}

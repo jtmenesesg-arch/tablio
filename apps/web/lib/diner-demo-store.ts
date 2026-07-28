@@ -7,6 +7,12 @@ import {
 } from "@tablio/payments-simulated";
 import { PaymentEventProcessor } from "@tablio/application";
 import { createDinerAlias } from "./diner-alias";
+import {
+  appendPaidOrderToKds,
+  kdsProductAvailability,
+  kdsTicketStates,
+  mutateKds,
+} from "./kds-demo-store";
 import type {
   CartLine,
   DinerBootstrap,
@@ -244,7 +250,7 @@ function ensureSession(token: string | undefined): MutableSession {
 
 function productAvailable(product: MutableProduct): boolean {
   return (
-    product.available &&
+    (kdsProductAvailability(product.id) ?? product.available) &&
     (!product.trackStock || (product.stock ?? 0) - product.reserved > 0)
   );
 }
@@ -283,27 +289,23 @@ function cartLines(cart: MutableCart): CartLine[] {
   });
 }
 
-function stationFor(product: MutableProduct): string {
+function stationFor(product: MutableProduct): {
+  id: "barra" | "cocina";
+  name: string;
+} {
   return product.categoryId === "beer" || product.categoryId === "cocktails"
-    ? "Barra"
-    : "Cocina";
-}
-
-function liveTicketStatus(
-  confirmedAt: string,
-  stationName: string,
-): TicketStatus {
-  const elapsed = now() - Date.parse(confirmedAt);
-  if (elapsed >= (stationName === "Barra" ? 2_200 : 4_200)) return "ready";
-  if (elapsed >= 900) return "in_preparation";
-  return "queued";
+    ? { id: "barra", name: "Barra" }
+    : { id: "cocina", name: "Cocina" };
 }
 
 function liveOrders(session: MutableSession): DinerOrder[] {
+  const ticketStates = kdsTicketStates(
+    session.orders.flatMap((order) => order.tickets.map((ticket) => ticket.id)),
+  );
   return session.orders.map((order) => {
     const tickets = order.tickets.map((ticket) => ({
       ...ticket,
-      status: liveTicketStatus(order.confirmedAt, ticket.stationName),
+      status: (ticketStates.get(ticket.id) ?? ticket.status) as TicketStatus,
     }));
     const stateNames = tickets.map((ticket) => ticket.status);
     const orderState = stateNames.every((status) => status === "ready")
@@ -344,15 +346,33 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
   }
 
   const sourceLines = cartLines(session.cart);
-  const stations = new Map<string, string[]>();
+  const stations = new Map<
+    string,
+    {
+      name: string;
+      items: Array<{
+        id: string;
+        name: string;
+        quantity: number;
+        note?: string;
+      }>;
+    }
+  >();
   for (const line of sourceLines) {
     const product = state.products.get(line.productId);
     if (!product) continue;
     const station = stationFor(product);
-    stations.set(station, [
-      ...(stations.get(station) ?? []),
-      `${line.quantity}× ${line.productName}`,
-    ]);
+    const group = stations.get(station.id) ?? {
+      name: station.name,
+      items: [],
+    };
+    group.items.push({
+      id: line.id,
+      name: `${line.productName}${line.variantName ? ` · ${line.variantName}` : ""}`,
+      quantity: line.quantity,
+      note: line.note,
+    });
+    stations.set(station.id, group);
     if (product.trackStock) {
       product.reserved -= line.quantity;
       product.stock = (product.stock ?? 0) - line.quantity;
@@ -360,21 +380,40 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
   }
 
   const confirmedAt = new Date().toISOString();
+  const orderId = randomUUID();
+  const orderNumber = ++state.orderSequence;
+  const kdsTickets = [...stations.entries()].map(
+    ([stationId, station], index) => ({
+      id: `${orderId}:${stationId}:${index}`,
+      stationId,
+      stationName: station.name,
+      items: station.items,
+    }),
+  );
   const order: DinerOrder = {
-    id: randomUUID(),
-    number: ++state.orderSequence,
+    id: orderId,
+    number: orderNumber,
     alias: session.alias,
     displayName: session.displayName,
     totalClp: quote.totalClp,
     state: "confirmed",
     confirmedAt,
-    tickets: [...stations.entries()].map(([stationName, itemNames]) => ({
-      id: randomUUID(),
-      stationName,
+    tickets: kdsTickets.map((ticket) => ({
+      id: ticket.id,
+      stationName: ticket.stationName,
       status: "queued",
-      itemNames,
+      itemNames: ticket.items.map((item) => `${item.quantity}× ${item.name}`),
     })),
   };
+  appendPaidOrderToKds({
+    orderId,
+    orderNumber,
+    tableName: "Mesa 8",
+    alias: session.alias,
+    displayName: session.displayName,
+    confirmedAt,
+    tickets: kdsTickets,
+  });
   session.orders.unshift(order);
   payment.status = "confirmed";
   session.quote = Object.freeze({ ...quote, status: "paid" });
@@ -720,5 +759,10 @@ export function setProductAvailabilityForTest(
   }
   const product = state.products.get(productId);
   if (!product) throw new DinerError("Producto no encontrado.", 404);
-  product.available = available;
+  mutateKds({
+    action: "product.availability",
+    productId,
+    available,
+    reason: "Preparación de prueba E2E",
+  });
 }
