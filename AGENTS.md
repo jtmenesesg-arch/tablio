@@ -92,9 +92,16 @@ Aplica a todo lo que toque pagos, pedidos, boletas, reembolsos o datos de tenant
 - **Durabilidad:** colas durables, outbox, reintentos con backoff, dead-letter queue, spool de
   impresión persistente. **Jamás existe un modo offline que produzca un pedido cuyo pago no se
   pudo verificar.**
+- **Entrega al KDS:** Realtime avisa, PostgreSQL manda y la cola garantiza efectos. El KDS
+  nunca depende del polling de la cola para mostrar pedidos confirmados.
+- **`service_role` no protege datos:** ignora RLS. Ninguna ruta que responda datos de un
+  usuario puede usarla. Las requests de usuario propagan su JWT y un tenant activo validado;
+  si falta contexto de tenant, la operación falla cerrada.
 - **Auditoría obligatoria** (quién, cuándo, por qué) en: reembolso, anulación, cambio de precio,
   cierre manual, reapertura, impersonación.
 - **Tests** de todas las rutas críticas, con explicación en lenguaje simple de qué prueban.
+- **Control negativo de RLS:** el test de aislamiento debe demostrarse en rojo quitando
+  deliberadamente una política en una base efímera, restaurarla y volver a pasar en verde.
 
 ---
 

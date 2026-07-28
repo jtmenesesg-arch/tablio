@@ -1,0 +1,35 @@
+# Glosario
+
+- **ADR:** documento que registra una decisión técnica, sus alternativas y consecuencias.
+- **API:** puerta controlada por la que dos sistemas intercambian datos o acciones.
+- **Backoff:** espera que aumenta entre reintentos para no insistir de forma destructiva.
+- **BFF:** backend adaptado a las necesidades de una interfaz concreta.
+- **CheckoutQuote:** fotografía inmutable de todo lo que una persona va a pagar.
+- **CI:** verificación automática que corre en cada cambio antes de aceptarlo.
+- **Comanda:** instrucción de producción enviada a una estación, como barra o cocina.
+- **Constraint:** regla de PostgreSQL que impide guardar datos inválidos o duplicados.
+- **Custom Access Token Hook:** función que agrega claims controlados al JWT antes de que
+  Supabase Auth lo emita.
+- **Dead-letter queue (DLQ):** cola separada para mensajes que no pudieron procesarse después de los reintentos.
+- **Edge Function:** función server-side de Supabase usada para trabajo breve cerca de los datos.
+- **Full jitter:** variación aleatoria del tiempo de backoff para evitar reintentos simultáneos.
+- **Fail-closed:** si falta identidad o contexto válido, se niega acceso en vez de abrirlo por
+  defecto.
+- **Idempotencia:** propiedad que permite repetir un mensaje sin repetir su efecto comercial.
+- **KDS:** pantalla de producción que organiza comandas para barra o cocina.
+- **Monorepo:** un repositorio que contiene aplicaciones y paquetes relacionados.
+- **Outbox transaccional:** tabla donde el evento se guarda en la misma transacción que el cambio de negocio.
+- **p95:** valor bajo el cual queda el 95% de las mediciones observadas.
+- **PWA:** sitio web con comportamiento similar a una app, sin exigir instalación.
+- **Realtime:** canal de aviso inmediato; no reemplaza a PostgreSQL como fuente de verdad.
+- **RLS:** políticas de PostgreSQL que deciden qué filas puede leer o modificar cada identidad.
+- **RPC:** función de PostgreSQL invocada como una operación remota y transaccional.
+- **`service_role`:** credencial privilegiada de Supabase que ignora RLS; solo puede vivir en
+  infraestructura controlada y nunca en una ruta que sirve datos de usuario.
+- **SLO:** objetivo medible de confiabilidad o velocidad que el sistema se compromete a vigilar.
+- **Spool de impresión:** cola persistente de trabajos pendientes para una impresora.
+- **Tenant:** local o cliente cuyos datos deben quedar aislados de los demás.
+- **Transactional outbox:** nombre en inglés de outbox transaccional.
+- **Visibility timeout:** período durante el que un mensaje leído queda oculto a otros consumidores.
+- **Webhook:** aviso server-side enviado por un proveedor a una URL controlada por Tablio.
+- **Worker:** proceso que consume trabajo durable fuera del flujo inmediato del usuario.
