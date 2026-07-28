@@ -15,7 +15,7 @@
   "scripts": {
     "build": "pnpm --filter @tablio/web build",
     "dev": "pnpm --filter @tablio/web dev",
-    "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" package.json pnpm-workspace.yaml tsconfig.json vitest.config.ts eslint.config.mjs README.md docs/BUILD_LOG.md docs/DOMAIN_MAP.md docs/GLOSSARY.md docs/OPEN_ISSUES.md docs/adr/ADR-001-payment-gateway-spike.md docs/sprints/SPRINT-01-SUMMARY.md",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" package.json pnpm-workspace.yaml tsconfig.json vitest.config.ts eslint.config.mjs README.md \"docs/*.md\" \"docs/adr/*.md\" \"docs/sprints/*.md\"",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
