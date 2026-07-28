@@ -252,3 +252,48 @@ cuenta sería fricción innecesaria. Realtime acelera; la consulta recupera.
 - Security Advisors: 0 hallazgos.
 - Performance Advisors: se corrigió la FK de categoría sin índice y las policies SELECT
   solapadas. Permanecen sólo índices sin uso, esperables sin tráfico y registrados en OI-008.
+
+## 2026-07-28 — Sprint 4, KDS, comandas y durabilidad
+
+### Qué cambió
+
+- Se construyó `/kds` como pantalla horizontal, opaca y de alto contraste, con estaciones
+  configurables, temporizadores, sello Pagado, botones grandes y estados independientes.
+- El camino inmediato invalida por estación y vuelve a consultar la fuente durable. Al abrir o
+  reconectar se recuperan todas las comandas no terminales y cada 45 segundos corre una
+  reconciliación de respaldo aunque el canal parezca sano.
+- La pantalla muestra permanentemente conexión y “actualizado hace X”; después de 75 segundos
+  sin sincronizar aparece una advertencia roja grande que impide confundir una caída con una
+  barra tranquila.
+- Cada KDS mantiene heartbeat. La confirmación congela si había pantalla viva y la métrica
+  excluye de percentiles el tiempo sin observador, presentándolo en un contador separado.
+- Las transiciones usan estado y versión esperados. Dos pantallas no pueden sobrescribirse:
+  una gana y la otra debe recargar.
+- READY escribe avisos durables para garzón y comensal. Agotado/repuesto actualiza la carta de
+  inmediato y deja auditoría.
+- Se aplicaron tablas RLS para configuración, presencia, métricas, endpoints, spool e intentos
+  de impresión. `PrinterPort` y el worker dejan el transporte físico como adaptador stub.
+- Se corrigió la documentación del código de presencia a 4 dígitos.
+
+### Por qué
+
+Realtime debe acelerar sin transformarse en fuente de verdad. La consulta periódica cubre un
+websocket medio muerto; el heartbeat permite medir el sistema y no cuánto tiempo estuvo
+apagada una tablet. El spool debe sobrevivir aunque todavía no se haya elegido cómo alcanzar
+la impresora del local.
+
+### Verificación
+
+- Playwright completo: 11/11 recorridos verdes, incluidos pago real del adaptador simulado a
+  Barra/Cocina, reconexión, agotado inmediato, indicador y métrica segmentada.
+- Medición de laboratorio con KDS conectado: 12 muestras, p50 64 ms, p95 103 ms, p99 105 ms.
+  Hubo 1 confirmación sin KDS conectado y quedó fuera de los percentiles.
+- Vitest: 37 controles verdes, incluidos reinicio, duplicado, concurrencia, spool y reimpresión.
+- La migración remota `verify_sprint_04_kds` comprobó tablas, RPCs, privilegios mínimos, seis
+  tablas con RLS forzado y policies privadas de Realtime, sin crear datos.
+- La suite pgTAP de 26 controles quedó versionada. La CLI de Supabase intenta iniciar Docker
+  incluso con `--linked`; como Docker fue cancelado, la verificación remota ejecutable se hizo
+  mediante la migración anterior.
+- TypeScript estricto, ESLint, Prettier y build de producción verdes.
+- Security Advisors finales: cero hallazgos. Performance Advisors: sólo `unused_index`
+  informativos esperables antes de tráfico, cubiertos por OI-008.

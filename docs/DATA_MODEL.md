@@ -9,8 +9,8 @@
 - **Núcleo financiero:** `20260728064954_sprint_02_financial_core.sql` y migraciones de
   hardening `20260728065005`, `20260728065130`, `20260728065508`, `20260728070001`
 - **Suite financiera:** `supabase/tests/database/002_financial_core.test.sql` (`1..33` verde)
-- **PWA comensal:** `20260728173000_sprint_03_diner_pwa.sql` y
-  `20260728173500_sprint_03_advisor_fixes.sql`
+- **PWA comensal:** `20260728212726_sprint_03_diner_pwa.sql` y
+  `20260728212851_sprint_03_advisor_fixes.sql`
 - **Suite PWA:** `supabase/tests/database/003_diner_pwa.test.sql` (`1..17`)
 
 ## Convenciones obligatorias
@@ -254,15 +254,73 @@ Categorías, disponibilidad y solicitudes están publicadas para avisos Realtime
 producción usa Broadcast privado y vuelve a consultar PostgreSQL al recibir un aviso o
 reconectar. Ver ADR-003.
 
+## KDS, métricas e impresión implementados en Sprint 4
+
+### Configuración y presencia operativa
+
+- `tenant_kds_settings`: umbrales verde/ámbar/crítico, sonidos, reconciliación de respaldo,
+  advertencia de pantalla desactualizada y timeout de presencia. Los defaults son 45 s, 75 s y
+  30 s respectivamente, pero cada tenant puede cambiarlos.
+- `kds_clients`: heartbeat durable por tenant, local y estación. Una estación nula representa
+  la vista “Todas”.
+
+Al confirmar el pago, el trigger de la comanda consulta `kds_clients` con el timeout del tenant
+y congela en `kds_delivery_metrics.kds_connected_at_confirmation` si había al menos una
+pantalla viva para la estación. Una tablet encendida después no convierte espera operativa en
+latencia del sistema.
+
+### Comandas y concurrencia
+
+`tickets.state_version` aumenta con cada transición. `transition_ticket` recibe estado
+esperado y versión esperada: una de dos pantallas concurrentes gana; la segunda recibe
+conflicto, recarga PostgreSQL y no sobrescribe trabajo. Las transiciones siguen:
+
+```text
+QUEUED → ACKNOWLEDGED → IN_PREPARATION → READY → COMPLETED
+```
+
+READY crea, con idempotencia, los avisos durables para garzón y comensal. Las comandas de un
+mismo pedido mantienen filas y versiones independientes.
+
+### Latencia confirmación → primera visibilidad
+
+`kds_delivery_metrics` guarda reloj de confirmación, presencia en ese instante y primera
+visibilidad confirmada por el KDS. La RPC usa reloj de PostgreSQL para evitar diferencias de
+hora entre tablet y servidor. `kds_latency_summary` calcula p50/p95/p99 sólo con
+`kds_connected_at_confirmation = true` y presenta por separado:
+
+- muestras conectadas aún no visibles;
+- confirmaciones sin KDS conectado;
+- muestras conectadas ya visibles.
+
+La prueba de laboratorio de Sprint 4 obtuvo p50 64 ms, p95 103 ms y p99 105 ms en 12 muestras
+conectadas, más 1 caso sin KDS conectado excluido.
+
+### Agotados
+
+`set_product_availability` cambia disponibilidad bajo RLS, registra actor/motivo en auditoría
+y emite invalidación. Una reserva de quote ya existente conserva prioridad; nuevas personas
+no pueden agregar el producto agotado.
+
+### Spool persistente
+
+- `printer_endpoints`: impresora lógica y configuración por estación.
+- `print_jobs`: trabajo durable, idempotencia, estado, reintentos, DLQ y vínculo de reimpresión.
+- `print_attempts`: cada intento y resultado.
+
+`private.materialize_print_jobs` sólo es ejecutable por `service_role` y convierte el outbox
+de impresión en spool idempotente. `PrinterPort` mantiene el transporte físico reemplazable;
+el adaptador actual es un stub. Elegir agente local, servicio administrado o impresora cloud
+sigue abierto en OI-005.
+
 ## Tablas todavía previstas
 
-| Dominio          | Entidades principales                               |
-| ---------------- | --------------------------------------------------- |
-| Sesión/presencia | `presence_code_rotations`, historial de revocación  |
-| Catálogo         | `modifiers`, historiales de precio                  |
-| Propina          | `tips`, `tip_allocations`                           |
-| Tributación      | `tax_documents`, `tax_document_attempts`            |
-| Impresión        | `print_jobs`, `printer_endpoints`, `print_attempts` |
+| Dominio          | Entidades principales                              |
+| ---------------- | -------------------------------------------------- |
+| Sesión/presencia | `presence_code_rotations`, historial de revocación |
+| Catálogo         | `modifiers`, historiales de precio                 |
+| Propina          | `tips`, `tip_allocations`                          |
+| Tributación      | `tax_documents`, `tax_document_attempts`           |
 
 ## Defensa contra referencias cruzadas
 

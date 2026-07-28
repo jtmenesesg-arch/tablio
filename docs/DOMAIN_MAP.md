@@ -101,7 +101,10 @@ comandas iniciales se crean atómicamente antes de avisar al KDS.
 
 Divide un pedido en comandas por estación dentro de la transacción de confirmación. KDS recibe
 avisos rápidos, reconstruye su estado desde PostgreSQL y nunca espera a la cola para mostrar
-trabajo ya confirmado.
+trabajo ya confirmado. Un heartbeat persistido permite saber qué estaciones tenían pantalla
+activa al confirmar; sólo esas entregas alimentan p50/p95/p99. La pantalla reconcilia además
+cada 45 segundos aunque Realtime parezca conectado y muestra una alerta operativa si deja de
+sincronizar.
 
 ### 9.1 Acciones de mesa
 
@@ -112,7 +115,9 @@ estado que parezca pagado.
 ### 10. Durabilidad y efectos
 
 Outbox, Supabase Queues, consumidores, reintentos, DLQ, spool de impresión y replay auditado.
-Realtime acelera la pantalla, pero no es la cola ni la fuente de verdad.
+`PrinterPort` separa el spool durable del transporte hacia el hardware; hoy existe un stub y
+la conectividad física sigue abierta. Realtime acelera la pantalla, pero no es la cola ni la
+fuente de verdad.
 
 ### 11. Propinas
 

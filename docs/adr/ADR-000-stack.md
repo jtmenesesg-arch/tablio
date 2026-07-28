@@ -260,12 +260,13 @@ completa hace rollback y no se anuncia el pedido.
 El aviso contiene identificadores, no el pedido como fuente de verdad. Al recibirlo, el KDS
 consulta bajo RLS el pedido y sus comandas ya persistidas.
 
-**Objetivo SLO inicial, todavía no verificado:** con el KDS conectado y saludable, el 95% de
+**Objetivo SLO inicial:** con el KDS conectado y saludable, el 95% de
 los pedidos debe estar visible en la estación correcta en **2 segundos o menos**, medidos desde
 el commit de `CONFIRMED` en PostgreSQL hasta el render confirmado en el KDS. El tiempo que la
-pasarela tarda en confirmar queda fuera de esta medición. Este objetivo permanece marcado como
-**hipótesis no verificada** hasta que exista instrumentación end-to-end que registre p50, p95 y
-p99 por tenant/estación bajo carga representativa.
+pasarela tarda en confirmar queda fuera de esta medición. Sprint 4 instrumentó el recorrido y
+midió en laboratorio p50 64 ms, p95 103 ms y p99 105 ms sobre 12 muestras con KDS conectado.
+Una confirmación sin pantalla activa se informó aparte y no contaminó los percentiles. Falta
+revalidar por tenant/estación bajo carga y redes representativas del piloto.
 
 Este camino **no espera** al relay, al intervalo de Cron ni al drenado de Supabase Queues. Un
 fallo de Realtime no revierte ni pierde el pedido: únicamente retrasa el aviso visual hasta que

@@ -136,7 +136,7 @@ Se deja una capa que permita migrar tenants grandes a infraestructura dedicada a
 Acciones con permiso + auditoría obligatoria (quién/cuándo/por qué): reembolso, anulación, cambio de precio, cierre manual, reapertura, impersonación.
 
 ### 10.4 Seguridad del QR + presencia física
-QR con id **no predecible**, firmado/verificable, versionado, activable/revocable, regenerable ante robo, con "Bar X · Mesa 8" visible. Un QR firmado **no prueba presencia** (se puede fotografiar y compartir), así que controles **configurables por local**: activación de sesión por el garzón, **código corto visible en la mesa** ("ingresa 482"), renovación diaria, límites de frecuencia, detección de anomalías, e **invalidar sesión sin reimprimir el QR**. Flujo normal: QR permanente abre la mesa + código de sesión corto demuestra presencia (opcional según riesgo).
+QR con id **no predecible**, firmado/verificable, versionado, activable/revocable, regenerable ante robo, con "Bar X · Mesa 8" visible. Un QR firmado **no prueba presencia** (se puede fotografiar y compartir), así que controles **configurables por local**: activación de sesión por el garzón, **código de 4 dígitos visible en la mesa** ("ingresa 4826"), renovación diaria, límites de frecuencia, detección de anomalías, e **invalidar sesión sin reimprimir el QR**. Flujo normal: QR permanente abre la mesa + código de sesión corto demuestra presencia (opcional según riesgo).
 
 ---
 

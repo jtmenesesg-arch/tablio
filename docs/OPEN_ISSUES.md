@@ -48,7 +48,8 @@ se implementa antes de su momento.
 
 ## OI-005 — Conectividad con impresora térmica
 
-- **Estado:** abierto; decisión prevista para Sprint 4.
+- **Estado:** abierto; el puerto y spool quedaron implementados en Sprint 4, pero el transporte
+  físico sigue sin decidir.
 - **Decidir antes de:** comprar/recomendar hardware y diseñar onboarding de impresión.
 - **Problema:** Vercel/Supabase viven en la nube, pero la impresora suele estar dentro de la red
   privada del bar. La nube no puede asumir que alcanza directamente su IP.
@@ -89,8 +90,10 @@ Hardware que recibe trabajos mediante API o servicio del fabricante.
 
 ### Impacto que debe contemplarse desde ahora
 
-El dominio reserva `print_jobs`, `printer_endpoints` y `print_attempts`, y accede a impresión
-mediante un puerto reemplazable. No se escoge opción ni se compra hardware en Sprint 0.
+El esquema aplicado contiene `print_jobs`, `printer_endpoints` y `print_attempts`; el worker
+usa reintentos/DLQ y toda reimpresión exige motivo auditable. `PrinterPort` ya separa el spool
+del transporte y el adaptador físico sigue como stub. No se escoge opción ni se compra
+hardware hasta probarla con el piloto.
 
 ## OI-007 — Control negativo del test de aislamiento
 
@@ -102,7 +105,7 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 
 ## OI-008 — Índices sin uso observado
 
-- **Estado:** abierto, informativo; no bloquea Sprint 3.
+- **Estado:** abierto, informativo; no bloquea Sprint 4.
 - **Hallazgo:** después de indexar las claves foráneas del núcleo financiero y de la PWA, los
   Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
   varios índices nuevos todavía registran cero usos.
@@ -121,14 +124,18 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
   reembolso o producción manual, ajuste de inventario y auditoría completa.
 - **Riesgo:** resolver fuera de Tablio deja dinero, stock y pedido sin trazabilidad.
 
-## OI-010 — Realtime privado e instrumentación PWA
+## OI-010 — Realtime privado y validación bajo carga
 
 - **Estado:** arquitectura decidida en ADR-003; validación de producción pendiente.
 - **Decidir antes de:** piloto con concurrencia real.
-- **Implementado:** recuperación por consulta al servidor en arranque, recarga, reconexión y
-  timer corto del modo demo; tablas relevantes publicadas en Supabase Realtime.
-- **Pendiente:** emitir autorización temporal desde la sesión opaca, conectar Broadcast
-  privado por mesa, medir p50/p95/p99 y probar reconexión/pérdida de avisos bajo carga.
+- **Implementado:** topics privados y autorización RLS en el esquema, recuperación por consulta
+  en arranque/reconexión, reconciliación independiente cada 45 s, heartbeat por estación,
+  indicador visible y alerta si la pantalla queda desactualizada.
+- **Medido en laboratorio:** 12 confirmaciones con KDS conectado: p50 64 ms, p95 103 ms,
+  p99 105 ms. Un caso sin KDS conectado se contó aparte. Objetivo p95 ≤ 2 s cumplido en este
+  entorno.
+- **Pendiente:** conectar el cliente Supabase autenticado de producción, probar Broadcast
+  privado y pérdida de avisos bajo carga/redes representativas del piloto.
 - **Criterio:** un aviso nunca contiene autoridad financiera; sólo invalida la lectura y
   PostgreSQL reconstruye el estado.
 - **Riesgo:** declarar “en vivo” sin medir teléfonos/redes reales de un bar lleno.
@@ -138,7 +145,8 @@ mediante un puerto reemplazable. No se escoge opción ni se compra hardware en S
 - La PWA y sus pruebas existen; CI y despliegue siguen pendientes.
 - El control negativo rojo → verde queda diferido a staging aislado, a más tardar antes del
   piloto.
-- El objetivo KDS p95 ≤ 2 s sigue sin verificar hasta tener instrumentación end-to-end.
+- El objetivo KDS p95 ≤ 2 s está medido y cumplido en laboratorio; falta revalidarlo bajo
+  carga y redes reales antes del piloto (OI-010).
 - El proyecto Vercel está vinculado, pero su configuración debe verificarse con
   `apps/web` como Root Directory antes del primer despliegue.
 - Las decisiones manuales sobre aprobaciones tardías deben cerrarse en el panel del cajero

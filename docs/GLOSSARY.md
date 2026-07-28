@@ -21,7 +21,12 @@
 - **Idempotencia:** propiedad que permite repetir un mensaje sin repetir su efecto comercial.
 - **Inventory reservation:** unidades apartadas por un quote; en Tablio usa exactamente el
   mismo vencimiento del quote y sólo aplica a productos con seguimiento de stock.
+- **Heartbeat:** señal periódica de vida de una pantalla; permite distinguir un KDS activo de
+  uno aparentemente conectado pero congelado.
 - **KDS:** pantalla de producción que organiza comandas para barra o cocina.
+- **Latencia KDS:** tiempo entre confirmación durable del pago y primera visibilidad de la
+  comanda. Los percentiles sólo incluyen estaciones con algún KDS conectado al confirmar; las
+  estaciones ausentes se cuentan aparte.
 - **Monorepo:** un repositorio que contiene aplicaciones y paquetes relacionados.
 - **Outbox transaccional:** tabla donde el evento se guarda en la misma transacción que el cambio de negocio.
 - **ProcessedEvent:** registro de lease y finalización que impide a un consumidor ejecutar dos
@@ -35,8 +40,8 @@
   propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.
 - **PWA:** sitio web con comportamiento similar a una app, sin exigir instalación.
-- **Código de presencia:** número corto impreso/mostrado en la mesa que demuestra cercanía
-  física antes de abrir una sesión de dispositivo.
+- **Código de presencia:** número de 4 dígitos impreso/mostrado en la mesa que demuestra
+  cercanía física antes de abrir una sesión de dispositivo.
 - **Sesión de dispositivo:** identidad anónima y recuperable de un teléfono dentro de una
   sesión de mesa; tiene carrito, alias y vencimientos propios.
 - **Broadcast privado:** canal Realtime autorizado por topic. Sólo avisa que algo cambió; el
@@ -48,6 +53,8 @@
   infraestructura controlada y nunca en una ruta que sirve datos de usuario.
 - **SLO:** objetivo medible de confiabilidad o velocidad que el sistema se compromete a vigilar.
 - **Spool de impresión:** cola persistente de trabajos pendientes para una impresora.
+- **Sondeo de respaldo:** consulta periódica y barata a PostgreSQL que repara avisos Realtime
+  perdidos; no reemplaza el camino inmediato.
 - **Tenant:** local o cliente cuyos datos deben quedar aislados de los demás.
 - **Modo demo:** adaptador y pantalla que ejercitan el protocolo sin credenciales, tarjetas ni
   movimiento de dinero real; nunca es una configuración válida de producción.

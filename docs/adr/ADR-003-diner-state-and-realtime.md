@@ -53,10 +53,15 @@ botella. Fuentes actuales:
 - <https://supabase.com/docs/guides/realtime/authorization>
 - <https://supabase.com/docs/guides/realtime/benchmarks>
 
-La demo de Sprint 3 no usa credenciales ni datos remotos: simula el aviso con recuperación
-periódica (0,8 s durante confirmación/estado y 2,5 s para carta). Es además el fallback ante
-reconexión. La instrumentación del p95 y la prueba de carga del canal privado quedan antes del
-piloto.
+La demo no usa credenciales ni datos remotos: simula el aviso inmediato con SSE y siempre
+vuelve a consultar el estado durable. El KDS hace además reconciliación barata cada 45
+segundos, independiente de que el websocket parezca conectado. Producción usa Broadcast
+privado; la prueba de carga del canal privado queda antes del piloto.
+
+Cada KDS registra heartbeat por tenant, local y estación. La confirmación toma una fotografía
+de si existía al menos una pantalla viva para esa estación. Los percentiles sólo usan esas
+muestras; las confirmaciones sin pantalla se cuentan aparte para no convertir tiempo muerto
+operativo en latencia del sistema.
 
 ### 4. Pago
 
@@ -94,4 +99,6 @@ privado conserva el aviso rápido; la consulta posterior conserva la verdad dura
 - Dos cookies de dispositivo producen dos carritos distintos dentro de la misma mesa.
 - La PWA sigue útil si pierde un aviso Realtime.
 - Se necesita emitir/renovar autorización de canal desde la sesión opaca antes del piloto.
-- El p95 visible se debe medir end-to-end; la demo no lo declara verificado.
+- La prueba E2E de Sprint 4 midió en laboratorio p50 64 ms, p95 103 ms y p99 105 ms sobre 12
+  confirmaciones con KDS conectado; una confirmación sin KDS fue segmentada y excluida.
+- El objetivo p95 ≤ 2 s está verificado en laboratorio, no aún bajo carga/red real de piloto.
