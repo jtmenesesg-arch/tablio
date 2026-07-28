@@ -44,8 +44,8 @@ La franja superior siempre debe decir “MODO DEMO · NO MUEVE DINERO REAL”.
 
 Se aplicaron al proyecto Supabase actual:
 
-- `20260728173000_sprint_03_diner_pwa.sql`
-- `20260728173500_sprint_03_advisor_fixes.sql`
+- `20260728212726_sprint_03_diner_pwa.sql`
+- `20260728212851_sprint_03_advisor_fixes.sql`
 
 Agregan configuración por tenant, categorías, alérgenos/fotos, sesiones de dispositivo,
 identidad congelada en quote/pedido, número humano de pedido, acciones, solicitudes y la

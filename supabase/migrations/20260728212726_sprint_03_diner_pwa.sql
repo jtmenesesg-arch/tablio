@@ -1,4 +1,5 @@
 -- Sprint 3: anonymous diner device sessions, configurable menu and service actions.
+-- Filename matches the version recorded by the linked Supabase project.
 -- The Data API remains closed to anon; user routes use narrow server operations.
 
 create table public.tenant_diner_settings (

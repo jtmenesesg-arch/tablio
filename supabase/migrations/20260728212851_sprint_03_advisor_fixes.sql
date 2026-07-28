@@ -1,4 +1,5 @@
 -- Sprint 3 advisor follow-up: cover the new FK and avoid overlapping SELECT policies.
+-- Filename matches the version recorded by the linked Supabase project.
 
 create index products_tenant_menu_category_fk_idx
   on public.products (tenant_id, menu_category_id)
@@ -76,4 +77,3 @@ using (
   tenant_id = (select private.current_tenant_id())
   and (select private.has_permission(tenant_id, 'catalog.manage'))
 );
-
