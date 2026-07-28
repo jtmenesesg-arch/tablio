@@ -3,14 +3,17 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="landing">
-      <p className="eyebrow">Tablio · Sprint 1</p>
-      <h1>Laboratorio de pagos</h1>
+      <p className="eyebrow">Tablio · PWA del comensal</p>
+      <h1>Pide otra ronda sin levantar la mano.</h1>
       <p>
-        Un entorno controlado para demostrar confirmaciones server-side,
-        duplicados, rechazos y reembolsos sin usar una pasarela ni mover plata.
+        Entra a la mesa demo, arma tu pedido y sigue cada comanda por separado.
+        El pago es simulado y no mueve dinero real.
       </p>
       <Link className="primaryLink" href="/demo/payments">
-        Abrir demo segura
+        Ver laboratorio financiero
+      </Link>
+      <Link className="solidButton" href="/mesa/demo-mesa-8">
+        Entrar a Mesa 8
       </Link>
     </main>
   );
