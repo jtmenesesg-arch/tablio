@@ -19,7 +19,10 @@
     "e2e": "playwright test",
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"tests/**/*.{ts,tsx}\" package.json pnpm-workspace.yaml tsconfig.json vitest.config.ts playwright.config.ts eslint.config.mjs README.md \"docs/*.md\" \"docs/adr/*.md\" \"docs/sprints/*.md\"",
     "lint": "eslint .",
+    "load:sprint10": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types tests/load/sprint-10-load.ts",
+    "perf:sprint10": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types tests/performance/sprint-10-pwa.ts",
     "test": "vitest run",
+    "test:chaos": "vitest run tests/chaos/sprint-10-chaos.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

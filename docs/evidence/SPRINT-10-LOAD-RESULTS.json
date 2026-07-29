@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-07-29T18:25:57.187Z",
+  "mode": "full",
+  "environment": {
+    "node": "v24.13.0",
+    "platform": "darwin 25.2.0",
+    "logicalCpuCount": 8,
+    "baseUrl": "http://localhost:3100"
+  },
+  "assumptions": {
+    "maxTables": 60,
+    "seatsPerTable": 4,
+    "maxSeats": 240,
+    "maxOrdersPerPersonHour": 3,
+    "burstFactor": 2,
+    "safetyFactor": 2,
+    "targetOrdersPerHour": 2880,
+    "targetOrdersPerMinute": 48,
+    "lastRoundPeople": 96,
+    "lastRoundWindowMinutes": 5,
+    "idleReferenceConfirmationToKdsMs": 103
+  },
+  "scanBurst": {
+    "configuredScans": 240,
+    "latency": {
+      "samples": 240,
+      "p50Ms": 2383,
+      "p95Ms": 4318,
+      "p99Ms": 4322,
+      "maxMs": 4322
+    }
+  },
+  "sustained": {
+    "name": "carga_sostenida",
+    "configuredOrders": 240,
+    "successfulOrders": 240,
+    "errors": [],
+    "elapsedMs": 286401,
+    "confirmationToKds": {
+      "samples": 240,
+      "p50Ms": 33,
+      "p95Ms": 70,
+      "p99Ms": 88,
+      "maxMs": 99
+    },
+    "fullCheckout": {
+      "samples": 240,
+      "p50Ms": 1012,
+      "p95Ms": 1240,
+      "p99Ms": 1503,
+      "maxMs": 1535
+    },
+    "fanoutReads": {
+      "samples": 60,
+      "p50Ms": 28,
+      "p95Ms": 84,
+      "p99Ms": 96,
+      "maxMs": 98
+    },
+    "streams": {
+      "kdsClients": 4,
+      "waiterClients": 8,
+      "kdsEventsReceived": 3104,
+      "waiterEventsReceived": 6208
+    },
+    "reconnect": {
+      "disconnectedMs": 41,
+      "recoveredTickets": 132
+    },
+    "durabilitySnapshot": {
+      "pendingTickets": 240,
+      "queuedPrintJobs": 240,
+      "noKdsConnectedCount": 0,
+      "connectedNotYetVisibleCount": 0
+    }
+  },
+  "lastRound": {
+    "name": "ultima_ronda",
+    "configuredOrders": 96,
+    "successfulOrders": 96,
+    "errors": [],
+    "elapsedMs": 272008,
+    "confirmationToKds": {
+      "samples": 96,
+      "p50Ms": 26,
+      "p95Ms": 55,
+      "p99Ms": 70,
+      "maxMs": 74
+    },
+    "fullCheckout": {
+      "samples": 96,
+      "p50Ms": 1077,
+      "p95Ms": 1802,
+      "p99Ms": 1839,
+      "maxMs": 1839
+    },
+    "fanoutReads": {
+      "samples": 12,
+      "p50Ms": 28,
+      "p95Ms": 38,
+      "p99Ms": 39,
+      "maxMs": 39
+    },
+    "streams": {
+      "kdsClients": 4,
+      "waiterClients": 8,
+      "kdsEventsReceived": 1060,
+      "waiterEventsReceived": 2120
+    },
+    "reconnect": {
+      "disconnectedMs": 13,
+      "recoveredTickets": 72
+    },
+    "durabilitySnapshot": {
+      "pendingTickets": 96,
+      "queuedPrintJobs": 96,
+      "noKdsConnectedCount": 0,
+      "connectedNotYetVisibleCount": 0
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-07-29T18:38:23.943Z",
+  "environment": {
+    "baseUrl": "http://localhost:3100",
+    "viewport": "360x740",
+    "cpuThrottle": 4,
+    "network": {
+      "profile": "slow_4g",
+      "roundTripLatencyMs": 150,
+      "downloadKbps": 1600,
+      "uploadKbps": 750,
+      "cache": "disabled",
+      "serviceWorker": "blocked"
+    }
+  },
+  "samples": [
+    {
+      "run": 1,
+      "usableMs": 2060,
+      "domContentLoadedMs": 719,
+      "loadMs": 1691,
+      "firstContentfulPaintMs": 724,
+      "transferredBytes": 241284
+    },
+    {
+      "run": 2,
+      "usableMs": 1999,
+      "domContentLoadedMs": 677,
+      "loadMs": 1655,
+      "firstContentfulPaintMs": 680,
+      "transferredBytes": 241284
+    },
+    {
+      "run": 3,
+      "usableMs": 2008,
+      "domContentLoadedMs": 684,
+      "loadMs": 1662,
+      "firstContentfulPaintMs": 688,
+      "transferredBytes": 241284
+    }
+  ],
+  "usableSummary": {
+    "samples": 3,
+    "p50Ms": 2008,
+    "p95Ms": 2055,
+    "p99Ms": 2059,
+    "maxMs": 2060,
+    "budgetMs": 5000
+  }
+}

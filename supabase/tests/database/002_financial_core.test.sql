@@ -597,7 +597,7 @@ select throws_ok(
     )
   $$,
   '23514',
-  'confirmed order requires a server-verified approved payment',
+  'confirmed prepaid order requires a server-verified approved payment',
   'schema rejects an order without approved payment'
 );
 
