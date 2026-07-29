@@ -2956,3 +2956,509 @@ input {
     grid-template-columns: 1fr;
   }
 }
+
+/* Sprint 6 — Caja. Financial surfaces are intentionally solid and opaque. */
+.cashierShell {
+  min-height: 100vh;
+  background: #f8f7f3;
+  color: #111110;
+  padding: 24px 28px 56px;
+}
+
+.cashierHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 20px;
+  max-width: 1500px;
+}
+
+.cashierHeader h1 {
+  font-size: clamp(30px, 3vw, 46px);
+  letter-spacing: -0.04em;
+  margin: 4px 0;
+}
+
+.cashierHeader p {
+  margin: 0;
+}
+
+.cashierDemoFlag {
+  color: #b83e10;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.cashierConnection {
+  background: #dcefe5;
+  border: 2px solid #1a6b45;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  padding: 12px 16px;
+  text-align: right;
+}
+
+.cashierConnection strong {
+  color: #1a6b45;
+}
+
+.cashierConnectionBad {
+  background: #fff0ed;
+  border-color: #c0280f;
+}
+
+.cashierConnectionBad strong {
+  color: #c0280f;
+}
+
+.cashierError {
+  background: #c0280f;
+  color: #fff;
+  font-weight: 800;
+  margin: 0 auto 18px;
+  max-width: 1500px;
+  padding: 15px 18px;
+}
+
+.cashierCritical {
+  align-items: center;
+  background: #c0280f;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto 18px;
+  max-width: 1500px;
+  padding: 22px 24px;
+}
+
+.cashierCritical h2,
+.cashierCritical p {
+  margin: 2px 0;
+}
+
+.cashierCritical button,
+.cashierCritical a {
+  background: #fff;
+  border: 0;
+  color: #8f1e0b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 14px 18px;
+}
+
+.cashierMetrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 auto 18px;
+  max-width: 1500px;
+}
+
+.cashierMetrics article {
+  background: #111110;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 105px;
+  padding: 18px;
+}
+
+.cashierMetrics article strong {
+  font-size: clamp(26px, 2.5vw, 38px);
+  letter-spacing: -0.04em;
+  margin-top: auto;
+}
+
+.cashierTabs {
+  background: #fff;
+  border: 1px solid #d8d4cb;
+  display: flex;
+  gap: 4px;
+  margin: 0 auto 18px;
+  max-width: 1500px;
+  padding: 6px;
+}
+
+.cashierTabs button {
+  background: #fff;
+  border: 0;
+  color: #4a4741;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  padding: 13px 18px;
+}
+
+.cashierTabs .cashierTabActive {
+  background: #e8531d;
+  color: #fff;
+}
+
+.cashierTableGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 auto;
+  max-width: 1500px;
+}
+
+.cashierTableCard {
+  background: #fff;
+  border: 2px solid #d8d4cb;
+  min-height: 250px;
+  padding: 20px;
+}
+
+.cashierTable-requires_delivery {
+  border-color: #b87c10;
+}
+
+.cashierTable-requires_attention {
+  border-color: #c0280f;
+}
+
+.cashierTable-new_orders {
+  border-color: #e8531d;
+}
+
+.cashierTable-free,
+.cashierTable-closed {
+  color: #716d65;
+}
+
+.cashierTableTitle {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cashierTableTitle h2 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.cashierTableTitle span {
+  color: #6c6861;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cashierTableTitle strong {
+  background: #111110;
+  color: #fff;
+  font-size: 12px;
+  padding: 8px 10px;
+  text-align: right;
+}
+
+.cashierTableAmount {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.cashierTableCounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cashierTableCounts span {
+  background: #f0eee8;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 9px;
+}
+
+.cashierTableCard footer {
+  border-top: 1px solid #dedad1;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 14px;
+}
+
+.cashierSectionHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto 16px;
+  max-width: 1500px;
+}
+
+.cashierSectionHeader h2,
+.cashierSectionHeader p {
+  margin: 2px 0;
+}
+
+.cashierSectionHeader a,
+.cashierClosureResult a {
+  background: #111110;
+  color: #fff;
+  font-weight: 800;
+  padding: 12px 15px;
+  text-decoration: none;
+}
+
+.cashierExceptionList {
+  margin: 0 auto;
+  max-width: 1500px;
+}
+
+.cashierExceptionCard {
+  background: #fff;
+  border: 2px solid #b87c10;
+  margin-bottom: 14px;
+  padding: 20px;
+}
+
+.cashierException-critical {
+  border-color: #c0280f;
+  border-width: 4px;
+}
+
+.cashierExceptionTop {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.cashierExceptionTop h3 {
+  font-size: 23px;
+  margin: 4px 0;
+}
+
+.cashierExceptionTop p {
+  margin: 0;
+}
+
+.cashierExceptionTop > strong {
+  font-size: 30px;
+  white-space: nowrap;
+}
+
+.cashierExceptionTop span {
+  color: #c0280f;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.cashierTimestamps {
+  background: #f0eee8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 16px 0;
+  padding: 12px;
+}
+
+.cashierManualOpen,
+.cashierManualClosed {
+  border-left: 5px solid #1a6b45;
+  font-weight: 800;
+  padding: 10px 12px;
+}
+
+.cashierManualClosed {
+  border-color: #c0280f;
+  color: #c0280f;
+}
+
+.cashierExceptionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cashierExceptionActions button,
+.cashierCloseButton {
+  background: #111110;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 12px 15px;
+}
+
+.cashierExceptionActions .cashierDangerButton {
+  background: #c0280f;
+}
+
+.cashierExceptionActions button:disabled,
+.cashierCloseButton:disabled {
+  background: #aaa59c;
+  cursor: not-allowed;
+}
+
+.cashierEmpty {
+  background: #fff;
+  border: 1px solid #d8d4cb;
+  padding: 24px;
+}
+
+.cashierReconciliationWrap {
+  margin: 0 auto;
+  max-width: 1500px;
+  overflow-x: auto;
+}
+
+.cashierReconciliation {
+  background: #fff;
+  border-collapse: collapse;
+  min-width: 1120px;
+  width: 100%;
+}
+
+.cashierReconciliation th {
+  background: #111110;
+  color: #fff;
+  font-size: 12px;
+  padding: 14px;
+  text-align: left;
+}
+
+.cashierReconciliation td {
+  border-bottom: 1px solid #ddd8cf;
+  padding: 16px 14px;
+  vertical-align: top;
+}
+
+.cashierReconciliation td span,
+.cashierReconciliation td small {
+  display: block;
+  margin-top: 4px;
+}
+
+.cashierTaxPending,
+.cashierRecon-pending {
+  color: #b87c10;
+  font-weight: 800;
+}
+
+.cashierRecon-matched {
+  color: #1a6b45;
+  font-weight: 800;
+}
+
+.cashierRecon-difference {
+  color: #c0280f;
+  font-weight: 800;
+}
+
+.cashierClose {
+  margin: 0 auto;
+  max-width: 1500px;
+}
+
+.cashierCloseCard,
+.cashierClosureResult {
+  background: #fff;
+  border: 2px solid #111110;
+  padding: 24px;
+}
+
+.cashierCloseWarning {
+  background: #fff0ed;
+  border: 2px solid #c0280f;
+  color: #8f1e0b;
+  font-weight: 800;
+  margin: 18px 0;
+  padding: 14px;
+}
+
+.cashierCloseButton {
+  background: #e8531d;
+  font-size: 18px;
+  min-height: 54px;
+}
+
+.cashierClosureResult {
+  margin-top: 18px;
+}
+
+.cashierClosureResult header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cashierClosureResult h3 {
+  margin: 4px 0;
+}
+
+.cashierClosureResult dl {
+  border: 2px solid #111110;
+}
+
+.cashierClosureResult dl div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 16px;
+}
+
+.cashierClosureResult dl div + div {
+  border-top: 1px solid #b8b3aa;
+}
+
+.cashierClosureResult dt {
+  font-weight: 700;
+}
+
+.cashierClosureResult dd {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.cashierClosureResult .cashierPayout {
+  background: #111110;
+  color: #fff;
+}
+
+.cashierLocalAdjustment {
+  background: #fff5d9;
+  border: 2px solid #b87c10;
+  margin-top: 16px;
+  padding: 14px;
+}
+
+@media (max-width: 1050px) {
+  .cashierMetrics,
+  .cashierTableGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .cashierShell {
+    padding: 16px;
+  }
+
+  .cashierHeader,
+  .cashierCritical,
+  .cashierSectionHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cashierConnection {
+    text-align: left;
+  }
+
+  .cashierMetrics,
+  .cashierTableGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cashierTabs {
+    overflow-x: auto;
+  }
+}
