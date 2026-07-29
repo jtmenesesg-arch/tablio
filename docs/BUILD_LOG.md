@@ -330,3 +330,42 @@ la impresora del local.
   `employee_pin_attempts`.
 - Performance Advisors: cero claves foráneas sin índice; sólo `unused_index` informativos sin
   tráfico real, cubiertos por OI-008.
+
+## 2026-07-28 — Sprint 6, caja, cierre y conciliación
+
+### Qué cambió
+
+- Se construyó `/caja` con sesiones de mesa, grupos, métricas de turno, conexión permanente,
+  excepciones financieras, reembolsos, conciliación sintética, cierre y CSV.
+- Se materializaron turnos de caja, atribución por hora del proveedor, snapshots inmutables,
+  desgloses por medio/garzón, historial de excepciones y settlements por pago.
+- Una confirmación conserva siempre aprobación y recepción. Si su hora no cae en ningún turno,
+  queda sin turno en una bandeja crítica; si pertenece a uno cerrado, se liga al original para
+  revisión post-cierre.
+- La producción manual por aprobación tardía dura 20 minutos configurables. Dentro de la
+  ventana revalida mesa y stock y crea pedido/comandas/outbox atómicamente; fuera se
+  deshabilita.
+- ADR-005 separó la propina devuelta con turno abierto de la ya distribuida. La primera reduce
+  el turno; la segunda crea un ajuste a cargo del local en el siguiente cierre.
+- El cierre exige justificación si quedan excepciones y congela todos los totales calculados
+  en PostgreSQL. Triggers impiden editar o eliminar su evidencia.
+
+### Por qué
+
+La promesa “el cierre explica cada peso” necesita rastrear dinero y decisiones sin tratar una
+mesa prepaga como deuda, sin esconder cobros tardíos y sin reescribir una fotografía financiera
+después de distribuir propinas.
+
+### Verificación
+
+- Vitest: 60/60 controles verdes, 14 específicos del dominio de caja.
+- Playwright de caja: 4/4 recorridos; 19 recorridos completos al sumar PWA, KDS y garzón.
+- pgTAP remoto: 40/40 en verde dentro de una transacción con rollback, incluidos RLS, permisos
+  y fail-closed.
+- Se aplicaron `sprint_06_cashier_closure_reconciliation`, `sprint_06_advisor_fixes`,
+  `sprint_06_runtime_fix` y `sprint_06_permission_fix` al proyecto Supabase enlazado. El fix
+  final exige `cashier.close` en las RPC públicas de apertura y cierre.
+- Security Advisors: cero hallazgos. Performance Advisors: cero claves foráneas de Sprint 6
+  sin índice; permanecen sólo índices sin uso informativos por falta de carga real.
+- El lint remoto quedó sin hallazgos de Sprint 6 y conserva tres `warning extra` heredados de
+  Sprint 2.

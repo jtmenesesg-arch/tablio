@@ -6,10 +6,11 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto completó **Sprint 5 — panel del garzón, mesas y sesiones**. PWA, KDS y garzón ya
-cierran pedido pagado → producción → READY → entrega, además de llamados, grupos y traspasos.
-Las migraciones están aplicadas y sus 31 controles pgTAP pasaron en el Supabase actual; no hay
-pasarela ni impresora física real.
+El proyecto completó **Sprint 6 — caja, cierre y conciliación**. PWA, KDS, garzón y caja ya
+cubren pedido pagado → producción → entrega → cierre financiero, con excepciones accionables,
+reembolsos auditados y datos sintéticos hasta el abono. Las migraciones están aplicadas y los
+40 controles pgTAP de Sprint 6 pasaron en el Supabase actual; no hay pasarela, DTE ni impresora
+física real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -59,11 +60,12 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Luego abre estas tres direcciones lado a lado:
+Luego abre estas cuatro direcciones:
 
 - PWA: `http://localhost:3000/mesa/demo-mesa-8`, código `4826`.
 - KDS: `http://localhost:3000/kds`; elige Barra, Cocina o Todas.
 - Garzón: `http://localhost:3000/garzon`; PIN demo `2468`.
+- Caja: `http://localhost:3000/caja`.
 
 La PWA debe decir “MODO DEMO · NO MUEVE DINERO REAL” y el KDS debe mostrar permanentemente su
 conexión y la hora de la última sincronización.
@@ -82,8 +84,8 @@ pnpm e2e
 pnpm build
 ```
 
-En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 5 suma una suite
-pgTAP de 31 controles y deja 15 recorridos E2E combinados de PWA, KDS y garzón.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 6 suma una suite
+pgTAP de 40 controles y cuatro recorridos de caja a los 15 recorridos previos.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
@@ -114,6 +116,16 @@ El panel usa PIN hasheado, zonas configurables y una cola persistente. Realtime 
 consulta periódica recupera. Una tarea de 12 minutos se vuelve crítica; una zona sin cobertura
 queda visible para todos y escala a administración. Cerrar turno muestra pendientes, deja
 snapshot auditado y nunca borra el trabajo.
+
+## Panel de caja
+
+`/caja` muestra sesiones y montos procesados —no deuda de mesa—, métricas del turno,
+excepciones críticas, conciliación sintética y cierre. Reembolsar exige permiso y motivo. El
+cierre es inmutable y exportable; una aprobación tardía conserva hora de proveedor y recepción.
+
+La producción manual de un pago aprobado tras vencer el quote dura 20 minutos configurables.
+Una devolución posterior al cierre no descuenta propina al trabajador: crea un ajuste a cargo
+del local según ADR-005. Todo está marcado como modo demo y no mueve dinero real.
 
 ## Laboratorio de pagos
 

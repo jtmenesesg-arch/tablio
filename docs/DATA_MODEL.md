@@ -528,3 +528,47 @@ explícita para clientes.
 - Incidencias, grupos, descartes y traspasos escriben `audit_log`.
 - `waiter_shift_close_snapshots` congela el desglose pendiente. Cerrar no bloquea ni borra:
   libera cobertura y deja las tareas visibles como “sin asignar”.
+
+## Caja, cierre y conciliación implementados en Sprint 6
+
+### Turnos y atribución temporal
+
+- `cashier_shifts` delimita un turno por tenant y local; sólo puede existir uno abierto por
+  local. Usa versión para impedir dos cierres concurrentes.
+- `payment_shift_attributions` conserva `provider_approved_at` y `provider_received_at`. La
+  hora de aprobación se busca en intervalos semiabiertos `[opened_at, closed_at)`.
+- Si la aprobación pertenece a un turno ya cerrado, queda como revisión post-cierre ligada a
+  ese turno. Si no pertenece a ninguno, queda `unassigned` y abre una excepción crítica; nunca
+  se asigna al turno más cercano.
+
+### Reembolsos y propinas
+
+- `cashier_refund_actions` enlaza pago, reembolso, turno original, turno operativo, usuario,
+  motivo e idempotencia.
+- Con turno original abierto, el componente proporcional reduce la propina distribuible.
+- Con turno original cerrado, `cashier_post_close_adjustments` registra el mismo componente a
+  cargo del local. El cierre histórico y el dinero ya distribuido al trabajador no cambian.
+- `cashier_closure_adjustments` incluye cada ajuste pendiente una sola vez en el siguiente
+  cierre.
+
+### Snapshot y trazabilidad
+
+- `cashier_shift_closures` congela venta bruta, reembolsos, contracargos, comisión, abono
+  esperado, arqueo, propinas, pedidos, ticket promedio y justificación de excepciones.
+- Sus resúmenes por medio de pago y garzón son inmutables. Triggers rechazan `UPDATE` y
+  `DELETE`; hechos posteriores son nuevas atribuciones, excepciones o ajustes append-only.
+- `settlement_payment_entries` aporta bruto, devoluciones, contracargos, comisión, neto, abono
+  y referencia por pago. `cashier_reconciliation_trace` lo compara con quote/pedido y deja la
+  columna tributaria explícitamente `pending_sprint_7`.
+
+### Excepciones y producción manual
+
+- `cashier_exception_queue` expone lenguaje simple, monto, mesa/persona, ambas horas y opciones
+  autorizadas. Los cambios de estado usan versión y quedan en `cashier_exception_events`.
+- Una aprobación con quote expirado no produce automáticamente. La producción manual está
+  disponible 20 minutos por defecto; revalida sesión y stock y crea pedido, ítems, comandas y
+  outbox en una transacción. Después sólo quedan reembolso o escalamiento.
+
+Todas las tablas nuevas llevan `tenant_id`, RLS habilitado y forzado. Las vistas usan
+`security_invoker`; el navegador no puede actualizar pagos, pedidos, cierres ni excepciones de
+forma directa.

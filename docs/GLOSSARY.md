@@ -8,6 +8,8 @@
 - **BFF:** backend adaptado a las necesidades de una interfaz concreta.
 - **CheckoutQuote:** fotografía inmutable de todo lo que una persona va a pagar.
 - **Chargeback:** desconocimiento o disputa que revierte un cargo después de la venta.
+- **Cierre inmutable:** fotografía financiera del turno que no se edita después de ejecutada;
+  hechos tardíos aparecen como ajustes nuevos y auditados.
 - **CI:** verificación automática que corre en cada cambio antes de aceptarlo.
 - **Comanda:** instrucción de producción enviada a una estación, como barra o cocina.
 - **Constraint:** regla de PostgreSQL que impide guardar datos inválidos o duplicados.
@@ -38,6 +40,10 @@
   decisión operativa.
 - **Settlement:** reporte de liquidación que compara venta bruta, reembolsos, contracargos,
   comisión del proveedor, neto y abono real.
+- **Ajuste post-cierre de propina:** costo que asume el local cuando devuelve al cliente una
+  propina que ya fue distribuida; no reduce retroactivamente lo recibido por el trabajador.
+- **Atribución de turno:** vínculo entre un pago y el intervalo de caja que contiene la hora
+  de aprobación del proveedor. Conserva también la hora de recepción para auditar desfases.
 - **PaymentGateway:** puerto neutral por el que el núcleo financiero opera con la pasarela
   propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.

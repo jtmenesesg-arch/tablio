@@ -156,6 +156,15 @@ Compara CheckoutQuote/pedido, transacción de pasarela, documento tributario y l
 Toda diferencia queda como excepción accionable. Una aprobación posterior al vencimiento no
 produce: abre una alerta crítica visible al cajero para reembolsar o producir manualmente.
 
+Caja agrega turnos, atribución por hora de aprobación del proveedor, reembolsos auditados y un
+snapshot de cierre inmutable. Si no existe un turno que contenga esa hora, la confirmación
+queda en una bandeja sin turno, con hora del proveedor y recepción. Los hechos posteriores no
+reabren un cierre: generan ajustes append-only.
+
+La propina se prorratea al reembolsar. Mientras el turno de origen está abierto reduce su
+distribución; si ya cerró, el trabajador conserva lo recibido y el local absorbe un ajuste
+visible en el cierre siguiente, según ADR-005.
+
 ### 14. Billing de Tablio
 
 Cobra setup y suscripción SaaS por separado del dinero del bar. La morosidad nunca corta una

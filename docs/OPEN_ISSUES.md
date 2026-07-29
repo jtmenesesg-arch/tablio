@@ -23,7 +23,7 @@ se implementa antes de su momento.
 
 ## OI-002 — Proveedor DTE
 
-- **Estado:** abierto; ADR-005 pendiente.
+- **Estado:** abierto; ADR-006 pendiente.
 - **Decidir antes de:** primer pago real en producción.
 - **Evidencia requerida:** certificación/autorización, API, idempotencia, notas de crédito,
   recuperación ante fallas, soporte y costo.
@@ -106,7 +106,7 @@ hardware hasta probarla con el piloto.
 ## OI-008 — Índices sin uso observado
 
 - **Estado:** abierto, informativo; no bloquea Sprint 4.
-- **Hallazgo:** después de indexar también todas las claves foráneas del Sprint 5, los
+- **Hallazgo:** después de indexar también todas las claves foráneas hasta Sprint 6, los
   Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
   varios índices nuevos todavía registran cero usos.
 - **Acción:** conservarlos para evitar scans y bloqueos costosos en deletes/updates de tablas
@@ -116,13 +116,13 @@ hardware hasta probarla con el piloto.
 
 ## OI-009 — Resolución operativa de cobro aprobado tras expirar
 
-- **Estado:** abierto; la detección y alerta están implementadas, la acción de caja no.
-- **Decidir antes de:** Sprint de panel de cajero y primer piloto.
-- **Implementado:** no se crea pedido; la excepción aparece crítica e inmediata con opciones
-  `refund` y `produce_manually`.
-- **Pendiente:** permisos finales, UX, motivo obligatorio, confirmación, ejecución del
-  reembolso o producción manual, ajuste de inventario y auditoría completa.
-- **Riesgo:** resolver fuera de Tablio deja dinero, stock y pedido sin trazabilidad.
+- **Estado:** cerrado en Sprint 6 con el adaptador simulado.
+- **Implementado:** no se crea pedido automáticamente; la excepción aparece crítica e
+  inmediata. Reembolsar exige permiso, motivo e idempotencia. Producir manualmente revalida
+  mesa y stock y crea pedido, comandas y outbox atómicamente.
+- **Ventana:** 20 minutos configurables desde la aprobación server-side. Vencida la ventana,
+  producir queda deshabilitado y sólo se permite reembolsar o escalar.
+- **Pendiente externo:** validar reembolso real antes del piloto dentro de OI-001 y OI-013.
 
 ## OI-010 — Realtime privado y validación bajo carga
 
@@ -149,14 +149,38 @@ hardware hasta probarla con el piloto.
   carga y redes reales antes del piloto (OI-010).
 - El proyecto Vercel está vinculado, pero su configuración debe verificarse con
   `apps/web` como Root Directory antes del primer despliegue.
-- Las decisiones manuales sobre aprobaciones tardías deben cerrarse en el panel del cajero
-  antes del piloto (OI-009).
+- La operación de aprobaciones tardías está cerrada con el simulador; su reembolso real se
+  valida con la pasarela antes del piloto (OI-001 y OI-013).
 - El canal Broadcast privado y su prueba de carga deben cerrarse antes del piloto (OI-010).
+- La política laboral de propinas post-cierre debe revisarse antes del piloto (OI-012).
 
 ## OI-011 — Consumidor visual de alertas huérfanas
 
-- **Estado:** evento durable implementado; pantalla pendiente de Sprint 6.
+- **Estado:** evento durable implementado; pantalla de administración operativa pendiente.
 - **Implementado:** sin cobertura, las tareas se muestran a todos. Tras 2 minutos por defecto,
   `waiter_admin_alerts` y el outbox `waiter.admin.orphan_task` escalan.
 - **Pendiente:** mostrar, reconocer y resolver la alerta en caja/administración.
 - **Riesgo:** los garzones quedan protegidos, pero falta la vista central del responsable.
+
+## OI-012 — Revisión laboral de propinas reembolsadas post-cierre
+
+- **Estado:** bloqueante antes del piloto.
+- **Decisión técnica actual:** ADR-005 impide descontar retroactivamente al trabajador una
+  propina ya distribuida. El componente proporcional se registra como ajuste a cargo del
+  local y aparece en el cierre siguiente.
+- **Revisión requerida:** confirmar con asesor laboral chileno el tratamiento, lenguaje de
+  reportes, respaldo y operación cuando la pasarela devuelve propina al cliente.
+- **Riesgo:** tratar como simple corrección contable dinero que pertenece a trabajadores.
+- **Límite:** ninguna recomendación futura puede reescribir cierres históricos.
+
+## OI-013 — Conciliación real hasta el abono
+
+- **Estado:** bloqueante antes del piloto.
+- **Verificado:** el simulador produce venta bruta, comisión, neto, abono y diferencias; la
+  maquinaria detecta diferencias, crea excepciones idempotentes y exporta el cierre.
+- **No verificado:** que la pasarela elegida exponga por API todos esos campos con referencias
+  estables y oportunidad suficiente para conciliar cada pago hasta el depósito bancario.
+- **Evidencia requerida:** credenciales reales, pago, reembolso total/parcial, settlement,
+  comisión y abono observado en una cuenta de comercio de prueba.
+- **Riesgo:** sin esos datos la promesa “el cierre explica cada peso” no se puede cumplir como
+  está escrita.
