@@ -101,11 +101,17 @@ hardware hasta probarla con el piloto.
 
 ## OI-007 — Control negativo del test de aislamiento
 
-- **Estado:** pendiente.
-- **Compromiso:** Control negativo del test de aislamiento (rojo → verde). Requiere ambiente de
-  staging aislado. Se ejecutará cuando exista staging, a más tardar antes del piloto.
+- **Estado:** cerrado en Sprint 10.
+- **Evidencia roja:** dentro de una única transacción en el proyecto Supabase actual se
+  reemplazó temporalmente `zones_select_own_tenant` por una policy insegura `USING (true)`.
+  La misma aserción que exige que tenant A vea exactamente una zona recibió dos y produjo
+  `not ok 1`, `have: 2`, `want: 1`.
+- **Restauración:** la transacción completa terminó en `ROLLBACK`; una consulta posterior
+  confirmó la policy segura original.
+- **Evidencia verde:** la suite completa `001_tenant_isolation.test.sql` pasó 19/19 y la nueva
+  suite masiva Sprint 10 pasó 5/5 con 96 filas por tenant, incluyendo fail-closed sin claim.
 - **Artefacto listo:** `supabase/tests/negative/tenant_isolation_broken.test.sql`.
-- **Seguridad:** nunca se debilita una policy del proyecto actual para obtener esta evidencia.
+- **Seguridad:** el cambio inseguro nunca se confirmó y no sobrevivió a la sesión de prueba.
 
 ## OI-008 — Índices sin uso observado
 
@@ -139,6 +145,11 @@ hardware hasta probarla con el piloto.
 - **Medido en laboratorio:** 12 confirmaciones con KDS conectado: p50 64 ms, p95 103 ms,
   p99 105 ms. Un caso sin KDS conectado se contó aparte. Objetivo p95 ≤ 2 s cumplido en este
   entorno.
+- **Medido en Sprint 10:** con KDS conectado, 240 pedidos bajo carga sostenida dieron p50
+  33 ms, p95 70 ms y p99 88 ms; el pico “última ronda” de 96 pedidos en cinco minutos dio
+  p50 26 ms, p95 55 ms y p99 70 ms. No hubo casos sin KDS conectado en esas dos corridas.
+  El servidor estaba caliente, por lo que la mejora frente a 103 ms no se interpreta como una
+  optimización; sí demuestra que el objetivo no se degradó en el laboratorio.
 - **Pendiente:** conectar el cliente Supabase autenticado de producción, probar Broadcast
   privado y pérdida de avisos bajo carga/redes representativas del piloto.
 - **Criterio:** un aviso nunca contiene autoridad financiera; sólo invalida la lectura y
@@ -148,10 +159,10 @@ hardware hasta probarla con el piloto.
 ## Pendientes acumulados
 
 - La PWA y sus pruebas existen; CI y despliegue siguen pendientes.
-- El control negativo rojo → verde queda diferido a staging aislado, a más tardar antes del
-  piloto.
-- El objetivo KDS p95 ≤ 2 s está medido y cumplido en laboratorio; falta revalidarlo bajo
-  carga y redes reales antes del piloto (OI-010).
+- El control negativo rojo → rollback → verde quedó cerrado con evidencia en Sprint 10
+  (OI-007).
+- El objetivo KDS p95 ≤ 2 s está medido y cumplido en reposo, carga sostenida y “última
+  ronda”; falta revalidarlo sobre infraestructura y redes reales antes del piloto (OI-010).
 - El proyecto Vercel está vinculado, pero su configuración debe verificarse con
   `apps/web` como Root Directory antes del primer despliegue.
 - La operación de aprobaciones tardías está cerrada con el simulador; su reembolso real se
@@ -251,7 +262,8 @@ hardware hasta probarla con el piloto.
 
 ## OI-019 — RPCs `SECURITY DEFINER` expuestas de forma intencional
 
-- **Estado:** revisado nuevamente en Sprint 9; revisión final antes de producción.
+- **Estado:** revisado nuevamente en Sprint 10; revisión final antes de producción con dinero
+  real.
 - **Advisor:** Supabase conserva seis warnings
   [`0028`](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
   y
@@ -286,7 +298,45 @@ hardware hasta probarla con el piloto.
 
 - **Protecciones comunes:** `search_path` vacío, grants mínimos, validación interna, motivos y
   auditoría en acciones sensibles. Los grants accidentales a `public/anon` están revocados.
+- **Evidencia Sprint 10:** Security Advisors volvió a reportar exactamente estas seis
+  advertencias y ninguna nueva. La explicación completa para una persona no técnica está en
+  `docs/OI-019-SECURITY-EXPLAINED.md`.
 - **Pendiente:** revisión de seguridad para decidir si las implementaciones se mueven a
   `private` detrás de wrappers `SECURITY INVOKER` sin romper el acceso neutro ni la atomicidad.
 - **Riesgo:** una futura modificación podría ampliar el resultado o debilitar una validación
   interna sin que el grant cambie.
+
+## OI-020 — Pico de escaneos y validación en hosting
+
+- **Estado:** bloqueante de validación antes del piloto, no de la demo.
+- **Evidencia Sprint 10:** 240 aperturas simultáneas de la entrada PWA en el servidor local
+  dieron p50 2.383 s, p95 4.318 s y p99 4.322 s. La navegación móvil productiva, con CPU 4×
+  más lenta y red limitada a 1,6 Mbps/150 ms, dio p95 2.055 s en tres cargas frías.
+- **Pendiente:** repetir en el despliegue candidato, desde teléfonos y redes del local, con
+  caché fría y QR reales. El umbral inicial de aceptación es p95 ≤ 5 s para quedar utilizable.
+- **Riesgo:** el flujo financiero soporta la ráfaga, pero una apertura masiva puede sentirse
+  lenta o sobrecargar una instancia fría antes de que el usuario llegue a la carta.
+
+## Clasificación final de asuntos
+
+| Asunto | Clasificación al cierre de Sprint 10                                 |
+| ------ | -------------------------------------------------------------------- |
+| OI-001 | Bloqueante para piloto con pagos y para producción con dinero real   |
+| OI-002 | Bloqueante para producción con dinero real                           |
+| OI-003 | No bloqueante técnico; bloquea pricing comercial real                |
+| OI-004 | Bloqueante para piloto con pagos y para producción                   |
+| OI-005 | Bloqueante operativo para piloto que exija impresión física          |
+| OI-007 | Cerrado                                                              |
+| OI-008 | No bloqueante; observar con tráfico representativo                   |
+| OI-009 | Cerrado con simulador; validación externa cubierta por OI-001/OI-013 |
+| OI-010 | Bloqueante de validación de infraestructura antes del piloto         |
+| OI-011 | Bloqueante operativo antes de un piloto desatendido                  |
+| OI-012 | Bloqueante legal antes del piloto                                    |
+| OI-013 | Bloqueante para piloto con pagos y producción real                   |
+| OI-014 | Bloqueante para producción con dinero real                           |
+| OI-015 | Bloqueante legal antes de producción con dinero real                 |
+| OI-016 | Bloqueante legal antes de producción con dinero real                 |
+| OI-017 | Bloqueante sólo antes de cobrar el SaaS                              |
+| OI-018 | No bloqueante; la revisión humana mantiene seguro el onboarding      |
+| OI-019 | Bloqueante de revisión de seguridad antes de producción              |
+| OI-020 | Bloqueante de validación de rendimiento antes del piloto             |

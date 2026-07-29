@@ -1,0 +1,106 @@
+# Informe de carga y caos · Sprint 10
+
+Fecha de ejecución: 29 de julio de 2026. Ambiente: build local de Tablio, Node 24.13,
+macOS, ocho CPU lógicas. Es evidencia de laboratorio reproducible, no una afirmación de
+capacidad de Vercel, Supabase ni de la red de un bar real.
+
+## Capacidad objetivo
+
+La referencia aprobada usa el mayor plan estándar:
+
+```text
+60 mesas × 4 asientos × 3 pedidos/persona/hora × ráfaga 2 × seguridad 2
+= 2.880 pedidos por hora
+= 48 pedidos por minuto
+```
+
+Además se ejecutó “última ronda”: 96 personas —40% de 240— dentro de cinco minutos, en cuatro
+oleadas simultáneas de 24. La carga sostenida usó 240 pedidos en veinte lotes de 12 separados
+por 15 segundos. Hubo cuatro clientes KDS y ocho clientes garzón escuchando eventos.
+
+## Resultados
+
+| Escenario                        | Muestras |      p50 |      p95 |      p99 |   Máximo |
+| -------------------------------- | -------: | -------: | -------: | -------: | -------: |
+| 240 escaneos simultáneos         |      240 | 2.383 ms | 4.318 ms | 4.322 ms | 4.322 ms |
+| Confirmación → KDS, sostenido    |      240 |    33 ms |    70 ms |    88 ms |    99 ms |
+| Checkout completo, sostenido     |      240 | 1.012 ms | 1.240 ms | 1.503 ms | 1.535 ms |
+| Fanout KDS/garzón, sostenido     |       60 |    28 ms |    84 ms |    96 ms |    98 ms |
+| Confirmación → KDS, última ronda |       96 |    26 ms |    55 ms |    70 ms |    74 ms |
+| Checkout completo, última ronda  |       96 | 1.077 ms | 1.802 ms | 1.839 ms | 1.839 ms |
+| Fanout KDS/garzón, última ronda  |       12 |    28 ms |    38 ms |    39 ms |    39 ms |
+
+El p95 en reposo de Sprint 4 fue 103 ms. Bajo esta carga, el p95 fue 70 ms sostenido y 55 ms
+en última ronda. No se interpreta como que “la carga mejora el sistema”: el servidor estaba
+caliente y el arnés evita tiempos de compilación. Sí prueba que no apareció degradación contra
+el objetivo p95 ≤ 2 s.
+
+- Sostenido: 240/240 pedidos, 240 comandas y 240 trabajos de impresión; cero errores.
+- Última ronda: 96/96 pedidos, 96 comandas y 96 trabajos de impresión; cero errores.
+- Cero confirmaciones con KDS ausente y cero comandas conectadas sin registrar visibilidad.
+- Reconexion KDS: 132 comandas recuperadas en 41 ms durante sostenido y 72 en 13 ms durante
+  última ronda.
+- Los cuatro KDS recibieron 3.104 eventos sostenidos y 1.060 de última ronda. Los ocho
+  clientes garzón recibieron 6.208 y 2.120.
+
+El punto lento fue abrir 240 páginas simultáneamente: p95 4,318 s. Está dentro de cinco
+segundos en este equipo, pero debe repetirse en el hosting y la conectividad del piloto.
+
+La evidencia cruda está en `docs/evidence/SPRINT-10-LOAD-RESULTS.json`.
+
+## PWA de gama baja
+
+Se midió el build de producción, no `next dev`: viewport 360×740, CPU 4× más lenta, RTT 150
+ms, 1,6 Mbps de bajada, 750 kbps de subida, caché desactivada y service worker bloqueado.
+
+| Métrica usable             |      p50 |      p95 |      p99 |   Máximo |
+| -------------------------- | -------: | -------: | -------: | -------: |
+| Entrada visible y operable | 2.008 ms | 2.055 ms | 2.059 ms | 2.060 ms |
+
+FCP fue 680–724 ms, carga completa 1.655–1.691 ms y la transferencia fue 241.284 bytes. La
+auditoría visual en 360×740 confirmó texto, tarjetas y controles táctiles legibles. El KDS en
+1280×800 mostró seis comandas simultáneas, conexión, última sincronización, contadores y p95
+legibles. Los tests verifican que total, pago, confirmación y error usan fondos opacos sin
+`backdrop-filter`.
+
+La evidencia cruda está en `docs/evidence/SPRINT-10-PWA-PERFORMANCE.json`.
+
+## Caos ejecutado
+
+| Falla                                         | Resultado de laboratorio                                                                                   |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Internet/cambio de red del comensal           | Chromium quedó offline tras confirmar, volvió online, recargó y recuperó el mismo pedido.                  |
+| KDS desconectado                              | Se confirmaron 96 pedidos sin pantalla; un proceso nuevo recuperó los 96 desde almacenamiento persistente. |
+| Impresora sin papel                           | 96 trabajos quedaron reintentables, cero DLQ; al volver la impresora se imprimieron 96 claves únicas.      |
+| Reinicio de servidor                          | Un repositorio recién creado desde el mismo archivo recuperó pedidos, comandas y spool.                    |
+| Pasarela lenta/caída                          | El estado `pending` no creó outbox; la confirmación server-side posterior creó un solo efecto.             |
+| DTE caído                                     | 24 emisiones fallaron, quedaron 24 identidades; al reintentar salieron 24 folios, nunca 48.                |
+| 96 confirmaciones duplicadas y fuera de orden | Se guardaron dos eventos distintos y un solo efecto `payment.confirmed`; el `pending` antiguo no degradó.  |
+| Stock simultáneo                              | pgTAP 002 confirma que el segundo quote no reserva la última unidad ya tomada.                             |
+| Cierre mientras entra pago                    | Caja conserva aprobación/recepción y atribuye al turno original o a la bandeja sin turno.                  |
+| Reembolso parcial durante producción          | Quedó un reembolso idempotente, propina proporcional y cierre contablemente consistente.                   |
+| QR revocado/desconocido                       | El contrato público respondió 404 y no creó sesión.                                                        |
+| Cruce de tenants con volumen                  | pgTAP cargó 96 filas por tenant: A vio 96, cero de B, modificó cero de B y sin claim vio cero.             |
+
+Los escenarios físicos —router real, dos operadores móviles, tablet concreta e impresora
+ESC/POS— siguen siendo parte obligatoria del ensayo en terreno. El laboratorio sí ejecutó la
+falla de transporte y la recuperación de estado.
+
+## Criterios de lanzamiento
+
+| Criterio                                   | Evidencia                                                      | Resultado                   |
+| ------------------------------------------ | -------------------------------------------------------------- | --------------------------- |
+| 100% de aprobados con quote                | 336 checkouts por API y pgTAP 002                              | Cumple                      |
+| Cero efectos comerciales duplicados        | 96 webhooks duplicados, KDS doble append, DTE y spool          | Cumple                      |
+| 100% de diferencias como excepción         | monto, moneda, comercio, quote, settlement y DTE en pgTAP/caja | Cumple con simuladores      |
+| Ningún pedido sin confirmación server-side | constraint ejecutado, SQLSTATE 23514                           | Cumple                      |
+| Reembolso vinculado y auditado             | tests de caja, pago y nota de crédito                          | Cumple con simuladores      |
+| p95 confirmación → KDS ≤ 2 s               | 70 ms sostenido; 55 ms última ronda                            | Cumple en laboratorio       |
+| Recuperación tras desconexión              | 96/96 comandas y reconexiones bajo carga                       | Cumple                      |
+| Sin pérdida tras reinicio                  | KDS, garzón y spool persistentes                               | Cumple                      |
+| Historia reproducible                      | quote → evento → pago → pedido → ticket → outbox → DTE/cierre  | Cumple con datos sintéticos |
+| Aislamiento real                           | rojo 1/1, rollback, verde 19/19 y volumen 5/5                  | Cumple                      |
+
+Conclusión: el núcleo está listo para un piloto controlado **sin dinero real**. Operar con
+dinero real sigue bloqueado por proveedores, asesorías, hardware e infraestructura listados en
+`REAL_MONEY_BLOCKERS.md`.

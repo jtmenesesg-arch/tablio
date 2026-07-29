@@ -1,7 +1,8 @@
 # Mapa de dominios
 
-- **Estado:** vivo, flujo completo del local, crédito excepcional, panel del dueño,
-  onboarding, billing SaaS y superadmin implementados con proveedores simulados
+- **Estado:** vivo y endurecido en Sprint 10; flujo completo del local, crédito excepcional,
+  panel del dueño, onboarding, billing SaaS y superadmin implementados con proveedores
+  simulados
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -246,6 +247,13 @@ auditable.
   como evidencia, pero no puede hacer retroceder una máquina de estados.
 - El alias y nombre opcional se congelan en quote/pedido para que la entrega siga siendo
   inequívoca aunque el dispositivo cambie después.
+
+## Hardening transversal de Sprint 10
+
+No se agregó un dominio nuevo. La carga y el caos atravesaron identidad, catálogo, quote,
+pagos, pedidos, KDS, impresión, DTE, caja y RLS como una sola cadena. La condición de éxito fue
+que cada pago aprobado conserve exactamente un efecto comercial recuperable, incluso con
+duplicados, reinicios o dependencias caídas.
 
 ## Transacción de confirmación implementada
 

@@ -114,6 +114,22 @@
 - **Estado inicial digno:** vista para un tenant nuevo que muestra los datos disponibles y
   explica cuándo aparecerán comparaciones, en vez de presentar vacíos sin contexto.
 
+## Términos de Sprint 10
+
+- **Capacidad objetivo:** volumen calculado a partir de asientos, pedidos máximos por
+  persona/hora, factor de ráfaga y margen de seguridad; evita escoger una cifra arbitraria.
+- **Carga sostenida:** tráfico intenso mantenido durante un intervalo, sin asumir que todas
+  las personas actúan exactamente al mismo tiempo.
+- **Última ronda:** pico realista donde una fracción grande del local pide dentro de cinco
+  minutos; complementa el promedio horario.
+- **Prueba de caos:** falla deliberada y controlada de una dependencia para demostrar
+  recuperación, durabilidad e idempotencia.
+- **Control negativo:** prueba que primero introduce deliberadamente una vulnerabilidad y
+  debe fallar; después restaura la protección y debe pasar.
+- **Ráfaga:** concentración temporal de operaciones por encima del promedio.
+- **Percentiles p50/p95/p99:** tiempos máximos observados para el 50%, 95% y 99% de las
+  operaciones; muestran la experiencia típica y la cola lenta.
+
 ## Términos de Sprint 7
 
 - **DTE:** Documento Tributario Electrónico emitido por un proveedor autorizado e informado

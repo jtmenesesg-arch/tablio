@@ -1,7 +1,8 @@
 # Modelo de datos
 
 - **Estado:** fundación multi-tenant, núcleo financiero, operación, tributación, onboarding,
-  billing SaaS, crédito de mesa y panel del dueño versionados y aplicados
+  billing SaaS, crédito de mesa y panel del dueño versionados, aplicados y endurecidos en
+  Sprint 10
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
@@ -22,7 +23,7 @@
   `20260729042449_sprint_07_advisor_fixes.sql`, más corrección de carrera
   `20260729043100_sprint_07_runtime_fixes.sql` y cola/consumidor
   `20260729043804_sprint_07_tax_queue_consumer.sql`
-- **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..34` verde
+- **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..43` verde
   en el proyecto remoto, ejecutada dentro de una transacción con rollback)
 - **Onboarding y SaaS:** migraciones `20260729163957`, `20260729164321`,
   `20260729164723`, `20260729165547` y `20260729165625`
@@ -31,6 +32,12 @@
 - **Crédito y dueño:** migraciones `20260729172848` a `20260729175502`
 - **Suite Sprint 9:** `supabase/tests/database/009_table_credit_owner.test.sql`
   (`1..51` verde en el proyecto remoto, con rollback)
+- **Hardening Sprint 10:** `supabase/tests/database/010_sprint_10_hardening.test.sql`
+  (`1..5` verde con 96 filas por tenant); suites 001–010: 316/316.
+
+Sprint 10 no agregó ni alteró tablas. Verificó el modelo aplicado mediante el control negativo
+RLS rojo → rollback → verde, una prueba masiva de aislamiento/fail-closed y carga/caos sobre
+los flujos existentes. La policy insegura temporal nunca se confirmó en la base.
 
 ## Convenciones obligatorias
 

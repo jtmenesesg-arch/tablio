@@ -6,11 +6,11 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto completó **Sprint 9 — crédito de mesa y panel del dueño**. Además del flujo
-pedido pagado → producción → entrega → cierre → respaldo tributario simulado, permite
-configurar un local, administrar el SaaS, abrir crédito excepcional con límites y entender el
-negocio mediante un panel narrativo. Las migraciones están aplicadas; no hay pasarela,
-proveedor DTE, billing SaaS ni impresora física real.
+El proyecto completó **Sprint 10 — endurecimiento y preparación del piloto**. El flujo pedido
+pagado → producción → entrega → cierre → respaldo tributario simulado pasó aislamiento
+negativo, carga, caos, recuperación, rendimiento móvil y accesibilidad operativa. Queda apto
+para demo y como candidato a piloto controlado después de cerrar sus bloqueantes; todavía no
+está autorizado para operar dinero real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -87,14 +87,21 @@ pnpm typecheck
 pnpm test
 pnpm e2e
 pnpm build
+pnpm load:sprint10
+pnpm perf:sprint10
 ```
 
-En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 9 suma 51 controles
-pgTAP y cuatro recorridos E2E de coexistencia, cobro, verificación, fuga e historia inicial.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Las suites 001–010 suman
+316 controles pgTAP verdes.
 
-La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
-su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
-a más tardar antes del piloto.
+La verificación remota y el recorrido real Auth → JWT → RLS pasaron. El control negativo
+reemplazó una policy por otra deliberadamente insegura dentro de una transacción: el test quedó
+rojo, se hizo rollback y las suites volvieron a verde.
+
+Los resultados y límites están en
+[`LOAD_AND_CHAOS_REPORT.md`](docs/LOAD_AND_CHAOS_REPORT.md); la instalación y contingencias,
+en [`PILOT_PLAYBOOK.md`](docs/PILOT_PLAYBOOK.md); y lo que falta para usar dinero real, en
+[`REAL_MONEY_BLOCKERS.md`](docs/REAL_MONEY_BLOCKERS.md).
 
 ## PWA demo
 

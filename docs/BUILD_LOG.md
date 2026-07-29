@@ -474,3 +474,41 @@ falla de cobro no puede interrumpir un viernes por la noche ni revelar deuda al 
   explicados en lenguaje simple.
 - Performance Advisors: cero claves foráneas Sprint 9 sin índice; los `unused_index` siguen
   bajo OI-008 hasta disponer de tráfico representativo.
+
+## 2026-07-29 — Sprint 10 · Endurecimiento y preparación del piloto
+
+### Qué cambió
+
+- Se agregó un harness reproducible de carga que recorre rutas HTTP reales: entrada PWA,
+  dispositivo, carrito, quote, pago simulado, confirmación server-side, pedido, comanda,
+  visibilidad KDS, fanout a KDS/garzones, reconexión y spool.
+- Se modelaron dos perfiles: capacidad sostenida de 2.880 pedidos/h y “última ronda”, con
+  96 de 240 personas comprando dentro de cinco minutos.
+- Se agregó una suite de caos para KDS caído, reinicio, proveedor lento y eventos fuera de
+  orden, impresora caída, DTE caído, reembolso parcial y cierre concurrente.
+- Se agregó una suite E2E de red offline/online, QR inválido y opacidad de superficies
+  financieras, además de una medición móvil en build productivo.
+- Se cerró el control negativo multi-tenant: policy deliberadamente insegura, test rojo,
+  rollback, policy restaurada y suites verdes.
+- Se escribieron el playbook de piloto, reporte de carga/caos, explicación simple de OI-019,
+  lista de bloqueantes reales y resumen final.
+
+### Resultados medidos
+
+- Carga sostenida: 240/240 flujos sin error; confirmación → KDS p50 33 ms, p95 70 ms,
+  p99 88 ms. Se crearon exactamente 240 comandas y 240 trabajos de impresión.
+- Última ronda: 96/96 flujos sin error; confirmación → KDS p50 26 ms, p95 55 ms,
+  p99 70 ms. Se crearon exactamente 96 comandas y 96 trabajos de impresión.
+- Pico de entrada: 240 escaneos simultáneos p50 2.383 s, p95 4.318 s, p99 4.322 s; queda
+  bajo OI-020 para repetir en hosting y dispositivos reales.
+- PWA productiva con CPU 4× y red 1,6 Mbps/150 ms: utilizable p50 2.008 s, p95 2.055 s,
+  p99 2.059 s; 241 KB transferidos.
+- Caos: 5/5 escenarios verdes. E2E de hardening: 3/3 verdes.
+- pgTAP remoto: 316/316 entre las suites 001–010. Security Advisors: exactamente los seis
+  warnings intencionales OI-019; no aparecieron warnings nuevos.
+
+### Decisión de salida
+
+El producto queda apto para demo y candidato a piloto controlado después de cerrar los
+bloqueantes marcados. No queda autorizado para operar dinero real: pasarela, DTE, asesorías,
+impresión física, despliegue/observabilidad y validaciones de infraestructura siguen abiertos.
