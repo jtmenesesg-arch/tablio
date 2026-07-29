@@ -1,7 +1,7 @@
 # Modelo de datos
 
-- **Estado:** fundación multi-tenant, núcleo financiero, PWA, KDS y modelo de garzón
-  versionados y aplicados en el proyecto Supabase actual
+- **Estado:** fundación multi-tenant, núcleo financiero, operación, tributación, onboarding y
+  billing SaaS versionados y aplicados en el proyecto Supabase actual
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
@@ -24,6 +24,10 @@
   `20260729043804_sprint_07_tax_queue_consumer.sql`
 - **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..34` verde
   en el proyecto remoto, ejecutada dentro de una transacción con rollback)
+- **Onboarding y SaaS:** migraciones `20260729163957`, `20260729164321`,
+  `20260729164723`, `20260729165547` y `20260729165625`
+- **Suite Sprint 8:** `supabase/tests/database/008_onboarding_billing_superadmin.test.sql`
+  (`1..51` verde en el proyecto remoto, con rollback)
 
 ## Convenciones obligatorias
 
@@ -615,3 +619,51 @@ explícita para clientes.
 Todas las tablas nuevas llevan `tenant_id`, RLS habilitado y forzado. Las vistas usan
 `security_invoker`; el navegador no puede actualizar pagos, pedidos, cierres ni excepciones de
 forma directa.
+
+## Onboarding, planes y billing implementados en Sprint 8
+
+### Progreso e importación
+
+- `onboarding_runs` representa un proceso retomable por tenant/local.
+- `onboarding_step_states` conserva estado y datos parciales de cada paso.
+- `menu_imports` y `menu_import_items` separan extracción, revisión y publicación. Un trigger
+  impide publicar mientras falte confirmar cualquier nombre o precio.
+- `tenant_gateway_connections` guarda sólo estado/metadatos de la pasarela del bar;
+  `private.tenant_gateway_credentials` conserva referencias a secretos Vault.
+- `onboarding_test_runs` registra venta y reembolso de prueba sin tratarlos como ventas reales.
+
+### Planes
+
+- `saas_plan_definitions` versiona cortes, límites generosos y precios CLP.
+- `tenant_plan_assignments` conserva cada recomendación/cambio, métricas que la originaron,
+  vigencia y motivo.
+- La recomendación usa mesas: Inicial `≤12`, Flujo `13–30`, Alto flujo `31–60` y
+  Personalizado `>60`.
+- Zonas/estaciones sólo elevan un nivel cuando ambas exceden los límites generosos del plan
+  por mesas.
+- Un cambio entra en `current_period_end`; nunca reescribe el período vigente ni cobra
+  retroactivamente.
+
+### Suscripción separada de las ventas
+
+- `saas_billing_accounts` representa la cuenta con la que el bar paga a Tablio, no la cuenta
+  que recibe pagos de comensales.
+- `private.saas_billing_credentials` referencia secretos Vault separados.
+- `saas_subscriptions`, `saas_invoices` y `saas_charge_attempts` modelan setup, mensualidad,
+  estado de cuenta, idempotencia y reintentos.
+- `saas_notifications` guarda avisos previos, fallos, gracia y suspensión programada.
+- `subscription_status_events` es append-only y audita cada transición.
+
+El job horario genera aviso cinco días antes, factura e intento idempotente. Los fallos
+programan 24/72/120 horas y avanzan por `past_due`, `grace` y `admin_restricted`; no suspenden
+de inmediato. `suspension_scheduled` exige fecha futura auditada y la suspensión efectiva sólo
+bloquea pedidos nuevos.
+
+### Plataforma
+
+- `platform_memberships` separa superadministradores de cualquier rol de local.
+- `tenant_feature_flags` activa capacidades por tenant sin relajar RLS.
+- `impersonation_sessions` exige motivo y duplica evidencia en `audit_log` del tenant.
+- RPCs de superadmin comprueban membresía de plataforma dentro de la transacción.
+- `diner_ordering_availability` devuelve únicamente disponibilidad y texto neutro; no expone
+  plan, deuda, factura ni estado comercial.

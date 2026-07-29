@@ -77,6 +77,25 @@
 - **Webhook:** aviso server-side enviado por un proveedor a una URL controlada por Tablio.
 - **Worker:** proceso que consume trabajo durable fuera del flujo inmediato del usuario.
 
+## Términos de Sprint 8
+
+- **Billing SaaS:** cobro de setup/mensualidad del bar a Tablio; está completamente separado
+  de las ventas que el comensal paga al bar.
+- **Dunning / gestión de morosidad:** secuencia configurable de aviso, reintentos, gracia,
+  restricción administrativa y eventual suspensión agendada.
+- **Restricción administrativa:** estado que bloquea cambios/reportes no operativos, pero
+  mantiene pedidos, KDS, garzones y caja funcionando.
+- **Suspensión programada:** corte futuro de pedidos nuevos, con aviso escrito y horario de
+  bajo tráfico; nunca es la reacción inmediata a un cobro fallido.
+- **`SaasBillingProvider`:** puerto neutral exclusivo para que Tablio cobre su setup y
+  mensualidad; no usa la pasarela comercial del bar.
+- **Revisión humana de carta:** confirmación obligatoria de nombres y precios extraídos antes
+  de publicar. El sistema no confía automáticamente en OCR o documentos externos.
+- **Impersonación:** acceso temporal de soporte a un tenant, permitido sólo a superadmin y con
+  motivo, inicio, fin y acciones auditadas.
+- **Límite generoso de layout:** cantidad de zonas/estaciones que no altera el plan por sí
+  sola. Sólo exceder ambas dimensiones eleva un nivel sobre el determinado por mesas.
+
 ## Términos de Sprint 7
 
 - **DTE:** Documento Tributario Electrónico emitido por un proveedor autorizado e informado

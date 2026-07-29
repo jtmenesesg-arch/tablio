@@ -31,10 +31,14 @@ se implementa antes de su momento.
 
 ## OI-003 — Cortes de planes por tamaño
 
-- **Estado:** abierto; no bloquea arquitectura.
-- **Decidir antes de:** pricing comercial y onboarding cobrable.
-- **Datos base:** número de mesas, zonas, estaciones, dispositivos, locales y nivel de soporte.
-- **Evidencia requerida:** entrevistas/pilotos, costo de soporte y capacidad real usada.
+- **Estado:** hipótesis implementada; bloquea el pricing productivo, no la arquitectura.
+- **Propuesta actual:** Inicial hasta 12 mesas, Flujo 13–30, Alto flujo 31–60 y Personalizado
+  sobre 60. Las mesas mandan; zonas y estaciones sólo elevan un nivel cuando ambas exceden
+  límites generosos.
+- **Precios demo:** setup/mensualidad son hipótesis, no una oferta comercial validada.
+- **Decidir antes de:** cobrar a un tenant real.
+- **Evidencia requerida:** entrevistas/pilotos con bares de 10–25 mesas, disposición a pagar,
+  costo de instalación/soporte y capacidad realmente usada.
 - **Riesgo:** planes arbitrarios que castiguen al cliente correcto o no cubran costos.
 
 ## OI-004 — UX para conectar la pasarela del bar
@@ -153,6 +157,9 @@ hardware hasta probarla con el piloto.
   valida con la pasarela antes del piloto (OI-001 y OI-013).
 - El canal Broadcast privado y su prueba de carga deben cerrarse antes del piloto (OI-010).
 - La política laboral de propinas post-cierre debe revisarse antes del piloto (OI-012).
+- Planes/precios y proveedor de cobro SaaS deben validarse antes de cobrar (OI-003 y OI-017).
+- La extracción real de cartas debe probarse con documentos de locales antes de ofrecerla
+  como automatización productiva (OI-018).
 
 ## OI-011 — Consumidor visual de alertas huérfanas
 
@@ -218,3 +225,41 @@ hardware hasta probarla con el piloto.
 - **Pendiente:** validar con asesor y proveedor la representación aceptada, conservación,
   disponibilidad, correo y operación aplicable a la Resolución Exenta SII N.º 53 de 2025
   desde el 1 de marzo de 2026.
+
+## OI-017 — Proveedor real para cobrar el SaaS
+
+- **Estado:** bloqueante antes del primer cobro real.
+- **Implementado:** puerto `SaasBillingProvider`, adaptador simulado, setup, mensualidad,
+  facturas, avisos previos, idempotencia, reintentos, gracia y suspensión programada.
+- **Pendiente:** elegir/contratar proveedor para que los bares paguen a Tablio, crear la cuenta
+  de Tablio, probar alta de medio, cobro recurrente, reintento, cancelación, conciliación,
+  impuestos, seguridad y recuperación después de timeout.
+- **Regla:** esta cuenta pertenece a Tablio y nunca se reutiliza para ventas de comensales ni
+  para conectar la cuenta comercial del bar.
+- **Riesgo:** confundir ambos flujos, duplicar mensualidades o suspender por un estado ambiguo.
+
+## OI-018 — Extracción productiva de cartas
+
+- **Estado:** abierto; el flujo y la revisión humana están implementados, la extracción es
+  simulada.
+- **Pendiente:** evaluar OCR/parser para PDF, imagen y link con cartas reales chilenas,
+  incluyendo miles, símbolos `$`, variantes, precios por tamaño, categorías y fotos.
+- **Criterio:** jamás publicar sin confirmación humana individual de nombre y precio, aunque
+  la extracción anuncie alta confianza.
+- **Riesgo:** precio mal leído, categorías mezcladas o contenido remoto cambiante.
+
+## OI-019 — RPCs `SECURITY DEFINER` expuestas de forma intencional
+
+- **Estado:** revisado en Sprint 8; revisión final antes de producción.
+- **Advisor:** Supabase conserva seis warnings
+  [`0028`](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
+  y
+  [`0029`](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- **Justificación actual:** `diner_ordering_availability` debe aceptar al comensal anónimo y
+  sólo entrega disponibilidad/texto neutro. Las otras RPCs validan dentro de la transacción
+  tenant, permiso de dueño o membresía superadmin; los grants accidentales a `public/anon`
+  fueron revocados.
+- **Pendiente:** revisión de seguridad para decidir si las implementaciones se mueven a
+  `private` detrás de wrappers `SECURITY INVOKER` sin romper el acceso neutro ni la atomicidad.
+- **Riesgo:** una futura modificación podría ampliar el resultado o debilitar una validación
+  interna sin que el grant cambie.

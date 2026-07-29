@@ -1,6 +1,7 @@
 # Mapa de dominios
 
-- **Estado:** vivo, núcleo financiero, PWA, KDS y operación del garzón implementados
+- **Estado:** vivo, flujo completo del local más onboarding, billing SaaS y superadmin
+  implementados con proveedores simulados
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -24,6 +25,11 @@ flowchart LR
   venue --> station["Estación"]
 
   tenant --> access["Identidad, roles y permisos"]
+  tenant --> onboarding["Onboarding guiado"]
+  onboarding --> catalog["Carta revisada"]
+  onboarding --> saas["Plan y suscripción Tablio"]
+  platform["Superadmin Tablio"] --> saas
+  platform --> tenant
   table --> session["Sesión de mesa"]
   session --> device["Sesión de dispositivo"]
   device --> cart["Carrito por persona"]
@@ -178,9 +184,28 @@ visible en el cierre siguiente, según ADR-005.
 ### 14. Billing de Tablio
 
 Cobra setup y suscripción SaaS por separado del dinero del bar. La morosidad nunca corta una
-noche de alto flujo sin aviso y horario controlado. Este dominio tendrá credenciales, puerto,
-ledger y conciliación propios en Sprint 8; no reutiliza `PaymentGateway` ni la cuenta de
+noche de alto flujo sin aviso y horario controlado. Usa `SaasBillingProvider`, credenciales,
+facturas, intentos y conciliación propios; no reutiliza `PaymentGateway` ni la cuenta de
 pasarela de un bar.
+
+Las mesas determinan el plan: Inicial hasta 12, Flujo hasta 30, Alto flujo hasta 60 y luego
+Personalizado. Zonas y estaciones sólo hacen subir un nivel si ambas exceden límites generosos.
+Precios/cortes siguen como hipótesis comerciales. Los cambios se aplican al ciclo siguiente,
+sin retroactividad.
+
+Morosidad y acceso operativo están separados. Avisos, reintentos, gracia y restricción
+administrativa no impiden vender ni producir. Suspender pedidos nuevos requiere aviso previo y
+horario de bajo tráfico. La PWA recibe sólo disponibilidad y mensaje neutro.
+
+### 15. Onboarding y plataforma
+
+El onboarding guarda progreso por paso, exige revisión humana del menú importado, conecta la
+cuenta simulada del bar, crea personal/QRs, ejecuta prueba y habilita producción. Los secretos
+reales quedan detrás de referencias Vault.
+
+Superadmin administra tenants, métricas, feature flags, proveedores y soporte. Su identidad es
+de plataforma, no de un tenant. Toda impersonación exige motivo y genera doble evidencia
+auditable.
 
 ## Límites importantes
 
@@ -212,5 +237,5 @@ comercial falla se crea una excepción idempotente; nunca se crea parcialmente u
 
 ## Decisiones abiertas relacionadas
 
-Ver [`OPEN_ISSUES.md`](OPEN_ISSUES.md): pasarela primaria, DTE, planes, UX de conexión de
-pasarela e impresión térmica.
+Ver [`OPEN_ISSUES.md`](OPEN_ISSUES.md): proveedores reales de pasarela/DTE/billing SaaS,
+validación comercial de planes, extracción de carta e impresión térmica.

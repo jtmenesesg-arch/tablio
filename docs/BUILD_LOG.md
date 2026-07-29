@@ -393,3 +393,42 @@ después de distribuir propinas.
   repetición aislada tras un botón transitoriamente deshabilitado y pasó 4/4. Security
   Advisors sin hallazgos. Los Advisors de rendimiento quedaron sólo con `unused_index`,
   esperable sin tráfico real.
+
+## 2026-07-29 — Sprint 8 · Onboarding, superadmin y cobro SaaS
+
+### Qué cambió
+
+- Se construyó `/onboarding` con nueve pasos retomables: local, tamaño, carta con revisión
+  humana, tributación, conexión simulada de la cuenta del bar, personal, QRs/códigos de
+  presencia, venta/reembolso de prueba y habilitación.
+- Se creó el puerto `SaasBillingProvider` y un adaptador simulado separado de
+  `PaymentGateway`; cubre conexión, setup, mensualidad, idempotencia, fallo y reintento.
+- ADR-007 fijó las mesas como dimensión principal: Inicial ≤12, Flujo 13–30, Alto flujo
+  31–60 y Personalizado >60. Zonas/estaciones sólo elevan un nivel si ambas superan límites
+  generosos. Precios y cortes siguen siendo hipótesis comerciales.
+- Se construyó `/superadmin` con métricas, tenants, plan/estado/proveedores, feature flags,
+  cobros y soporte con impersonación obligatoriamente motivada.
+- Se separó estado comercial de acceso operativo. Morosidad y restricción administrativa
+  mantienen ventas; la suspensión sólo bloquea pedidos nuevos después de aviso/agendamiento.
+  La PWA recibe exclusivamente disponibilidad y mensaje neutro.
+- Se aplicaron cinco migraciones: progreso, importación, conexiones/secretos Vault, planes,
+  suscripciones, facturas, intentos, avisos, cron horario, auditoría, feature flags,
+  superadmin, índices y hardening RLS/grants.
+
+### Por qué
+
+Tablio necesitaba poder instalar y administrar un local sin mezclar el dinero del bar con la
+mensualidad del SaaS. La escala de planes debe discriminar dentro del beachhead real y una
+falla de cobro no puede interrumpir un viernes por la noche ni revelar deuda al comensal.
+
+### Verificación
+
+- 79/79 Vitest; 26/26 Playwright; TypeScript, ESLint, Prettier y build verdes.
+- pgTAP Sprint 8: 51/51; aislamiento multi-tenant: 19/19, ambos en el proyecto remoto con
+  rollback.
+- Performance Advisors: se agregaron los 14 índices de claves foráneas faltantes y se corrigió
+  el `auth.uid()` por fila; quedan sólo `unused_index` sin tráfico real.
+- Security Advisors: se revocaron grants anónimos accidentales. Se registraron en OI-019 seis
+  warnings intencionales de RPCs `SECURITY DEFINER`, con acceso mínimo y validación interna.
+- Migraciones locales alineadas con el historial remoto: `20260729163957`,
+  `20260729164321`, `20260729164723`, `20260729165547` y `20260729165625`.
