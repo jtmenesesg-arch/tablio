@@ -547,3 +547,27 @@ impresión física, despliegue/observabilidad y validaciones de infraestructura 
 - TypeScript, ESLint y revisión visual de PWA, caja y dueño verdes.
 - Security Advisors: ningún warning nuevo; tres `INFO` intencionales de tablas `private`.
 - Performance Advisors: cero claves foráneas Sprint 11 sin índice.
+
+## 2026-07-29 — Sprint 12 · Momento del pago
+
+### Qué cambió
+
+- Upsell determinista, máximo dos sugerencias, descartable y sin productos agotados.
+- Happy hour versionado; el quote congela precio y descuento aunque cambie la promoción.
+- Invitaciones pagadas esperan reclamo hasta 60 minutos por defecto, avisan antes de vencer y
+  pueden cancelarse con reembolso mientras no exista producción.
+- Otra persona de la misma mesa puede reclamar; el dispositivo pagador no puede auto-reclamar.
+- Propina congela trabajador y turno. Caja/dueño informan por medio de pago sin mover dinero.
+- ADR-011 y ADR-012 fijan reglas, concurrencia y trazabilidad.
+
+### Verificación
+
+- Vitest 125/125, TypeScript, ESLint y build verdes.
+- Playwright Sprint 12 4/4 en la última ejecución completa; el quinto caso de misma mesa quedó
+  añadido y cubierto en dominio, pero el límite del entorno impidió su reejecución.
+- Última ejecución conservada de pgTAP Sprint 12: 31/31; aislamiento 19/19. La suite actual
+  tiene 38 casos y queda pendiente de repetición después de aplicar el último ajuste aditivo de
+  reembolsos.
+- Advisors sin hallazgos Sprint 12 tras cubrir claves foráneas y separar policies.
+- Pendiente operativo transitorio: aplicar
+  `20260729214000_sprint_12_tip_refund_policy.sql` cuando vuelva el acceso del conector.

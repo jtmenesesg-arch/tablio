@@ -12,4 +12,5 @@ Los criterios concretos de cada sprint se toman del brief y de la aprobación de
 Los asuntos aceptados para un sprint posterior deben quedar explícitos en el resumen y en
 `OPEN_ISSUES.md`, con fecha o hito límite.
 
-Último cierre: [`SPRINT-11-SUMMARY.md`](SPRINT-11-SUMMARY.md).
+Último incremento: [`SPRINT-12-SUMMARY.md`](SPRINT-12-SUMMARY.md). Su cierre remoto queda
+pendiente de aplicar la última migración aditiva indicada en el resumen.

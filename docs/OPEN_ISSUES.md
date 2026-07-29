@@ -349,6 +349,17 @@ hardware hasta probarla con el piloto.
   directo, se debe rediseñar; no se agrega una policy permisiva como atajo.
 - **Referencia:** [advisor RLS sin policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
 
+## OI-024 — Tratamiento tributario de promociones e invitaciones
+
+- **Estado:** bloqueante tributario antes del piloto con dinero real.
+- **Implementado con simulador:** precio y descuento congelados, líneas DTE identificables,
+  invitación pagada sin producción previa, reembolso parcial y obligación de nota de crédito.
+- **Pendiente:** asesor tributario chileno y proveedor DTE deben validar 2x1, descuento
+  porcentual, precio especial, producto invitado, vencimiento/cancelación y representación de
+  la nota de crédito.
+- **Riesgo:** que la conciliación sea correcta pero el documento use una representación fiscal
+  no aceptada.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación al cierre de Sprint 11                                 |
@@ -375,3 +386,4 @@ hardware hasta probarla con el piloto.
 | OI-021 | Bloqueante tributario antes del piloto                               |
 | OI-022 | Bloqueante de identidad real y privacidad antes del piloto           |
 | OI-023 | No bloqueante hoy; revisión de seguridad antes de producción         |
+| OI-024 | Bloqueante tributario antes del piloto                               |

@@ -164,3 +164,17 @@
   margen.
 - **Cliente dormido:** perfil con última visita anterior al umbral del tenant. Sprint 11 sólo
   crea el segmento; no envía mensajes.
+
+## Términos de Sprint 12
+
+- **Upsell determinista:** sugerencia adicional producida por reglas configuradas y
+  explicables; nunca por generación automática.
+- **Ingreso incremental atribuible:** monto de un upsell aceptado que llegó a pago confirmado.
+- **Versión promocional:** regla de happy hour inmutable que el quote copia para explicar su
+  precio aunque la campaña cambie.
+- **Invitación pendiente:** producto ya pagado y reservado que aún no genera comanda porque la
+  mesa destino no lo reclamó.
+- **Ventana de reclamo:** plazo configurable de 45–90 minutos, 60 por defecto, acotado también
+  por el cierre de la mesa destino.
+- **Propina congelada:** destinatario trabajador/turno validado al crear el quote y que no se
+  reasigna silenciosamente.

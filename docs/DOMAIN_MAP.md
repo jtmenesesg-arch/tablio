@@ -294,3 +294,22 @@ token presente  → perfil enmascarado → confirmación de la persona
 token perdido   → teléfono/correo → código → mismo perfil y mismos sellos
 saldo completo  → reserva premio → quote $0 → pedido/KDS → consumo de sellos
 ```
+
+## Momento del pago
+
+```text
+carrito mutable
+  ├─ sugerencia determinista → toque explícito → ítem upsell
+  ├─ promoción vigente → versión + descuento congelados
+  └─ propina → equipo o worker_id/turno válidos
+                    ↓
+             CheckoutQuote inmutable
+                    ↓ pago confirmado
+  pedido propio → comandas inmediatas por estación
+  invitación    → espera durable → reclamo → comanda a mesa destino
+                               └→ cancelación/vencimiento → reembolso
+```
+
+Realtime refresca happy hour y avisos; PostgreSQL conserva precio, estado e idempotencia. Una
+invitación no reclamada nunca llega al KDS. La propina usa el trabajador congelado aunque
+termine su turno antes del cierre del local.

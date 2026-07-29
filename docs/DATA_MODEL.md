@@ -756,3 +756,22 @@ permisadas en `private`. Advisors confirmó que Sprint 9 no agregó warnings de 
 `owner_loyalty_metrics` cuenta recurrencia, frecuencia, canjes, valor de lista, costo conocido,
 dormancia y recuperación tras token perdido. `cashier_loyalty_reward_summary` explica ingreso
 cero, referencia y costo por premio. Ambas vistas son `security_invoker`.
+
+## Momento del pago implementado en Sprint 12
+
+- `tenant_checkout_engagement_settings` configura cuatro capacidades apagadas por defecto.
+- `checkout_upsell_rules` permite producto, categoría, horario, margen conocido o lista
+  manual. `checkout_upsell_events` separa exposición, aceptación, descarte, quote y pago.
+- `promotion_campaigns`, `promotion_versions` y `promotion_activation_events` mantienen precio
+  versionado y auditoría. Quote/ítems/pedido copian versión y descuento.
+- `drink_invitations` conserva pagador, mesa destino, venta, producto, reserva, vigencia,
+  reclamo y reembolso. `drink_invitation_events` es append-only.
+- `tip_allocations` congela equipo o trabajador, sesión, medio y monto. El cierre del turno del
+  trabajador no modifica esta fila.
+- `tip_allocation_refund_adjustments` enlaza la política de ADR-005: un reembolso abierto
+  reduce lo distribuible y uno post-cierre queda como costo del local.
+- `owner_checkout_engagement_metrics` y `cashier_tip_allocation_summary` son vistas
+  `security_invoker`.
+
+Todas las tablas nuevas tienen `tenant_id`, claves compuestas, RLS habilitado/forzado y grants
+de lectura según permiso. Las escrituras operativas permanecen en funciones internas.
