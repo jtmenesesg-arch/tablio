@@ -32,6 +32,17 @@ export type OwnerDashboard = Readonly<{
     monthlyLeakageClp: number;
     previousMonthlyLeakageClp: number;
     leakageTrendPercent?: number;
+    loyalty: Readonly<{
+      activeProfiles: number;
+      returningProfiles: number;
+      averageVisitFrequency: number;
+      rewardsRedeemed: number;
+      rewardReferenceValueClp: number;
+      rewardKnownCostClp?: number;
+      dormantProfiles: number;
+      identityLossRatePercent: number;
+      identityRecoveries: number;
+    }>;
   };
   topProducts: readonly { name: string; quantity: number; salesClp: number }[];
   lowRotationProducts: readonly { name: string; quantity: number }[];

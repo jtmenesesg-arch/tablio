@@ -204,6 +204,16 @@ export type CashierBootstrap = Readonly<{
       expiresAt: string;
     }[];
   };
+  loyalty: Readonly<{
+    identityLossRatePercent: number;
+    identityRecoveries: number;
+    profiles: readonly {
+      id: string;
+      maskedIdentity: string;
+      contactMasked: string;
+      stamps: number;
+    }[];
+  }>;
   latestClosure?: CashierClosure;
   serverTime: string;
 }>;
@@ -239,4 +249,10 @@ export type CashierMutation =
       expectedVersion: number;
       cashDeclaredClp: number;
       exceptionOverrideReason?: string;
+    }
+  | {
+      action: "loyalty.adjust";
+      profileId: string;
+      stampDelta: number;
+      reason: string;
     };

@@ -740,7 +740,7 @@ body {
 .waiterKeypad {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin: 12px 0 16px;
 }
 
@@ -3973,6 +3973,38 @@ input {
   overflow-x: auto;
 }
 
+.cashierLoyaltyGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.cashierLoyaltyGrid article {
+  align-items: center;
+  background: #fefefe;
+  border: 1px solid #d9d4ca;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.cashierLoyaltyGrid article div {
+  display: flex;
+  flex-direction: column;
+}
+
+.cashierLoyaltyGrid button {
+  background: #111110;
+  border: 0;
+  border-radius: 10px;
+  color: #fefefe;
+  font: inherit;
+  font-weight: 750;
+  min-height: 44px;
+  padding: 0.65rem;
+}
+
 .cashierReconciliation {
   background: #fff;
   border-collapse: collapse;
@@ -4427,6 +4459,193 @@ input {
   margin: 0 auto 24px;
 }
 
+/* Sprint 11: fidelización. Las decisiones, totales y consentimientos usan
+   superficies opacas; ninguna información crítica depende de transparencia. */
+.loyaltyHeaderButton {
+  align-items: center;
+  background: #fef0e8;
+  border: 1px solid #f2784a;
+  border-radius: 999px;
+  color: #b83e10;
+  display: flex;
+  font: inherit;
+  font-weight: 800;
+  gap: 0.3rem;
+  min-height: 42px;
+  padding: 0.45rem 0.7rem;
+}
+
+.loyaltyRecognition,
+.loyaltyProgressCard,
+.favoriteCard,
+.loyaltyPostPayment,
+.loyaltyWallet,
+.loyaltyForm {
+  background: #fefefe;
+  border: 1px solid #dedbd3;
+  border-radius: 18px;
+  color: #111110;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.loyaltyRecognition h2,
+.loyaltyProgressCard h2,
+.loyaltyForm h2,
+.loyaltyWallet h2 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.loyaltyRecognition > div:last-child,
+.loyaltyProgressCard,
+.favoriteCard {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.loyaltyProgressCard button,
+.favoriteCard button {
+  background: #e8531d;
+  border: 0;
+  border-radius: 12px;
+  color: #fefefe;
+  font: inherit;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+}
+
+.loyaltyRecoveryLink {
+  background: #fef0e8;
+  border: 1px solid #f2784a;
+  border-radius: 14px;
+  color: #8c2f0b;
+  font: inherit;
+  font-weight: 750;
+  margin: 0.75rem 0;
+  padding: 0.9rem;
+  text-align: left;
+  width: 100%;
+}
+
+.favoriteCard small,
+.loyaltyPostPayment small {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.rewardBadge {
+  background: #fef0e8;
+  border: 1px solid #e8531d;
+  border-radius: 999px;
+  color: #b83e10;
+  display: inline-block;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 900;
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.loyaltyScreen {
+  padding-bottom: 7rem;
+}
+
+.loyaltyWallet {
+  text-align: center;
+}
+
+.stampRail {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 1.25rem 0;
+}
+
+.stampRail i {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #f8f7f3;
+  border: 2px solid #cfcac0;
+  border-radius: 50%;
+  color: #6b675f;
+  display: flex;
+  font-style: normal;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.stampRail i.earned {
+  background: #1a6b45;
+  border-color: #1a6b45;
+  color: #fefefe;
+}
+
+.loyaltyForm label {
+  display: block;
+  font-weight: 750;
+  margin: 1rem 0 0.35rem;
+}
+
+.loyaltyForm > input {
+  background: #fefefe;
+  border: 2px solid #77736b;
+  border-radius: 12px;
+  color: #111110;
+  font: inherit;
+  min-height: 50px;
+  padding: 0.75rem;
+  width: 100%;
+}
+
+.consentChecks {
+  background: #f8f7f3;
+  border: 1px solid #dedbd3;
+  border-radius: 12px;
+  margin: 1rem 0;
+  padding: 0.75rem;
+}
+
+.consentChecks label {
+  align-items: flex-start;
+  display: flex;
+  font-weight: 600;
+  gap: 0.6rem;
+  line-height: 1.35;
+  margin: 0.6rem 0;
+}
+
+.consentChecks input {
+  height: 20px;
+  margin-top: 0.1rem;
+  width: 20px;
+}
+
+.dangerTextButton {
+  background: transparent;
+  border: 0;
+  color: #c0280f;
+  font: inherit;
+  font-weight: 750;
+  padding: 1rem;
+  width: 100%;
+}
+
+.kdsRewardBadge {
+  background: #fef0e8;
+  border: 2px solid #f2784a;
+  border-radius: 8px;
+  color: #111110;
+  display: inline-block;
+  font-size: 0.75em;
+  font-style: normal;
+  font-weight: 950;
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.45rem;
+}
+
 .ownerHistoryNotice {
   padding: 20px;
   border-left: 6px solid #e8531d;
@@ -4546,6 +4765,49 @@ input {
   border: 2px solid #b87c10;
   border-radius: 16px;
   background: #fff7dc;
+}
+
+.ownerLoyalty {
+  background: #111110;
+  border-radius: 20px;
+  color: #fefefe;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+}
+
+.ownerLoyalty > div {
+  border-left: 3px solid #e8531d;
+  display: flex;
+  flex-direction: column;
+  padding-left: 1rem;
+}
+
+.ownerLoyalty strong {
+  font-size: 2rem;
+}
+
+.ownerLoyalty small {
+  color: #d8d5cd;
+  line-height: 1.4;
+}
+
+.ownerLoyalty .attention {
+  border-left-color: #f2b84a;
+}
+
+.ownerLoyalty > p {
+  color: #f8f7f3;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .ownerLoyalty {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ownerLeakage div {

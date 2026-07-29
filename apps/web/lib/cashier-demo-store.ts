@@ -11,6 +11,7 @@ import {
   creditDemoActor,
   tableCreditDemoStore,
 } from "./table-credit-demo-store";
+import { loyaltyDemoStore } from "./loyalty-demo-store";
 
 const actor: CashierActor = {
   id: "cashier-valentina",
@@ -56,6 +57,12 @@ export function getCashierBootstrap() {
         expiresAt: account.expiresAt,
       })),
     },
+    loyalty: {
+      identityLossRatePercent:
+        loyaltyDemoStore.metrics().identityLossRatePercent,
+      identityRecoveries: loyaltyDemoStore.metrics().identityRecoveries,
+      profiles: loyaltyDemoStore.cashierProfiles(),
+    },
   };
 }
 
@@ -94,6 +101,19 @@ export function mutateCashier(mutation: CashierMutation) {
       const result = repository.closeShift(actor, mutation);
       publishCashierEvent({ type: "shift", entityId: result.closure.id });
       return result;
+    }
+    case "loyalty.adjust": {
+      loyaltyDemoStore.assistedAdjustment({
+        profileId: mutation.profileId,
+        stampDelta: mutation.stampDelta,
+        reason: mutation.reason,
+        actorId: actor.id,
+      });
+      publishCashierEvent({
+        type: "exception",
+        entityId: mutation.profileId,
+      });
+      return { bootstrap: getCashierBootstrap() };
     }
   }
 }

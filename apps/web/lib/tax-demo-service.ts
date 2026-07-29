@@ -11,6 +11,12 @@ type DemoTaxState = {
       providerDocumentId?: string;
       amountClp: number;
       customerEmail?: string;
+      lines: readonly {
+        description: string;
+        quantity: number;
+        unitAmountClp: number;
+        isLoyaltyReward: boolean;
+      }[];
     }
   >;
   provider: SimulatedTaxDocumentProvider;
@@ -31,6 +37,12 @@ export function enqueueDemoReceipt(input: {
   orderId: string;
   amountClp: number;
   customerEmail?: string;
+  lines: readonly {
+    description: string;
+    quantity: number;
+    unitAmountClp: number;
+    isLoyaltyReward: boolean;
+  }[];
 }): void {
   if (state.byOrder.has(input.orderId)) return;
   state.byOrder.set(input.orderId, {
@@ -38,6 +50,7 @@ export function enqueueDemoReceipt(input: {
     message: "Tu boleta se está emitiendo. Tu pedido ya está confirmado.",
     amountClp: input.amountClp,
     customerEmail: input.customerEmail,
+    lines: input.lines,
   });
 
   setTimeout(() => {
@@ -55,14 +68,14 @@ export function enqueueDemoReceipt(input: {
           commune: "Santiago",
         },
         amount: { amount: input.amountClp, currency: "CLP" },
-        lines: [
-          {
-            description: "Consumo según pedido",
-            quantity: 1,
-            unitAmount: { amount: input.amountClp, currency: "CLP" },
-            taxAmount: { amount: 0, currency: "CLP" },
-          },
-        ],
+        lines: input.lines.map((line) => ({
+          description: line.isLoyaltyReward
+            ? `${line.description} · premio fidelización`
+            : line.description,
+          quantity: line.quantity,
+          unitAmount: { amount: line.unitAmountClp, currency: "CLP" },
+          taxAmount: { amount: 0, currency: "CLP" },
+        })),
         customerEmail: input.customerEmail,
       })
       .then((document) => {
@@ -73,6 +86,7 @@ export function enqueueDemoReceipt(input: {
             : "Boleta emitida y disponible.",
           amountClp: input.amountClp,
           customerEmail: input.customerEmail,
+          lines: input.lines,
           folio: document.folio,
           representationUrl: document.representationUrl,
           providerDocumentId: document.providerDocumentId,
@@ -87,6 +101,7 @@ export function enqueueDemoReceipt(input: {
               : "Boleta pendiente por falla del proveedor.",
           amountClp: input.amountClp,
           customerEmail: input.customerEmail,
+          lines: input.lines,
         });
       });
   }, 700);
@@ -98,6 +113,7 @@ export function demoReceiptForOrder(orderId: string) {
       status: "pending" as const,
       message: "Tu boleta se está emitiendo. Tu pedido ya está confirmado.",
       amountClp: 0,
+      lines: [],
     }
   );
 }

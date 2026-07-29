@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
+  consumeIssuedLoyaltyCredential,
   DinerError,
   getDinerBootstrap,
   joinDinerSession,
@@ -12,6 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const DEVICE_COOKIE = "tablio_diner_device";
+const LOYALTY_COOKIE = "tablio_diner_loyalty";
 const DEMO_QR = "demo-mesa-8";
 
 function errorResponse(error: unknown) {
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
     const bootstrap = await getDinerBootstrap(
       cookieStore.get(DEVICE_COOKIE)?.value,
       qrToken,
+      cookieStore.get(LOYALTY_COOKIE)?.value,
     );
     return NextResponse.json(bootstrap, {
       headers: {
@@ -60,7 +63,12 @@ export async function POST(request: Request) {
     }
 
     if (mutation.action === "join") {
-      const joined = joinDinerSession(mutation.qrToken, mutation.presenceCode);
+      const cookieStore = await cookies();
+      const joined = joinDinerSession(
+        mutation.qrToken,
+        mutation.presenceCode,
+        cookieStore.get(LOYALTY_COOKIE)?.value,
+      );
       const response = NextResponse.json(joined.bootstrap, {
         headers: {
           "cache-control": "no-store",
@@ -78,16 +86,27 @@ export async function POST(request: Request) {
     }
 
     const cookieStore = await cookies();
-    const bootstrap = await mutateDiner(
-      cookieStore.get(DEVICE_COOKIE)?.value,
-      mutation,
-    );
-    return NextResponse.json(bootstrap, {
+    const deviceToken = cookieStore.get(DEVICE_COOKIE)?.value;
+    const bootstrap = await mutateDiner(deviceToken, mutation);
+    const response = NextResponse.json(bootstrap, {
       headers: {
         "cache-control": "no-store",
         "x-tablio-demo-mode": "true",
       },
     });
+    const credential = consumeIssuedLoyaltyCredential(deviceToken);
+    if (credential === null) {
+      response.cookies.delete(LOYALTY_COOKIE);
+    } else if (credential) {
+      response.cookies.set(LOYALTY_COOKIE, credential, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 365 * 24 * 60 * 60,
+      });
+    }
+    return response;
   } catch (error) {
     return errorResponse(error);
   }

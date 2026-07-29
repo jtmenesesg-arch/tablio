@@ -8,7 +8,7 @@ import type {
   CashierTableState,
 } from "../../lib/cashier-contract";
 
-type View = "tables" | "exceptions" | "reconciliation" | "close";
+type View = "tables" | "exceptions" | "reconciliation" | "loyalty" | "close";
 
 function money(value = 0) {
   return new Intl.NumberFormat("es-CL", {
@@ -237,6 +237,19 @@ export function CashierDashboard() {
     });
   }
 
+  async function restoreStamp(profileId: string) {
+    const reason = window.prompt(
+      "Motivo obligatorio de la restitución. Quedará asociado a tu usuario en auditoría:",
+    );
+    if (!reason?.trim()) return;
+    await mutate({
+      action: "loyalty.adjust",
+      profileId,
+      stampDelta: 1,
+      reason,
+    });
+  }
+
   const critical = useMemo(
     () =>
       data?.exceptions.filter(
@@ -383,6 +396,7 @@ export function CashierDashboard() {
             ["tables", "Mesas"],
             ["exceptions", `Excepciones (${data.exceptions.length})`],
             ["reconciliation", "Conciliación"],
+            ["loyalty", "Sellos"],
             ["close", "Cierre"],
           ] as const
         ).map(([id, label]) => (
@@ -669,6 +683,48 @@ export function CashierDashboard() {
               </tbody>
             </table>
           </div>
+        </section>
+      ) : null}
+
+      {view === "loyalty" ? (
+        <section className="cashierLoyalty">
+          <div className="cashierSectionHeader">
+            <div>
+              <p className="eyebrow">RECUPERACIÓN ASISTIDA Y AUDITADA</p>
+              <h2>Sellos de clientes</h2>
+            </div>
+            <span>
+              Pérdida de identidad:{" "}
+              {data.loyalty.identityLossRatePercent.toLocaleString("es-CL")}%
+            </span>
+          </div>
+          <p>
+            El cliente puede recuperar solo con teléfono o correo. Usa esta vía
+            únicamente si reclama en el mostrador; nunca pide ni muestra su
+            nombre completo.
+          </p>
+          <div className="cashierLoyaltyGrid">
+            {data.loyalty.profiles.map((profile) => (
+              <article key={profile.id}>
+                <div>
+                  <strong>{profile.maskedIdentity}</strong>
+                  <span>{profile.contactMasked}</span>
+                  <b>{profile.stamps} sellos</b>
+                </div>
+                <button
+                  disabled={busy}
+                  onClick={() => void restoreStamp(profile.id)}
+                >
+                  Restituir 1 sello
+                </button>
+              </article>
+            ))}
+          </div>
+          {data.loyalty.profiles.length === 0 ? (
+            <p className="cashierEmpty">
+              Aún no hay perfiles activos en este local.
+            </p>
+          ) : null}
         </section>
       ) : null}
 

@@ -16,7 +16,8 @@ import type {
   TicketStatus,
 } from "../../../lib/diner-contract";
 
-type Screen = "entry" | "menu" | "cart" | "checkout" | "status" | "actions";
+type Screen =
+  "entry" | "menu" | "cart" | "checkout" | "status" | "actions" | "loyalty";
 
 const formatClp = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -156,6 +157,16 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
   const [customerEmail, setCustomerEmail] = useState("");
   const [tipPercent, setTipPercent] = useState(10);
   const [customTip, setCustomTip] = useState("");
+  const [loyaltyPurpose, setLoyaltyPurpose] = useState<"enroll" | "recover">(
+    "recover",
+  );
+  const [loyaltyChannel, setLoyaltyChannel] = useState<"phone" | "email">(
+    "phone",
+  );
+  const [loyaltyContact, setLoyaltyContact] = useState("");
+  const [loyaltyCode, setLoyaltyCode] = useState("");
+  const [identityConsent, setIdentityConsent] = useState(false);
+  const [contactConsent, setContactConsent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string>();
@@ -327,6 +338,28 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
     if (next) void refresh(true);
   }
 
+  async function startLoyaltyChallenge() {
+    await mutate({
+      action: "loyalty.challenge.start",
+      purpose: loyaltyPurpose,
+      channel: loyaltyChannel,
+      contact: loyaltyContact,
+      identificationConsent:
+        loyaltyPurpose === "recover" ? true : identityConsent,
+      contactConsent: loyaltyPurpose === "recover" ? true : contactConsent,
+    });
+  }
+
+  async function verifyLoyaltyChallenge() {
+    if (!data?.loyalty.challenge) return;
+    const next = await mutate({
+      action: "loyalty.challenge.verify",
+      challengeId: data.loyalty.challenge.id,
+      code: loyaltyCode,
+    });
+    if (next?.loyalty.profile) setScreen("menu");
+  }
+
   const visibleProducts = (data?.products ?? []).filter(
     (product) => category === "all" || product.categoryId === category,
   );
@@ -371,6 +404,15 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
             type="button"
           >
             <span className="miniBrand">t</span>
+          </button>
+          <button
+            aria-label="Mis sellos"
+            className="loyaltyHeaderButton"
+            onClick={() => setScreen("loyalty")}
+            type="button"
+          >
+            <Icon name="spark" size={18} />
+            {data.loyalty.profile?.stamps ?? 0}
           </button>
           <div>
             <strong>{data.venue.name}</strong>
@@ -488,6 +530,91 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
             </button>
           )}
 
+          {data.loyalty.recognition ? (
+            <section className="loyaltyRecognition solidSurface">
+              <div>
+                <p className="sectionKicker">Perfil del programa encontrado</p>
+                <h2>¿Este perfil es tuyo?</h2>
+                <strong>{data.loyalty.recognition.maskedIdentity}</strong>
+                <p>
+                  No mostramos nombres completos porque este teléfono puede
+                  circular por la mesa.
+                </p>
+              </div>
+              <div>
+                <button
+                  className="solidButton"
+                  disabled={working}
+                  onClick={() =>
+                    void mutate({ action: "loyalty.recognition.confirm" })
+                  }
+                >
+                  Sí, usar mis sellos
+                </button>
+                <button
+                  className="textButton"
+                  disabled={working}
+                  onClick={() =>
+                    void mutate({ action: "loyalty.recognition.reject" })
+                  }
+                >
+                  No soy yo
+                </button>
+              </div>
+            </section>
+          ) : data.loyalty.profile ? (
+            <section className="loyaltyProgressCard">
+              <div>
+                <p className="sectionKicker">Tus sellos en este local</p>
+                <h2>
+                  {data.loyalty.profile.stamps} de {data.loyalty.visitsRequired}
+                </h2>
+                <p>
+                  Recuperación activa en {data.loyalty.profile.contactMasked}
+                </p>
+              </div>
+              {data.loyalty.profile.rewardAvailable ? (
+                <button
+                  disabled={working}
+                  onClick={() => void mutate({ action: "loyalty.reward.add" })}
+                >
+                  Usar premio
+                </button>
+              ) : (
+                <button onClick={() => setScreen("loyalty")}>
+                  Ver programa
+                </button>
+              )}
+            </section>
+          ) : (
+            <button
+              className="loyaltyRecoveryLink"
+              onClick={() => {
+                setLoyaltyPurpose("recover");
+                setScreen("loyalty");
+              }}
+              type="button"
+            >
+              ¿Ya tenías sellos? Recupéralos con teléfono o correo
+            </button>
+          )}
+
+          {data.loyalty.favorite ? (
+            <section className="favoriteCard">
+              <div>
+                <p className="sectionKicker">Tu de siempre</p>
+                <strong>{data.loyalty.favorite.productName}</strong>
+                <small>Basado en tus pedidos reales en este local.</small>
+              </div>
+              <button
+                disabled={working}
+                onClick={() => void mutate({ action: "loyalty.favorite.add" })}
+              >
+                Agregar
+              </button>
+            </section>
+          ) : null}
+
           <nav className="categoryRail" aria-label="Categorías">
             <button
               className={category === "all" ? "active" : ""}
@@ -589,7 +716,11 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       <strong>{line.productName}</strong>
                       {line.variantName && <small>{line.variantName}</small>}
                       {line.note && <em>“{line.note}”</em>}
-                      <b>{money(line.lineTotalClp)}</b>
+                      {line.isLoyaltyReward ? (
+                        <span className="rewardBadge">PREMIO · $0</span>
+                      ) : (
+                        <b>{money(line.lineTotalClp)}</b>
+                      )}
                     </div>
                     <div className="quantityControl">
                       <button
@@ -965,6 +1096,38 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 </div>
               </section>
 
+              {data.loyalty.enrollmentAvailable ? (
+                <section className="loyaltyPostPayment solidSurface">
+                  <p className="sectionKicker">Una decisión aparte del pago</p>
+                  <h2>Guarda un sello por esta visita</h2>
+                  <p>
+                    Ya pagaste. Si aceptas, este local recordará tus visitas y
+                    podrás recuperar los sellos con teléfono o correo aunque
+                    este navegador borre sus datos.
+                  </p>
+                  <button
+                    className="solidButton"
+                    onClick={() => {
+                      setLoyaltyPurpose("enroll");
+                      setScreen("loyalty");
+                    }}
+                  >
+                    Quiero mis sellos
+                  </button>
+                  <small>
+                    No es necesario para pedir ni pagar. No se comparte entre
+                    bares.
+                  </small>
+                </section>
+              ) : data.loyalty.profile ? (
+                <section className="loyaltyPostPayment">
+                  <strong>
+                    Sello registrado · {data.loyalty.profile.stamps} de{" "}
+                    {data.loyalty.visitsRequired}
+                  </strong>
+                </section>
+              ) : null}
+
               <button
                 className="solidButton"
                 onClick={() => setScreen("menu")}
@@ -1047,6 +1210,205 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
         </section>
       )}
 
+      {screen === "loyalty" && (
+        <section className="contentScreen loyaltyScreen">
+          <div className="screenHeading">
+            <button
+              aria-label="Volver"
+              className="roundBack"
+              onClick={() => setScreen("menu")}
+              type="button"
+            >
+              <Icon name="arrow" />
+            </button>
+            <div>
+              <p className="sectionKicker">Programa de este local</p>
+              <h1>Mis sellos</h1>
+            </div>
+          </div>
+
+          {data.loyalty.profile ? (
+            <>
+              <section className="loyaltyWallet solidSurface">
+                <span className="successSeal">
+                  <Icon name="spark" size={28} />
+                </span>
+                <p>{data.loyalty.profile.maskedIdentity}</p>
+                <h2>
+                  {data.loyalty.profile.stamps} / {data.loyalty.visitsRequired}{" "}
+                  sellos
+                </h2>
+                <div className="stampRail">
+                  {Array.from({ length: data.loyalty.visitsRequired }).map(
+                    (_, index) => (
+                      <i
+                        className={
+                          index < data.loyalty.profile!.stamps ? "earned" : ""
+                        }
+                        key={index}
+                      >
+                        {index < data.loyalty.profile!.stamps ? "✓" : index + 1}
+                      </i>
+                    ),
+                  )}
+                </div>
+                <p>
+                  Continuidad: {data.loyalty.profile.contactMasked}. Si el
+                  navegador pierde su token, recuperas aquí sin pedir ayuda al
+                  bar.
+                </p>
+                {data.loyalty.profile.rewardAvailable ? (
+                  <button
+                    className="solidButton"
+                    disabled={working}
+                    onClick={() =>
+                      void mutate(
+                        { action: "loyalty.reward.add" },
+                        { nextScreen: "cart" },
+                      )
+                    }
+                  >
+                    Agregar {data.loyalty.profile.rewardProductName} · premio
+                  </button>
+                ) : null}
+              </section>
+              <button
+                className="dangerTextButton"
+                disabled={working}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "¿Eliminar tu identidad y revocar la recuperación? El historial financiero quedará anónimo.",
+                    )
+                  ) {
+                    void mutate({ action: "loyalty.revoke" });
+                  }
+                }}
+              >
+                Salir del programa y eliminar mis datos
+              </button>
+            </>
+          ) : data.loyalty.challenge ? (
+            <section className="loyaltyForm solidSurface">
+              <p className="sectionKicker">Verifica que eres tú</p>
+              <h2>
+                Código enviado a {data.loyalty.challenge.maskedDestination}
+              </h2>
+              <label htmlFor="loyalty-code">Código de 6 dígitos</label>
+              <input
+                id="loyalty-code"
+                inputMode="numeric"
+                maxLength={6}
+                onChange={(event) =>
+                  setLoyaltyCode(event.target.value.replaceAll(/\D/g, ""))
+                }
+                value={loyaltyCode}
+              />
+              <p className="demoHint">
+                En demo usa <strong>{data.loyalty.challenge.demoCode}</strong>
+              </p>
+              <button
+                className="solidButton"
+                disabled={working || loyaltyCode.length !== 6}
+                onClick={() => void verifyLoyaltyChallenge()}
+              >
+                Recuperar mis sellos
+              </button>
+            </section>
+          ) : (
+            <section className="loyaltyForm solidSurface">
+              <p className="sectionKicker">
+                {loyaltyPurpose === "recover"
+                  ? "Continuidad principal"
+                  : "Después del primer pago"}
+              </p>
+              <h2>
+                {loyaltyPurpose === "recover"
+                  ? "Recupera tus sellos"
+                  : "Activa tus sellos"}
+              </h2>
+              <p>
+                El token de este navegador puede perderse. Por eso teléfono o
+                correo son la forma principal de volver a entrar.
+              </p>
+              <div className="tipOptions">
+                <button
+                  className={loyaltyChannel === "phone" ? "selected" : ""}
+                  onClick={() => setLoyaltyChannel("phone")}
+                >
+                  Teléfono
+                </button>
+                <button
+                  className={loyaltyChannel === "email" ? "selected" : ""}
+                  onClick={() => setLoyaltyChannel("email")}
+                >
+                  Correo
+                </button>
+              </div>
+              <label htmlFor="loyalty-contact">
+                {loyaltyChannel === "phone" ? "Teléfono" : "Correo"}
+              </label>
+              <input
+                autoComplete={loyaltyChannel === "phone" ? "tel" : "email"}
+                id="loyalty-contact"
+                onChange={(event) => setLoyaltyContact(event.target.value)}
+                placeholder={
+                  loyaltyChannel === "phone"
+                    ? "+56 9 1234 5678"
+                    : "tu@correo.cl"
+                }
+                value={loyaltyContact}
+              />
+              {loyaltyPurpose === "enroll" ? (
+                <div className="consentChecks">
+                  <label>
+                    <input
+                      checked={identityConsent}
+                      onChange={(event) =>
+                        setIdentityConsent(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    Acepto que este local recuerde mis visitas y preferencias.
+                  </label>
+                  <label>
+                    <input
+                      checked={contactConsent}
+                      onChange={(event) =>
+                        setContactConsent(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    Acepto usar este dato para recuperar mis sellos. No acepto
+                    mensajes comerciales.
+                  </label>
+                </div>
+              ) : null}
+              <button
+                className="solidButton"
+                disabled={
+                  working ||
+                  !loyaltyContact.trim() ||
+                  (loyaltyPurpose === "enroll" &&
+                    (!identityConsent || !contactConsent))
+                }
+                onClick={() => void startLoyaltyChallenge()}
+              >
+                Enviar código
+              </button>
+              {loyaltyPurpose === "recover" && latestOrder ? (
+                <button
+                  className="textButton"
+                  onClick={() => setLoyaltyPurpose("enroll")}
+                >
+                  Soy nuevo: activar programa
+                </button>
+              ) : null}
+            </section>
+          )}
+        </section>
+      )}
+
       {screen !== "entry" && (
         <nav className="bottomNav" aria-label="Navegación principal">
           <button
@@ -1073,6 +1435,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
           >
             <Icon name="hand" size={21} />
             Ayuda
+          </button>
+          <button
+            className={screen === "loyalty" ? "active" : ""}
+            onClick={() => setScreen("loyalty")}
+            type="button"
+          >
+            <Icon name="spark" size={21} />
+            Sellos
           </button>
         </nav>
       )}

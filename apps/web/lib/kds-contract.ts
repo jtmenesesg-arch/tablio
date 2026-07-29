@@ -11,6 +11,7 @@ export type KdsTicketItem = Readonly<{
   name: string;
   quantity: number;
   note?: string;
+  isLoyaltyReward?: boolean;
 }>;
 
 export type KdsTicket = Readonly<{

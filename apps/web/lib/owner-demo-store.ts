@@ -6,6 +6,7 @@ import {
   creditDemoActor,
   tableCreditDemoStore,
 } from "./table-credit-demo-store";
+import { loyaltyDemoStore } from "./loyalty-demo-store";
 
 export const OWNER_DEMO_TENANT_ID = creditDemoActor.tenantId;
 
@@ -182,6 +183,7 @@ export class OwnerDemoStore {
       previousMonthlyLeakageClp,
       historyStartsAt,
     });
+    const loyaltyMetrics = loyaltyDemoStore.metrics();
     const products = [...byProduct.entries()].sort(
       (a, b) => b[1].quantity - a[1].quantity,
     );
@@ -241,6 +243,13 @@ export class OwnerDemoStore {
           monthlyLeakageClp,
           previousMonthlyLeakageClp,
         ),
+        loyalty: {
+          ...loyaltyMetrics,
+          rewardKnownCostClp:
+            loyaltyMetrics.rewardKnownCostClp > 0
+              ? loyaltyMetrics.rewardKnownCostClp
+              : undefined,
+        },
       },
       topProducts: products.slice(0, 3).map(([name, value]) => ({
         name,

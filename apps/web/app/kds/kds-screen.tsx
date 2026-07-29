@@ -162,6 +162,9 @@ function TicketCard({
             <strong>{item.quantity}×</strong>
             <span>
               {item.name}
+              {item.isLoyaltyReward ? (
+                <i className="kdsRewardBadge">PREMIO · $0</i>
+              ) : null}
               {item.note ? <em>Nota: {item.note}</em> : null}
             </span>
           </li>

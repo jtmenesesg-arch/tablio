@@ -30,6 +30,7 @@ import type {
 } from "./diner-contract";
 import { demoReceiptForOrder, enqueueDemoReceipt } from "./tax-demo-service";
 import { getDinerOrderingAvailability } from "./platform-demo-store";
+import { loyaltyDemoStore, LOYALTY_DEMO_TENANT_ID } from "./loyalty-demo-store";
 
 const TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina";
@@ -41,6 +42,7 @@ const QUOTE_TTL_MS = 10 * 60 * 1000;
 
 type MutableProduct = Omit<DinerProduct, "available"> & {
   available: boolean;
+  unitCostClp?: number;
   stock?: number;
   reserved: number;
 };
@@ -53,6 +55,7 @@ type MutableCart = {
     variantId?: string;
     quantity: number;
     note?: string;
+    isLoyaltyReward?: boolean;
   }>;
 };
 type MutableSession = {
@@ -77,6 +80,14 @@ type MutableSession = {
   orders: DinerOrder[];
   actionRequests: Map<string, { id: string; requestedAt: number }>;
   waiterPaymentRequest?: WaiterPaymentRequest;
+  loyaltyProfileId?: string;
+  loyaltyRecognitionProfileId?: string;
+  loyaltyChallenge?: DinerBootstrap["loyalty"]["challenge"];
+  lastPaidOrder?: {
+    id: string;
+    paidClp: number;
+    productIds: string[];
+  };
 };
 
 type DemoState = {
@@ -88,6 +99,7 @@ type DemoState = {
   gateway: SimulatedPaymentGateway;
   eventStore: InMemoryPaymentEventStore;
   paymentProcessor: PaymentEventProcessor;
+  issuedLoyaltyCredentials: Map<string, string | null>;
 };
 
 const categories = Object.freeze([
@@ -144,6 +156,7 @@ const productSeed: readonly MutableProduct[] = [
     allergens: ["Leche"],
     available: true,
     trackStock: true,
+    unitCostClp: 1_700,
     variants: [],
     stock: 12,
     reserved: 0,
@@ -221,6 +234,7 @@ function createState(): DemoState {
     gateway,
     eventStore,
     paymentProcessor: new PaymentEventProcessor(gateway, eventStore),
+    issuedLoyaltyCredentials: new Map(),
   };
 }
 
@@ -281,7 +295,8 @@ function cartLines(cart: MutableCart): CartLine[] {
     const variant = product.variants.find(
       (candidate) => candidate.id === line.variantId,
     );
-    const unitPriceClp = linePrice(product, line.variantId);
+    const referenceUnitPriceClp = linePrice(product, line.variantId);
+    const unitPriceClp = line.isLoyaltyReward ? 0 : referenceUnitPriceClp;
     return {
       id: line.id,
       productId: line.productId,
@@ -292,6 +307,10 @@ function cartLines(cart: MutableCart): CartLine[] {
       note: line.note,
       unitPriceClp,
       lineTotalClp: unitPriceClp * line.quantity,
+      isLoyaltyReward: line.isLoyaltyReward,
+      referenceUnitPriceClp: line.isLoyaltyReward
+        ? referenceUnitPriceClp
+        : undefined,
     };
   });
 }
@@ -363,6 +382,7 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
         name: string;
         quantity: number;
         note?: string;
+        isLoyaltyReward?: boolean;
       }>;
     }
   >();
@@ -379,6 +399,7 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
       name: `${line.productName}${line.variantName ? ` · ${line.variantName}` : ""}`,
       quantity: line.quantity,
       note: line.note,
+      isLoyaltyReward: line.isLoyaltyReward,
     });
     stations.set(station.id, group);
     if (product.trackStock) {
@@ -432,8 +453,53 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
     orderId,
     amountClp: quote.totalClp,
     customerEmail: session.customerEmail,
+    lines: [
+      ...sourceLines.map((line) => ({
+        description: `${line.productName}${
+          line.variantName ? ` · ${line.variantName}` : ""
+        }`,
+        quantity: line.quantity,
+        unitAmountClp: line.unitPriceClp,
+        isLoyaltyReward: Boolean(line.isLoyaltyReward),
+      })),
+      ...(quote.tipClp > 0
+        ? [
+            {
+              description: "Propina",
+              quantity: 1,
+              unitAmountClp: quote.tipClp,
+              isLoyaltyReward: false,
+            },
+          ]
+        : []),
+    ],
   });
   payment.status = "confirmed";
+  loyaltyDemoStore.recordConfirmedPayment({
+    profileId: session.loyaltyProfileId,
+    orderId,
+    paidClp: quote.subtotalClp,
+    productIds: sourceLines
+      .filter((line) => !line.isLoyaltyReward)
+      .map((line) => line.productId),
+  });
+  const rewardLine = sourceLines.find((line) => line.isLoyaltyReward);
+  if (rewardLine && session.loyaltyProfileId) {
+    loyaltyDemoStore.completeReward({
+      profileId: session.loyaltyProfileId,
+      cartId: session.cart.id,
+      referenceValueClp: rewardLine.referenceUnitPriceClp ?? 0,
+      optionalUnitCostClp: state.products.get(rewardLine.productId)
+        ?.unitCostClp,
+    });
+  }
+  session.lastPaidOrder = {
+    id: orderId,
+    paidClp: quote.subtotalClp,
+    productIds: sourceLines
+      .filter((line) => !line.isLoyaltyReward)
+      .map((line) => line.productId),
+  };
   session.quote = Object.freeze({ ...quote, status: "paid" });
   session.cart.state = "converted_to_order";
   session.cart = newCart();
@@ -448,6 +514,9 @@ function releaseQuote(session: MutableSession): void {
       product.reserved = Math.max(0, product.reserved - line.quantity);
     }
   }
+  if (session.loyaltyProfileId) {
+    loyaltyDemoStore.releaseReward(session.loyaltyProfileId, session.cart.id);
+  }
   session.quote = undefined;
   session.payment = undefined;
   session.cart.state = "open";
@@ -457,6 +526,14 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
   const lines = session ? cartLines(session.cart) : [];
   const currentTime = new Date().toISOString();
   const ordering = getDinerOrderingAvailability();
+  const loyaltyProfile = loyaltyDemoStore.profile(session?.loyaltyProfileId);
+  const favorite = loyaltyDemoStore.favorite(session?.loyaltyProfileId);
+  const favoriteProduct = favorite
+    ? state.products.get(favorite.productId)
+    : undefined;
+  const recognition = session?.loyaltyRecognitionProfileId
+    ? loyaltyDemoStore.profile(session.loyaltyRecognitionProfileId)
+    : undefined;
   return {
     demo: true,
     authenticated: Boolean(session),
@@ -483,6 +560,7 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
     categories,
     products: [...state.products.values()].map((product) => ({
       ...product,
+      unitCostClp: undefined,
       available: productAvailable(product),
       stock: undefined,
       reserved: undefined,
@@ -492,13 +570,15 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
       lines,
       subtotalClp: lines.reduce((sum, line) => sum + line.lineTotalClp, 0),
     },
-    quote: session?.quote,
-    payment: session?.payment
-      ? {
-          id: session.payment.id,
-          status: session.payment.status,
-        }
-      : undefined,
+    quote: session?.quote?.status === "active" ? session.quote : undefined,
+    payment:
+      session?.payment?.status === "pending" ||
+      session?.payment?.status === "rejected"
+        ? {
+            id: session.payment.id,
+            status: session.payment.status,
+          }
+        : undefined,
     orders: session ? liveOrders(session) : [],
     actions: actionSeed.map((action) => ({
       ...action,
@@ -509,6 +589,31 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
         : undefined,
     })),
     waiterPaymentRequest: session?.waiterPaymentRequest,
+    loyalty: {
+      enabled: loyaltyDemoStore.program().enabled,
+      visitsRequired: loyaltyDemoStore.program().visitsRequired,
+      recognition: recognition
+        ? { maskedIdentity: recognition.maskedIdentity }
+        : undefined,
+      profile: loyaltyProfile,
+      favorite:
+        favorite && favoriteProduct && productAvailable(favoriteProduct)
+          ? {
+              productId: favorite.productId,
+              productName: favoriteProduct.name,
+              quantity: favorite.quantity,
+            }
+          : undefined,
+      enrollmentAvailable: Boolean(
+        session && !loyaltyProfile && session.orders.length > 0,
+      ),
+      recoveryAlwaysAvailable: true,
+      challenge: session?.loyaltyChallenge,
+      identityLossMessage:
+        session?.loyaltyChallenge?.purpose === "recover"
+          ? "Tus sellos se recuperan sin depender del teléfono anterior ni del equipo del bar."
+          : undefined,
+    },
     serverTime: currentTime,
   };
 }
@@ -525,11 +630,18 @@ export class DinerError extends Error {
 export async function getDinerBootstrap(
   token: string | undefined,
   qrToken: string,
+  loyaltyCredential?: string,
 ): Promise<DinerBootstrap> {
   if (qrToken !== QR_TOKEN) throw new DinerError("Este QR no es válido.", 404);
   if (!token) return serialize(undefined);
   try {
     const session = ensureSession(token);
+    if (!session.loyaltyProfileId && !session.loyaltyRecognitionProfileId) {
+      session.loyaltyRecognitionProfileId = loyaltyDemoStore.recognition(
+        TENANT_ID,
+        loyaltyCredential,
+      )?.profileId;
+    }
     if (
       session.quote?.status === "active" &&
       Date.parse(session.quote.expiresAt) <= now()
@@ -549,6 +661,7 @@ export async function getDinerBootstrap(
 export function joinDinerSession(
   qrToken: string,
   presenceCode: string,
+  loyaltyCredential?: string,
 ): { token: string; bootstrap: DinerBootstrap } {
   if (qrToken !== QR_TOKEN) throw new DinerError("Este QR no es válido.", 404);
   const ordering = getDinerOrderingAvailability();
@@ -574,6 +687,10 @@ export function joinDinerSession(
     cart: newCart(),
     orders: [],
     actionRequests: new Map(),
+    loyaltyRecognitionProfileId: loyaltyDemoStore.recognition(
+      TENANT_ID,
+      loyaltyCredential,
+    )?.profileId,
   };
   state.sessions.set(token, session);
   return { token, bootstrap: serialize(session) };
@@ -806,10 +923,171 @@ export async function mutateDiner(
       }
       break;
     }
+    case "loyalty.recognition.confirm": {
+      if (!session.loyaltyRecognitionProfileId) {
+        throw new DinerError("No hay un perfil para confirmar.", 409);
+      }
+      loyaltyDemoStore.confirmRecognition(session.loyaltyRecognitionProfileId);
+      session.loyaltyProfileId = session.loyaltyRecognitionProfileId;
+      session.loyaltyRecognitionProfileId = undefined;
+      break;
+    }
+    case "loyalty.recognition.reject": {
+      if (session.loyaltyRecognitionProfileId) {
+        loyaltyDemoStore.rejectRecognition(session.loyaltyRecognitionProfileId);
+      }
+      session.loyaltyRecognitionProfileId = undefined;
+      state.issuedLoyaltyCredentials.set(session.token, null);
+      break;
+    }
+    case "loyalty.challenge.start": {
+      try {
+        session.loyaltyChallenge = loyaltyDemoStore.startChallenge({
+          tenantId: LOYALTY_DEMO_TENANT_ID,
+          purpose: mutation.purpose,
+          channel: mutation.channel,
+          contact: mutation.contact,
+          identificationConsent: mutation.identificationConsent,
+          contactConsent: mutation.contactConsent,
+        });
+      } catch (caught) {
+        throw new DinerError(
+          caught instanceof Error
+            ? caught.message
+            : "No pudimos enviar el código.",
+          400,
+        );
+      }
+      break;
+    }
+    case "loyalty.challenge.verify": {
+      try {
+        const verified = loyaltyDemoStore.verifyChallenge({
+          tenantId: LOYALTY_DEMO_TENANT_ID,
+          challengeId: mutation.challengeId,
+          code: mutation.code,
+        });
+        session.loyaltyProfileId = verified.profileId;
+        session.loyaltyRecognitionProfileId = undefined;
+        session.loyaltyChallenge = undefined;
+        state.issuedLoyaltyCredentials.set(session.token, verified.credential);
+        if (session.lastPaidOrder) {
+          loyaltyDemoStore.recordConfirmedPayment({
+            profileId: verified.profileId,
+            orderId: session.lastPaidOrder.id,
+            paidClp: session.lastPaidOrder.paidClp,
+            productIds: session.lastPaidOrder.productIds,
+          });
+        }
+      } catch (caught) {
+        throw new DinerError(
+          caught instanceof Error
+            ? caught.message
+            : "No pudimos verificar el código.",
+          400,
+        );
+      }
+      break;
+    }
+    case "loyalty.reward.add": {
+      if (!session.loyaltyProfileId || session.cart.state !== "open") {
+        throw new DinerError(
+          "Recupera tu perfil antes de usar el premio.",
+          409,
+        );
+      }
+      const reward = state.products.get(
+        loyaltyDemoStore.program().rewardProductId,
+      );
+      if (!reward || !productAvailable(reward)) {
+        throw new DinerError("El premio está agotado por ahora.", 409);
+      }
+      try {
+        loyaltyDemoStore.reserveReward(
+          session.loyaltyProfileId,
+          session.cart.id,
+        );
+      } catch (caught) {
+        throw new DinerError(
+          caught instanceof Error
+            ? caught.message
+            : "No pudimos reservar el premio.",
+          409,
+        );
+      }
+      session.cart.lines.push({
+        id: randomUUID(),
+        productId: reward.id,
+        quantity: 1,
+        isLoyaltyReward: true,
+      });
+      break;
+    }
+    case "loyalty.favorite.add": {
+      const favorite = loyaltyDemoStore.favorite(session.loyaltyProfileId);
+      const product = favorite
+        ? state.products.get(favorite.productId)
+        : undefined;
+      if (!favorite || !product || !productAvailable(product)) {
+        throw new DinerError("Tu favorito no está disponible ahora.", 409);
+      }
+      session.cart.lines.push({
+        id: randomUUID(),
+        productId: product.id,
+        quantity: favorite.quantity,
+      });
+      break;
+    }
+    case "loyalty.revoke": {
+      if (session.loyaltyProfileId) {
+        loyaltyDemoStore.anonymize(session.loyaltyProfileId);
+      }
+      session.loyaltyProfileId = undefined;
+      session.loyaltyRecognitionProfileId = undefined;
+      state.issuedLoyaltyCredentials.set(session.token, null);
+      break;
+    }
     default:
       throw new DinerError("La acción solicitada no existe.", 400);
   }
   return serialize(session);
+}
+
+export function consumeIssuedLoyaltyCredential(
+  deviceToken: string | undefined,
+): string | null | undefined {
+  if (!deviceToken || !state.issuedLoyaltyCredentials.has(deviceToken)) {
+    return undefined;
+  }
+  const value = state.issuedLoyaltyCredentials.get(deviceToken);
+  state.issuedLoyaltyCredentials.delete(deviceToken);
+  return value;
+}
+
+export function resetLoyaltyForTest(): void {
+  if (process.env.TABLIO_E2E !== "1") {
+    throw new DinerError("Ruta disponible solo en pruebas.", 404);
+  }
+  loyaltyDemoStore.reset();
+  for (const session of state.sessions.values()) {
+    session.loyaltyProfileId = undefined;
+    session.loyaltyRecognitionProfileId = undefined;
+    session.loyaltyChallenge = undefined;
+  }
+}
+
+export function seedLoyaltyProgressForTest(
+  deviceToken: string | undefined,
+  stamps: number,
+): void {
+  if (process.env.TABLIO_E2E !== "1") {
+    throw new DinerError("Ruta disponible solo en pruebas.", 404);
+  }
+  const session = ensureSession(deviceToken);
+  if (!session.loyaltyProfileId) {
+    throw new DinerError("Primero activa el programa.", 409);
+  }
+  loyaltyDemoStore.seedProgress(session.loyaltyProfileId, stamps);
 }
 
 export function setProductAvailabilityForTest(

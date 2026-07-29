@@ -131,6 +131,54 @@ export function OwnerDashboard() {
         </p>
       </section>
 
+      <section className="ownerLoyalty">
+        <div>
+          <span>Clientes que volvieron</span>
+          <strong>{data.metrics.loyalty.returningProfiles}</strong>
+          <small>
+            de {data.metrics.loyalty.activeProfiles} perfiles activos ·{" "}
+            {data.metrics.loyalty.averageVisitFrequency} visitas promedio
+          </small>
+        </div>
+        <div>
+          <span>Premios usados</span>
+          <strong>{data.metrics.loyalty.rewardsRedeemed}</strong>
+          <small>
+            Valor de lista {money(data.metrics.loyalty.rewardReferenceValueClp)}
+            {data.metrics.loyalty.rewardKnownCostClp !== undefined
+              ? ` · costo informado ${money(
+                  data.metrics.loyalty.rewardKnownCostClp,
+                )}`
+              : " · sin costo informado, no calculamos margen"}
+          </small>
+        </div>
+        <div
+          className={
+            data.metrics.loyalty.identityLossRatePercent >= 15
+              ? "attention"
+              : ""
+          }
+        >
+          <span>Pérdida de identidad del dispositivo</span>
+          <strong>
+            {data.metrics.loyalty.identityLossRatePercent.toLocaleString(
+              "es-CL",
+            )}
+            %
+          </strong>
+          <small>
+            {data.metrics.loyalty.identityRecoveries} recuperaciones sin el
+            token anterior. Si sube, la continuidad del programa requiere
+            atención.
+          </small>
+        </div>
+        <p>
+          {data.metrics.loyalty.dormantProfiles > 0
+            ? `${data.metrics.loyalty.dormantProfiles} clientes llevan más de 45 días sin volver. El segmento está listo; Tablio no envía mensajes.`
+            : "Todavía no hay clientes dormidos. Esta lectura aparecerá cuando exista historial suficiente."}
+        </p>
+      </section>
+
       <section className="ownerDetails">
         <article>
           <h3>Productos</h3>

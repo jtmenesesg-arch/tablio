@@ -28,6 +28,8 @@ export type CartLine = Readonly<{
   note?: string;
   unitPriceClp: number;
   lineTotalClp: number;
+  isLoyaltyReward?: boolean;
+  referenceUnitPriceClp?: number;
 }>;
 
 export type DinerQuote = Readonly<{
@@ -119,6 +121,35 @@ export type DinerBootstrap = Readonly<{
   orders: readonly DinerOrder[];
   actions: readonly ServiceAction[];
   waiterPaymentRequest?: WaiterPaymentRequest;
+  loyalty: Readonly<{
+    enabled: boolean;
+    visitsRequired: number;
+    recognition?: Readonly<{
+      maskedIdentity: string;
+    }>;
+    profile?: Readonly<{
+      id: string;
+      maskedIdentity: string;
+      contactMasked: string;
+      stamps: number;
+      rewardAvailable: boolean;
+      rewardProductName: string;
+    }>;
+    favorite?: Readonly<{
+      productId: string;
+      productName: string;
+      quantity: number;
+    }>;
+    enrollmentAvailable: boolean;
+    recoveryAlwaysAvailable: true;
+    challenge?: Readonly<{
+      id: string;
+      purpose: "enroll" | "recover";
+      maskedDestination: string;
+      demoCode: string;
+    }>;
+    identityLossMessage?: string;
+  }>;
   serverTime: string;
 }>;
 
@@ -162,4 +193,32 @@ export type DinerMutation =
   | {
       action: "service.request";
       serviceActionId: string;
+    }
+  | {
+      action: "loyalty.recognition.confirm";
+    }
+  | {
+      action: "loyalty.recognition.reject";
+    }
+  | {
+      action: "loyalty.challenge.start";
+      purpose: "enroll" | "recover";
+      channel: "phone" | "email";
+      contact: string;
+      identificationConsent: boolean;
+      contactConsent: boolean;
+    }
+  | {
+      action: "loyalty.challenge.verify";
+      challengeId: string;
+      code: string;
+    }
+  | {
+      action: "loyalty.reward.add";
+    }
+  | {
+      action: "loyalty.favorite.add";
+    }
+  | {
+      action: "loyalty.revoke";
     };

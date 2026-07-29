@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   DinerError,
+  resetLoyaltyForTest,
+  seedLoyaltyProgressForTest,
   setProductAvailabilityForTest,
 } from "../../../../lib/diner-demo-store";
 
@@ -16,9 +19,23 @@ export async function POST(request: Request) {
       throw new DinerError("No encontrado.", 404);
     }
     const body = (await request.json()) as {
+      action?: unknown;
       productId?: unknown;
       available?: unknown;
+      stamps?: unknown;
     };
+    if (body.action === "loyalty.reset") {
+      resetLoyaltyForTest();
+      return NextResponse.json({ ok: true });
+    }
+    if (body.action === "loyalty.seed" && typeof body.stamps === "number") {
+      const cookieStore = await cookies();
+      seedLoyaltyProgressForTest(
+        cookieStore.get("tablio_diner_device")?.value,
+        body.stamps,
+      );
+      return NextResponse.json({ ok: true });
+    }
     if (
       typeof body.productId !== "string" ||
       typeof body.available !== "boolean"

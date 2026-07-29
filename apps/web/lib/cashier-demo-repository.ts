@@ -621,6 +621,11 @@ export class CashierDemoRepository {
             .length / recentTaxAttempts.length;
     return {
       demo: true,
+      loyalty: {
+        identityLossRatePercent: 0,
+        identityRecoveries: 0,
+        profiles: [],
+      },
       actor,
       venue: { id: CASHIER_DEMO_VENUE_ID, name: "Bar La Esquina" },
       shift: shift
