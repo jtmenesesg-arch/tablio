@@ -317,9 +317,41 @@ hardware hasta probarla con el piloto.
 - **Riesgo:** el flujo financiero soporta la ráfaga, pero una apertura masiva puede sentirse
   lenta o sobrecargar una instancia fría antes de que el usuario llegue a la carta.
 
+## OI-021 — Premio gratuito en boleta, impuestos y conciliación
+
+- **Estado:** bloqueante legal antes del piloto.
+- **Implementado:** premio server-side como ítem inmutable a `$0`, referencia y costo opcional
+  separados, stock, KDS, ledger, reembolso y cierre.
+- **Pendiente:** asesor tributario chileno y proveedor DTE deben confirmar representación,
+  base imponible, descuento/bonificación, nota de crédito y tratamiento según medio de pago.
+- **Riesgo:** que la línea técnicamente trazable no sea la representación tributaria correcta.
+- **Regla:** sin costo informado sólo se muestra precio de lista; nunca se inventa margen.
+
+## OI-022 — Recuperación real, privacidad y entrega de códigos
+
+- **Estado:** bloqueante antes del piloto.
+- **Implementado con simulador:** consentimiento separado, contacto privado, código de un uso,
+  recuperación autónoma, rechazo de perfil compartido, anonimización, asistencia auditada y
+  métrica de pérdida de identidad.
+- **Pendiente:** proveedor SMS/correo real, límites por IP/contacto/dispositivo, reputación,
+  observabilidad de entrega, recuperación tras timeout y revisión legal chilena de textos,
+  retención, acceso, supresión e inicio de vigencia de la Ley 21.719.
+- **Riesgo:** códigos no entregados o abusables convierten la continuidad en una promesa falsa.
+
+## OI-023 — Tablas privadas sin políticas RLS por diseño
+
+- **Estado:** aceptado; revisar antes de producción con dinero real.
+- **Advisor:** tres avisos informativos `0008` para contactos, credenciales y desafíos.
+- **Motivo:** están en `private`, tienen RLS forzado, cero grants API y deliberadamente cero
+  policies. Sólo funciones internas con `SECURITY DEFINER`, `search_path` vacío y entradas
+  acotadas pueden operar. Agregar una policy a `authenticated` ampliaría la superficie.
+- **Condición de cambio:** si alguna tabla se expone por API o una ruta necesita acceso
+  directo, se debe rediseñar; no se agrega una policy permisiva como atajo.
+- **Referencia:** [advisor RLS sin policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+
 ## Clasificación final de asuntos
 
-| Asunto | Clasificación al cierre de Sprint 10                                 |
+| Asunto | Clasificación al cierre de Sprint 11                                 |
 | ------ | -------------------------------------------------------------------- |
 | OI-001 | Bloqueante para piloto con pagos y para producción con dinero real   |
 | OI-002 | Bloqueante para producción con dinero real                           |
@@ -340,3 +372,6 @@ hardware hasta probarla con el piloto.
 | OI-018 | No bloqueante; la revisión humana mantiene seguro el onboarding      |
 | OI-019 | Bloqueante de revisión de seguridad antes de producción              |
 | OI-020 | Bloqueante de validación de rendimiento antes del piloto             |
+| OI-021 | Bloqueante tributario antes del piloto                               |
+| OI-022 | Bloqueante de identidad real y privacidad antes del piloto           |
+| OI-023 | No bloqueante hoy; revisión de seguridad antes de producción         |

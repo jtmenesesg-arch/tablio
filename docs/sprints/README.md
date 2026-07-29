@@ -11,3 +11,5 @@ Cada sprint cerrado crea `SPRINT-XX-SUMMARY.md` con:
 Los criterios concretos de cada sprint se toman del brief y de la aprobación del fundador.
 Los asuntos aceptados para un sprint posterior deben quedar explícitos en el resumen y en
 `OPEN_ISSUES.md`, con fecha o hito límite.
+
+Último cierre: [`SPRINT-11-SUMMARY.md`](SPRINT-11-SUMMARY.md).

@@ -147,3 +147,20 @@
   recientes, no una promesa contractual del proveedor.
 - **Supabase Vault:** almacén cifrado donde se guardarán credenciales; las tablas de negocio
   conservan sólo la referencia al secreto.
+
+## Términos de Sprint 11
+
+- **Perfil recurrente por tenant:** identidad seudónima que existe sólo dentro de un local o
+  grupo; no sigue al comensal entre bares.
+- **Credencial de dispositivo:** token reemplazable que acelera reconocimiento. No es la
+  fuente de verdad y perderlo no borra sellos.
+- **Recuperación principal:** continuidad por teléfono/correo verificado, disponible sin
+  intervención del bar.
+- **Pérdida de identidad:** recuperación realizada porque faltó la credencial anterior. Su
+  tasa mide si el mecanismo de continuidad realmente funciona.
+- **Ledger de sellos:** historia append-only que suma/revierte visitas, premios y ajustes.
+- **Valor de referencia:** precio de lista congelado de un premio; no es ingreso ni costo.
+- **Costo conocido:** costo opcional informado por el dueño. Si falta, Tablio no inventa
+  margen.
+- **Cliente dormido:** perfil con última visita anterior al umbral del tenant. Sprint 11 sólo
+  crea el segmento; no envía mensajes.

@@ -274,3 +274,23 @@ comercial falla se crea una excepción idempotente; nunca se crea parcialmente u
 
 Ver [`OPEN_ISSUES.md`](OPEN_ISSUES.md): proveedores reales de pasarela/DTE/billing SaaS,
 validación comercial de planes, extracción de carta e impresión térmica.
+
+## Identidad recurrente y fidelización
+
+La sesión de mesa sigue siendo anónima. Después del primer pago, el comensal puede aceptar un
+perfil seudónimo exclusivo de ese bar. Teléfono/correo verificado es la continuidad principal;
+el token sólo acelera el reconocimiento. Un dispositivo compartido muestra `Perfil •NNN`, no
+un nombre completo, y exige confirmar “sí” o “no soy yo”.
+
+Un pago confirmado puede generar como máximo la visita configurada. El ledger, no el frontend,
+calcula sellos. “Tu de siempre” usa historial real del tenant y sólo ofrece productos
+disponibles. El premio entra al quote como ítem `$0`, conserva stock, aparece marcado en KDS y
+se reconcilia con referencia/costo opcional. Mensajería a dormidos no pertenece a este sprint:
+sólo se materializa el segmento.
+
+```text
+pago confirmado → visita idempotente → sello en ledger
+token presente  → perfil enmascarado → confirmación de la persona
+token perdido   → teléfono/correo → código → mismo perfil y mismos sellos
+saldo completo  → reserva premio → quote $0 → pedido/KDS → consumo de sellos
+```

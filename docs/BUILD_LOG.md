@@ -512,3 +512,38 @@ falla de cobro no puede interrumpir un viernes por la noche ni revelar deuda al 
 El producto queda apto para demo y candidato a piloto controlado después de cerrar los
 bloqueantes marcados. No queda autorizado para operar dinero real: pasarela, DTE, asesorías,
 impresión física, despliegue/observabilidad y validaciones de infraestructura siguen abiertos.
+
+## 2026-07-29 — Sprint 11 · Identidad recurrente y fidelización
+
+### Qué cambió
+
+- Se agregó identidad seudónima por tenant sin modificar el pedido anónimo. El opt-in aparece
+  después del primer pago y exige consentimientos separados para identificación y recuperación.
+- Teléfono/correo verificado es la continuidad principal. Un token perdido se reemplaza sin
+  perder sellos; el dispositivo compartido sólo muestra `Perfil •NNN`.
+- Caja puede restituir sellos con motivo obligatorio y actor auditado. El dueño ve la tasa de
+  recuperaciones por credencial perdida.
+- Programa, visitas, ledger, canjes, reembolsos y segmento dormido son configurables por tenant,
+  idempotentes, con RLS forzado y evidencia append-only.
+- “Tu de siempre” usa historial real y disponibilidad. El premio es un ítem server-side a `$0`,
+  conserva stock y aparece marcado en PWA/KDS.
+- Se agregó costo de producto opcional. Sin costo, conciliación informa sólo valor de lista y
+  jamás inventa margen.
+
+### Correcciones encontradas al probar
+
+- La segunda ronda todavía recibía en el bootstrap el quote ya pagado de la ronda anterior.
+  Se dejó de publicar quotes/pagos terminales; un nuevo carrito siempre crea un quote nuevo.
+- Advisors detectó 17 claves foráneas nuevas sin índice; se agregaron índices de cobertura.
+- Los tres avisos `RLS enabled no policy` de tablas privadas se conservaron deliberadamente:
+  cero policies/grants impide acceso API y está explicado en OI-023.
+
+### Verificación
+
+- Vitest: 115/115.
+- Playwright: 36/36 en la regresión completa; 3/3 específicos incluyen pérdida total de
+  cookies y canje/KDS.
+- pgTAP Sprint 11: 30/30 en el proyecto remoto con rollback.
+- TypeScript, ESLint y revisión visual de PWA, caja y dueño verdes.
+- Security Advisors: ningún warning nuevo; tres `INFO` intencionales de tablas `private`.
+- Performance Advisors: cero claves foráneas Sprint 11 sin índice.

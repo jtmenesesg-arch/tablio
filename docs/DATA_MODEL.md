@@ -722,3 +722,37 @@ ledger. Caja y garzón muestran ambas cifras sin compensarlas.
 Todas las tablas Sprint 9 tienen RLS habilitado y forzado. Roles API sólo reciben `SELECT`;
 las escrituras pasan por fachadas públicas `SECURITY INVOKER` que llaman implementaciones
 permisadas en `private`. Advisors confirmó que Sprint 9 no agregó warnings de seguridad.
+
+## Identidad recurrente y fidelización implementadas en Sprint 11
+
+### Identidad y recuperación
+
+- `diner_profiles` es un seudónimo por tenant; nunca contiene teléfono, correo ni nombre real.
+- `private.diner_profile_contacts` conserva hash de búsqueda, valor cifrado y máscara.
+- `private.diner_identity_credentials` modela credenciales reemplazables; perder una no
+  elimina el perfil.
+- `private.diner_recovery_challenges` guarda hashes, intentos, expiración y consumo.
+- `diner_consent_events` y `diner_identity_events` son append-only. Separan consentimiento de
+  identificación, contacto y recuperación tras token perdido.
+- `diner_device_sessions.diner_profile_id` sólo se vincula después de confirmación enmascarada.
+  Revocar anonimiza y desconecta sesiones/credenciales sin borrar evidencia financiera.
+
+### Sellos y premios
+
+- `tenant_loyalty_programs` está desactivado por defecto y configura compra mínima, visitas,
+  límite diario, premio, horario, vigencia y dormancia.
+- `loyalty_visits` acepta sólo pagos server-side confirmados y deduplica por pago/pedido.
+- `loyalty_ledger_entries` es la fuente del saldo. Ajustes de caja exigen actor y motivo.
+- `loyalty_reward_redemptions` reserva una sola vez y enlaza carrito, quote, pedido e ítem.
+- Quote y pedido congelan perfil, valor de lista y costo conocido. Ítems premio exigen precio,
+  impuesto y total `$0`, además de la redención.
+- `products.unit_cost_clp` es opcional. Nulo significa “costo desconocido”; los reportes no
+  calculan margen.
+- Reembolsos generan ajustes idempotentes; el total restaura el premio y el parcial sólo
+  revierte la visita cuando el neto deja de cumplir el mínimo.
+
+### Métricas
+
+`owner_loyalty_metrics` cuenta recurrencia, frecuencia, canjes, valor de lista, costo conocido,
+dormancia y recuperación tras token perdido. `cashier_loyalty_reward_summary` explica ingreso
+cero, referencia y costo por premio. Ambas vistas son `security_invoker`.
