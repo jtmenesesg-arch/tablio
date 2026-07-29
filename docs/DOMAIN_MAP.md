@@ -1,6 +1,6 @@
 # Mapa de dominios
 
-- **Estado:** vivo, núcleo financiero y PWA del comensal de Sprint 3 implementados
+- **Estado:** vivo, núcleo financiero, PWA, KDS y operación del garzón implementados
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -33,6 +33,12 @@ flowchart LR
   order --> ticket["Comanda por estación"]
   station --> ticket
   device --> action["Acciones y avisos"]
+  action --> waiter["Cola durable del garzón"]
+  ticket --> waiter
+  zone --> coverage["Turno y cobertura"]
+  coverage --> waiter
+  session --> group["Grupo operativo"]
+  group --> waiter
 
   payment --> tip["Propina"]
   payment --> tax["Documento tributario"]
@@ -111,6 +117,21 @@ sincronizar.
 Las acciones son datos configurables por tenant/venue y aplican cooldown más clave de
 deduplicación. “Pagar con el garzón” es sólo una solicitud visible: no crea pedido, comanda ni
 estado que parezca pagado.
+
+### 9.2 Servicio y entrega
+
+El garzón abre un turno por PIN, toma zonas y ve una cola reconstruible desde PostgreSQL.
+Realtime invalida; inicio, reconexión y sondeo cada 45 segundos recuperan pendientes. Entregar
+sólo mueve una comanda READY a COMPLETED; nunca crea pedidos ni confirma pagos.
+
+Una tarea asignada sigue al nuevo garzón al transferir mesa o zona. Sin cobertura, queda
+visible para todos y escala a administración. A los 12 minutos cualquier clase vence la
+prioridad normal para impedir inanición.
+
+### 9.3 Grupo operativo de mesas
+
+El grupo enlaza sesiones activas sólo para visualización. No altera QR, carritos, quotes,
+pagos, pedidos ni comandas y puede separarse sin reescribir historia financiera. Ver ADR-004.
 
 ### 10. Durabilidad y efectos
 

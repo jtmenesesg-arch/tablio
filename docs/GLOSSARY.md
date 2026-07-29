@@ -23,6 +23,8 @@
   mismo vencimiento del quote y sólo aplica a productos con seguimiento de stock.
 - **Heartbeat:** señal periódica de vida de una pantalla; permite distinguir un KDS activo de
   uno aparentemente conectado pero congelado.
+- **Inanición de tareas:** trabajo de menor prioridad que nunca sube porque llega trabajo
+  prioritario sin pausa. Tablio la corta con un techo absoluto configurable.
 - **KDS:** pantalla de producción que organiza comandas para barra o cocina.
 - **Latencia KDS:** tiempo entre confirmación durable del pago y primera visibilidad de la
   comanda. Los percentiles sólo incluyen estaciones con algún KDS conectado al confirmar; las
@@ -44,6 +46,12 @@
   cercanía física antes de abrir una sesión de dispositivo.
 - **Sesión de dispositivo:** identidad anónima y recuperable de un teléfono dentro de una
   sesión de mesa; tiene carrito, alias y vencimientos propios.
+- **Sesión de empleado:** turno autenticado ligado a `auth.uid()`, tenant, venue, vencimientos
+  y zonas.
+- **Grupo operativo de mesas:** unión visual de sesiones activas que no crea cuenta compartida
+  ni modifica pagos, pedidos o comandas.
+- **Tarea huérfana:** tarea de una zona sin ningún garzón activo; se muestra a todos y escala a
+  administración.
 - **Broadcast privado:** canal Realtime autorizado por topic. Sólo avisa que algo cambió; el
   cliente vuelve a consultar PostgreSQL.
 - **Realtime:** canal de aviso inmediato; no reemplaza a PostgreSQL como fuente de verdad.

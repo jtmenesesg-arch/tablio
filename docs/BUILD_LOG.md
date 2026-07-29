@@ -297,3 +297,36 @@ la impresora del local.
 - TypeScript estricto, ESLint, Prettier y build de producción verdes.
 - Security Advisors finales: cero hallazgos. Performance Advisors: sólo `unused_index`
   informativos esperables antes de tráfico, cubiertos por OI-008.
+
+## 2026-07-28 — Sprint 5, panel del garzón
+
+### Qué cambió
+
+- Se construyó `/garzon`: PIN, zonas, cola, mesas, grupos, traspaso de mesa/zona, incidencias y
+  cierre de turno.
+- SSE avisa, la consulta recupera y cada 45 segundos reconcilia. Conexión y última
+  sincronización son permanentes; 75 segundos sin éxito muestran alerta opaca.
+- READY crea una entrega pagada; completar exige estado y versión vigentes. Llamados y pagos
+  con garzón se materializan idempotentemente.
+- Pago con garzón es NO PAGADO, no crea Order/Ticket y expira a 30 minutos.
+- La cola tiene techo crítico a 12 minutos. Zonas huérfanas son visibles para todos y escalan
+  a administración a 2 minutos.
+- Cerrar muestra desglose, conserva snapshot, libera cobertura y no borra tareas.
+- ADR-004 congeló el grupo de mesas estrictamente operativo.
+
+### Verificación
+
+- Vitest: 46 controles verdes.
+- Playwright: 15/15 recorridos verdes entre PWA, KDS y garzón.
+- KDS en la corrida final: p50 86 ms, p95 134 ms, p99 149 ms, 1 caso sin pantalla.
+- TypeScript, ESLint y build Next.js verdes.
+- Se aplicaron remotamente `sprint_05_waiter_operations`, `sprint_05_runtime_fixes` y
+  `sprint_05_advisor_fixes`; el historial local y remoto quedó alineado.
+- pgTAP Sprint 5: 31/31 controles verdes en el proyecto remoto, dentro de una transacción con
+  rollback. Incluye tenant cruzado y fail-closed sin `tenant_id` ni sesión de empleado.
+- El lint remoto terminó sin errores de Sprint 5. Sólo informa tres `warning extra` heredados
+  de funciones del Sprint 2.
+- Security Advisors: cero hallazgos. Se agregó una policy explícita de denegación a
+  `employee_pin_attempts`.
+- Performance Advisors: cero claves foráneas sin índice; sólo `unused_index` informativos sin
+  tráfico real, cubiertos por OI-008.

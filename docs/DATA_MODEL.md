@@ -1,6 +1,7 @@
 # Modelo de datos
 
-- **Estado:** fundación multi-tenant, núcleo financiero y modelo PWA de Sprint 3 aplicados
+- **Estado:** fundación multi-tenant, núcleo financiero, PWA, KDS y modelo de garzón
+  versionados y aplicados en el proyecto Supabase actual
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
@@ -12,6 +13,11 @@
 - **PWA comensal:** `20260728212726_sprint_03_diner_pwa.sql` y
   `20260728212851_sprint_03_advisor_fixes.sql`
 - **Suite PWA:** `supabase/tests/database/003_diner_pwa.test.sql` (`1..17`)
+- **Panel del garzón:** `20260728225129_sprint_05_waiter_operations.sql`, corrección de
+  funciones `20260729024401_sprint_05_runtime_fixes.sql` y hardening de Advisors
+  `20260729030817_sprint_05_advisor_fixes.sql`
+- **Suite del garzón:** `supabase/tests/database/005_waiter_operations.test.sql` (`1..31`
+  verde en el proyecto remoto, ejecutada dentro de una transacción con rollback)
 
 ## Convenciones obligatorias
 
@@ -238,6 +244,7 @@ La identidad del quote/pedido no cambia aunque la sesión edite el nombre despu�
 - `service_action_types`: acciones configurables por venue, icono, orden y cooldown.
 - `diner_service_requests`: solicitud deduplicada y estados notificado, visto, completado o
   cancelado.
+
 - `diner_waiter_payment_requests`: aviso separado para pagar con el garzón.
 
 La última tabla no contiene `order_id` ni `ticket_id`. Insertarla no ejecuta la transacción de
@@ -486,3 +493,38 @@ Los Security Advisors quedaron sin hallazgos. Los hallazgos iniciales sobre func
 validando `auth.uid()` y membresía, restringiendo grants y dejando una RPC pública
 `SECURITY INVOKER`. `private.user_tenant_context` tiene RLS forzado y una policy de denegación
 explícita para clientes.
+
+## Operación del garzón implementada en Sprint 5
+
+### Identidad y turno
+
+- `employee_pin_attempts` es append-only y limita PIN por identidad y hash del dispositivo.
+  Un PIN inválido devuelve resultado sin excepción para conservar el intento.
+- `employee_sessions` vincula `auth.uid()` con empleado, tenant y venue. Tiene 1 hora de
+  inactividad por defecto, máximo absoluto de 12 horas, versión y cierre manual.
+- El Custom Access Token Hook agrega `employee_session_id` y `employee_id` sólo desde una
+  sesión activa. Sin tenant o sesión válida, RLS falla cerrado.
+- `employee_zone_assignments` conserva cobertura histórica. Una zona se transfiere con sus
+  mesas y tareas mediante una RPC auditada.
+
+### Cola durable
+
+- `waiter_tasks` materializa exactamente una tarea por comanda READY, llamado deduplicado o
+  solicitud de pago con garzón. Cada fuente tiene índice único.
+- `waiter_task_queue` es `security_invoker`: aplica RLS, marca zonas sin cobertura y calcula
+  prioridad efectiva.
+- Prioridades base: entrega 100, problema 80, pago con garzón 70 y servicio 50.
+- A los 12 minutos cualquier tarea toma prioridad 1000 y queda crítica, sin importar su clase.
+- Una zona sin cobertura es visible inmediatamente a todos. `waiter_admin_alerts` y el outbox
+  escalan a administración tras 2 minutos por defecto.
+- Toda resolución usa `state_version`. Entregar exige que la comanda siga READY y la mueve a
+  COMPLETED; una segunda escritura pierde por versión.
+
+### Mesas, grupos, traspasos y cierre
+
+- `table_session_groups` y sus miembros agrupan sesiones sólo para visualización. No poseen
+  carrito, quote, pago, pedido ni comanda.
+- `waiter_table_assignments` conserva dueño e historia. Traspasar mesa o zona mueve pendientes.
+- Incidencias, grupos, descartes y traspasos escriben `audit_log`.
+- `waiter_shift_close_snapshots` congela el desglose pendiente. Cerrar no bloquea ni borra:
+  libera cobertura y deja las tareas visibles como “sin asignar”.

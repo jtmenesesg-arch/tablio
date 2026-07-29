@@ -106,7 +106,7 @@ hardware hasta probarla con el piloto.
 ## OI-008 — Índices sin uso observado
 
 - **Estado:** abierto, informativo; no bloquea Sprint 4.
-- **Hallazgo:** después de indexar las claves foráneas del núcleo financiero y de la PWA, los
+- **Hallazgo:** después de indexar también todas las claves foráneas del Sprint 5, los
   Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
   varios índices nuevos todavía registran cero usos.
 - **Acción:** conservarlos para evitar scans y bloqueos costosos en deletes/updates de tablas
@@ -152,3 +152,11 @@ hardware hasta probarla con el piloto.
 - Las decisiones manuales sobre aprobaciones tardías deben cerrarse en el panel del cajero
   antes del piloto (OI-009).
 - El canal Broadcast privado y su prueba de carga deben cerrarse antes del piloto (OI-010).
+
+## OI-011 — Consumidor visual de alertas huérfanas
+
+- **Estado:** evento durable implementado; pantalla pendiente de Sprint 6.
+- **Implementado:** sin cobertura, las tareas se muestran a todos. Tras 2 minutos por defecto,
+  `waiter_admin_alerts` y el outbox `waiter.admin.orphan_task` escalan.
+- **Pendiente:** mostrar, reconocer y resolver la alerta en caja/administración.
+- **Riesgo:** los garzones quedan protegidos, pero falta la vista central del responsable.

@@ -6,11 +6,10 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto cerró **Sprint 4 — KDS, comandas y durabilidad**. Un pago confirmado por el
-servidor aparece en la estación correcta, Barra y Cocina avanzan de forma independiente y una
-pantalla que reconecta reconstruye todo desde PostgreSQL. El KDS muestra conexión y última
-sincronización permanentemente, concilia cada 45 segundos y alerta si puede estar
-desactualizado. No hay pasarela ni impresora física real.
+El proyecto completó **Sprint 5 — panel del garzón, mesas y sesiones**. PWA, KDS y garzón ya
+cierran pedido pagado → producción → READY → entrega, además de llamados, grupos y traspasos.
+Las migraciones están aplicadas y sus 31 controles pgTAP pasaron en el Supabase actual; no hay
+pasarela ni impresora física real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -60,10 +59,11 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Luego abre estas dos direcciones lado a lado:
+Luego abre estas tres direcciones lado a lado:
 
 - PWA: `http://localhost:3000/mesa/demo-mesa-8`, código `4826`.
 - KDS: `http://localhost:3000/kds`; elige Barra, Cocina o Todas.
+- Garzón: `http://localhost:3000/garzon`; PIN demo `2468`.
 
 La PWA debe decir “MODO DEMO · NO MUEVE DINERO REAL” y el KDS debe mostrar permanentemente su
 conexión y la hora de la última sincronización.
@@ -82,8 +82,8 @@ pnpm e2e
 pnpm build
 ```
 
-En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 4 suma una suite
-pgTAP de 26 controles y 11 recorridos E2E combinados de PWA y KDS.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 5 suma una suite
+pgTAP de 31 controles y deja 15 recorridos E2E combinados de PWA, KDS y garzón.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
@@ -107,6 +107,13 @@ carta de inmediato; el sondeo de 45 segundos queda sólo como red de seguridad.
 La demo persiste comandas y spool en `.tablio-demo/` para probar reinicios sin una base local.
 Producción usa las tablas PostgreSQL/RLS ya aplicadas, Broadcast privado como aviso y consulta
 durable como recuperación. El envío físico a una impresora sigue detrás de `PrinterPort`.
+
+## Panel del garzón
+
+El panel usa PIN hasheado, zonas configurables y una cola persistente. Realtime avisa y la
+consulta periódica recupera. Una tarea de 12 minutos se vuelve crítica; una zona sin cobertura
+queda visible para todos y escala a administración. Cerrar turno muestra pendientes, deja
+snapshot auditado y nunca borra el trabajo.
 
 ## Laboratorio de pagos
 
