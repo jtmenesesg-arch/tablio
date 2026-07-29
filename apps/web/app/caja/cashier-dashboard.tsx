@@ -355,6 +355,28 @@ export function CashierDashboard() {
         </article>
       </section>
 
+      {data.tableCredit?.enabled ? (
+        <section className="cashierCreditAlert" aria-label="Crédito de mesa">
+          <div>
+            <p className="eyebrow">MODO EXCEPCIÓN · RIESGO FINANCIERO</p>
+            <h2>Crédito de mesa: {money(data.tableCredit.openExposureClp)}</h2>
+            {data.tableCredit.accounts.map((account) => (
+              <p key={account.id}>
+                <strong>{account.tableName}</strong> ·{" "}
+                {money(account.prepaidByAppClp)} pagados por app ·{" "}
+                <strong>{money(account.outstandingClp)} en crédito</strong>
+                {account.status === "bill_requested"
+                  ? " · CUENTA SOLICITADA"
+                  : account.status === "expired"
+                    ? " · VENCIDA"
+                    : ""}
+              </p>
+            ))}
+          </div>
+          <a href="/credito">Administrar crédito</a>
+        </section>
+      ) : null}
+
       <nav className="cashierTabs" aria-label="Secciones de caja">
         {(
           [
@@ -391,6 +413,17 @@ export function CashierDashboard() {
               </div>
               {table.sessionId ? (
                 <>
+                  {data.tableCredit?.accounts
+                    .filter((account) => account.tableName === table.name)
+                    .map((account) => (
+                      <div className="cashierTableCredit" key={account.id}>
+                        <strong>CRÉDITO · NO PAGADO</strong>
+                        <span>
+                          {money(account.prepaidByAppClp)} app ·{" "}
+                          {money(account.outstandingClp)} crédito
+                        </span>
+                      </div>
+                    ))}
                   <p>
                     Sesión activa · {table.peopleCount} personas ·{" "}
                     {table.orderCount} pedidos
@@ -659,6 +692,17 @@ export function CashierDashboard() {
                   Para cerrar igual debes justificarlo y quedará auditado.
                 </div>
               ) : null}
+              {data.tableCredit?.currentShiftLossClp ? (
+                <div className="cashierCloseWarning">
+                  Fuga de crédito de mesa:{" "}
+                  <strong>{money(data.tableCredit.currentShiftLossClp)}</strong>{" "}
+                  en {data.tableCredit.currentShiftLossCount}{" "}
+                  {data.tableCredit.currentShiftLossCount === 1
+                    ? "mesa"
+                    : "mesas"}
+                  . Quedará congelada aparte de los pagos cobrados.
+                </div>
+              ) : null}
               <button
                 className="cashierCloseButton"
                 disabled={busy || !data.actor.canClose}
@@ -718,6 +762,12 @@ export function CashierDashboard() {
                   <strong>
                     {money(data.latestClosure.localTipAdjustmentsClp)}
                   </strong>
+                </div>
+              ) : null}
+              {data.tableCredit?.currentShiftLossClp ? (
+                <div className="cashierLocalAdjustment">
+                  Fuga de crédito de mesa registrada en este cierre:{" "}
+                  <strong>{money(data.tableCredit.currentShiftLossClp)}</strong>
                 </div>
               ) : null}
             </article>

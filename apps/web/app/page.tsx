@@ -24,6 +24,12 @@ export default function Home() {
       <Link className="primaryLink" href="/superadmin">
         Abrir Superadmin de Tablio
       </Link>
+      <Link className="primaryLink" href="/credito">
+        Probar crédito de mesa
+      </Link>
+      <Link className="primaryLink" href="/dueno">
+        Abrir panel del dueño
+      </Link>
     </main>
   );
 }

@@ -443,6 +443,12 @@ export function WaiterPanel() {
                   <small>
                     {table.peopleCount} personas · {table.orders.length} pedidos
                   </small>
+                  {table.credit ? (
+                    <em className="waiterCreditStatus">
+                      CRÉDITO · {money(table.credit.prepaidByAppClp)} app ·{" "}
+                      {money(table.credit.outstandingClp)} pendiente
+                    </em>
+                  ) : null}
                 </button>
               </article>
             ))}

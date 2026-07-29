@@ -45,6 +45,13 @@ export type WaiterTable = Readonly<{
   groupLabel?: string;
   groupVersion?: number;
   assignedEmployeeId?: string;
+  credit?: {
+    status:
+      "open" | "bill_requested" | "expired" | "settled" | "closed_with_loss";
+    prepaidByAppClp: number;
+    outstandingClp: number;
+    expiresAt: string;
+  };
   orders: readonly {
     orderNumber: number;
     alias?: string;

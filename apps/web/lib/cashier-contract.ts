@@ -188,6 +188,22 @@ export type CashierBootstrap = Readonly<{
     pendingAlertCount: number;
     pendingAlertAgeSeconds: number;
   };
+  tableCredit?: {
+    enabled: boolean;
+    openExposureClp: number;
+    maxVenueExposureClp: number;
+    currentShiftLossClp: number;
+    currentShiftLossCount: number;
+    accounts: readonly {
+      id: string;
+      tableName: string;
+      status:
+        "open" | "bill_requested" | "expired" | "settled" | "closed_with_loss";
+      prepaidByAppClp: number;
+      outstandingClp: number;
+      expiresAt: string;
+    }[];
+  };
   latestClosure?: CashierClosure;
   serverTime: string;
 }>;

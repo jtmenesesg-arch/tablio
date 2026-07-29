@@ -7,6 +7,10 @@ import {
   type CashierActor,
 } from "./cashier-demo-repository";
 import { publishCashierEvent } from "./cashier-event-hub";
+import {
+  creditDemoActor,
+  tableCreditDemoStore,
+} from "./table-credit-demo-store";
 
 const actor: CashierActor = {
   id: "cashier-valentina",
@@ -26,7 +30,33 @@ shared.__tablioCashierDemoRepository = repository;
 export { CashierConflictError };
 
 export function getCashierBootstrap() {
-  return repository.bootstrap(actor);
+  const bootstrap = repository.bootstrap(actor);
+  const credit = tableCreditDemoStore.bootstrap(creditDemoActor);
+  const liveAccountIds = new Set(credit.accounts.map((account) => account.id));
+  const currentShiftLosses = credit.losses.filter((loss) =>
+    liveAccountIds.has(loss.accountId),
+  );
+  return {
+    ...bootstrap,
+    tableCredit: {
+      enabled: credit.settings.enabled,
+      openExposureClp: credit.exposure.openClp,
+      maxVenueExposureClp: credit.settings.maxVenueExposureClp,
+      currentShiftLossClp: currentShiftLosses.reduce(
+        (total, loss) => total + loss.amountClp,
+        0,
+      ),
+      currentShiftLossCount: currentShiftLosses.length,
+      accounts: credit.accounts.map((account) => ({
+        id: account.id,
+        tableName: account.tableName,
+        status: account.status,
+        prepaidByAppClp: account.prepaidByAppClp,
+        outstandingClp: account.outstandingClp,
+        expiresAt: account.expiresAt,
+      })),
+    },
+  };
 }
 
 export function mutateCashier(mutation: CashierMutation) {

@@ -7,6 +7,10 @@ import {
 } from "./waiter-demo-repository";
 import { publishWaiterEvent } from "./waiter-event-hub";
 import type { WaiterMutation } from "./waiter-contract";
+import {
+  creditDemoActor,
+  tableCreditDemoStore,
+} from "./table-credit-demo-store";
 
 const shared = globalThis as typeof globalThis & {
   __tablioWaiterDemoRepository?: WaiterDemoRepository;
@@ -24,7 +28,27 @@ function syncKds(): void {
 
 export function getWaiterBootstrap(token: string | undefined) {
   syncKds();
-  return repository.bootstrap(token);
+  const bootstrap = repository.bootstrap(token);
+  const credit = tableCreditDemoStore.bootstrap(creditDemoActor);
+  return {
+    ...bootstrap,
+    tables: bootstrap.tables.map((table) => {
+      const account = credit.accounts.find(
+        (candidate) => candidate.tableName === table.tableName,
+      );
+      return account
+        ? {
+            ...table,
+            credit: {
+              status: account.status,
+              prepaidByAppClp: account.prepaidByAppClp,
+              outstandingClp: account.outstandingClp,
+              expiresAt: account.expiresAt,
+            },
+          }
+        : table;
+    }),
+  };
 }
 
 export function loginWaiter(pin: string, fingerprint: string) {
