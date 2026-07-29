@@ -12,5 +12,6 @@ export * from "./saas/subscription-policy";
 export * from "./table-credit/table-credit-policy";
 export * from "./owner/owner-insights";
 export * from "./loyalty/loyalty-policy";
+export * from "./checkout/checkout-engagement-policy";
 export * from "./saas/saas-billing-provider";
 export * from "./onboarding/menu-import";
