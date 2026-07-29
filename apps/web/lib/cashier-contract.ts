@@ -214,6 +214,14 @@ export type CashierBootstrap = Readonly<{
       stamps: number;
     }[];
   }>;
+  tipReport: readonly Readonly<{
+    workerName: string;
+    workerSessionId?: string;
+    paymentMethod: string;
+    amountClp: number;
+    occurredAt: string;
+    note: string;
+  }>[];
   latestClosure?: CashierClosure;
   serverTime: string;
 }>;

@@ -12,6 +12,7 @@ import {
   tableCreditDemoStore,
 } from "./table-credit-demo-store";
 import { loyaltyDemoStore } from "./loyalty-demo-store";
+import { checkoutEngagementDemoMetrics } from "./diner-demo-store";
 
 const actor: CashierActor = {
   id: "cashier-valentina",
@@ -37,6 +38,7 @@ export function getCashierBootstrap() {
   const currentShiftLosses = credit.losses.filter((loss) =>
     liveAccountIds.has(loss.accountId),
   );
+  const engagement = checkoutEngagementDemoMetrics();
   return {
     ...bootstrap,
     tableCredit: {
@@ -63,6 +65,17 @@ export function getCashierBootstrap() {
       identityRecoveries: loyaltyDemoStore.metrics().identityRecoveries,
       profiles: loyaltyDemoStore.cashierProfiles(),
     },
+    tipReport: engagement.tipAllocations.map((tip) => ({
+      workerName: tip.employeeName,
+      workerSessionId: tip.employeeSessionId,
+      paymentMethod: tip.paymentMethod,
+      amountClp: tip.amountClp,
+      occurredAt: tip.occurredAt,
+      note:
+        tip.employeeName === "Equipo"
+          ? "Distribución al equipo"
+          : "Destinatario congelado al crear el quote",
+    })),
   };
 }
 

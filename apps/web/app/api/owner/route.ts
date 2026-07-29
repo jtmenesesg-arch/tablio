@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import {
   OWNER_DEMO_TENANT_ID,
   ownerDemoStore,
+  mutateOwnerPromotion,
 } from "../../../lib/owner-demo-store";
+import type { OwnerMutation } from "../../../lib/owner-contract";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,21 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Consulta inválida." },
       { status: 403 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const mutation = (await request.json()) as OwnerMutation;
+    if (mutation.action !== "promotion.toggle") {
+      throw new Error("Acción no disponible.");
+    }
+    return NextResponse.json(mutateOwnerPromotion(Boolean(mutation.enabled)));
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Acción inválida." },
+      { status: 400 },
     );
   }
 }

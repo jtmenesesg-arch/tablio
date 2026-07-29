@@ -14,6 +14,7 @@ export function OwnerDashboard() {
   const [data, setData] = useState<OwnerData>();
   const [venue, setVenue] = useState("all");
   const [newTenant, setNewTenant] = useState(false);
+  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ venue });
@@ -34,6 +35,23 @@ export function OwnerDashboard() {
   );
 
   if (!data) return <main className="ownerShell">Preparando la historia…</main>;
+
+  async function togglePromotion() {
+    setWorking(true);
+    try {
+      const response = await fetch("/api/owner", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "promotion.toggle",
+          enabled: !data!.metrics.checkoutEngagement.promotionActive,
+        }),
+      });
+      setData((await response.json()) as OwnerData);
+    } finally {
+      setWorking(false);
+    }
+  }
 
   return (
     <main className="ownerShell">
@@ -177,6 +195,80 @@ export function OwnerDashboard() {
             ? `${data.metrics.loyalty.dormantProfiles} clientes llevan más de 45 días sin volver. El segmento está listo; Tablio no envía mensajes.`
             : "Todavía no hay clientes dormidos. Esta lectura aparecerá cuando exista historial suficiente."}
         </p>
+      </section>
+
+      <section className="ownerCheckoutEngagement solidSurface">
+        <header>
+          <div>
+            <span>Momento del pago</span>
+            <h2>Más venta, sin esconder descuentos</h2>
+          </div>
+          <button
+            disabled={working}
+            onClick={() => void togglePromotion()}
+            type="button"
+          >
+            {data.metrics.checkoutEngagement.promotionActive
+              ? "Detener happy hour"
+              : "Activar happy hour"}
+          </button>
+        </header>
+        <div>
+          <article>
+            <span>Aceptación del upsell</span>
+            <strong>
+              {data.metrics.checkoutEngagement.upsellAcceptanceRatePercent.toLocaleString(
+                "es-CL",
+              )}
+              %
+            </strong>
+            <small>
+              {data.metrics.checkoutEngagement.upsellAcceptances} aceptadas de{" "}
+              {data.metrics.checkoutEngagement.upsellExposures} vistas.
+            </small>
+          </article>
+          <article>
+            <span>Ingreso incremental atribuible</span>
+            <strong>
+              {money(
+                data.metrics.checkoutEngagement.upsellIncrementalRevenueClp,
+              )}
+            </strong>
+            <small>Solo sugerencias aceptadas y efectivamente pagadas.</small>
+          </article>
+          <article>
+            <span>Descuento promocional</span>
+            <strong>
+              {money(data.metrics.checkoutEngagement.promotionDiscountClp)}
+            </strong>
+            <small>
+              {data.metrics.checkoutEngagement.promotionName}:{" "}
+              {data.metrics.checkoutEngagement.promotionActive
+                ? "activa"
+                : "inactiva"}
+              .
+            </small>
+          </article>
+        </div>
+        <h3>Propinas informadas por trabajador y medio</h3>
+        {data.metrics.checkoutEngagement.tipsByWorker.length > 0 ? (
+          data.metrics.checkoutEngagement.tipsByWorker.map((tip, index) => (
+            <p key={`${tip.workerName}:${tip.paymentMethod}:${index}`}>
+              <span>
+                {tip.workerName} · {tip.paymentMethod}
+              </span>
+              <strong>{money(tip.amountClp)}</strong>
+            </p>
+          ))
+        ) : (
+          <p>
+            <span>Aún no hay propinas atribuidas en esta demo.</span>
+          </p>
+        )}
+        <small>
+          Tablio informa la distribución. El local entrega el dinero y Tablio no
+          cobra comisión sobre propinas.
+        </small>
       </section>
 
       <section className="ownerDetails">

@@ -736,6 +736,28 @@ export function CashierDashboard() {
               <h2>Cierre y arqueo</h2>
             </div>
           </div>
+          <article className="cashierTipReport solidSurface">
+            <h3>Propinas por trabajador y medio de pago</h3>
+            <p>
+              Tablio informa la distribución; no reparte dinero ni cobra
+              comisión sobre propinas.
+            </p>
+            {data.tipReport.length > 0 ? (
+              data.tipReport.map((tip, index) => (
+                <div key={`${tip.workerName}:${tip.paymentMethod}:${index}`}>
+                  <span>
+                    <strong>{tip.workerName}</strong>
+                    <small>
+                      {tip.paymentMethod} · {tip.note}
+                    </small>
+                  </span>
+                  <b>{money(tip.amountClp)}</b>
+                </div>
+              ))
+            ) : (
+              <small>Aún no hay propinas atribuidas en este turno.</small>
+            )}
+          </article>
           {data.shift ? (
             <article className="cashierCloseCard">
               <p>

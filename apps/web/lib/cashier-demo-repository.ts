@@ -626,6 +626,7 @@ export class CashierDemoRepository {
         identityRecoveries: 0,
         profiles: [],
       },
+      tipReport: [],
       actor,
       venue: { id: CASHIER_DEMO_VENUE_ID, name: "Bar La Esquina" },
       shift: shift

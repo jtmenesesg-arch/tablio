@@ -5,6 +5,9 @@ import {
   resetLoyaltyForTest,
   seedLoyaltyProgressForTest,
   setProductAvailabilityForTest,
+  resetCheckoutEngagementForTest,
+  setDemoPromotion,
+  setDemoTableClosedForTest,
 } from "../../../../lib/diner-demo-store";
 
 export const runtime = "nodejs";
@@ -23,9 +26,30 @@ export async function POST(request: Request) {
       productId?: unknown;
       available?: unknown;
       stamps?: unknown;
+      enabled?: unknown;
+      tableId?: unknown;
     };
     if (body.action === "loyalty.reset") {
       resetLoyaltyForTest();
+      return NextResponse.json({ ok: true });
+    }
+    if (body.action === "engagement.reset") {
+      resetCheckoutEngagementForTest();
+      return NextResponse.json({ ok: true });
+    }
+    if (
+      body.action === "engagement.promotion" &&
+      typeof body.enabled === "boolean"
+    ) {
+      setDemoPromotion(body.enabled);
+      return NextResponse.json({ ok: true });
+    }
+    if (
+      body.action === "engagement.table_closed" &&
+      typeof body.tableId === "string" &&
+      typeof body.enabled === "boolean"
+    ) {
+      setDemoTableClosedForTest(body.tableId, body.enabled);
       return NextResponse.json({ ok: true });
     }
     if (body.action === "loyalty.seed" && typeof body.stamps === "number") {

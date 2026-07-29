@@ -151,12 +151,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
   const [selectedVariant, setSelectedVariant] = useState<string>();
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
+  const [invitationTargetTableId, setInvitationTargetTableId] = useState("");
   const [category, setCategory] = useState("all");
   const [presenceCode, setPresenceCode] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [tipPercent, setTipPercent] = useState(10);
   const [customTip, setCustomTip] = useState("");
+  const [tipRecipientEmployeeId, setTipRecipientEmployeeId] = useState("");
   const [loyaltyPurpose, setLoyaltyPurpose] = useState<"enroll" | "recover">(
     "recover",
   );
@@ -290,6 +292,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
     setSelectedVariant(product.variants[0]?.id);
     setQuantity(1);
     setNote("");
+    setInvitationTargetTableId("");
     setError(undefined);
   }
 
@@ -301,6 +304,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       variantId: selectedVariant,
       quantity,
       note,
+      invitationTargetTableId: invitationTargetTableId || undefined,
     });
     if (next) setSelectedProduct(undefined);
   }
@@ -320,6 +324,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       tipClp,
       displayName,
       customerEmail: customerEmail || undefined,
+      tipRecipientEmployeeId: tipRecipientEmployeeId || undefined,
       idempotencyKey: crypto.randomUUID(),
     });
     if (next?.quote) setScreen("checkout");
@@ -511,6 +516,17 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
             </span>
           </div>
 
+          {data.engagement.promotion ? (
+            <section className="promotionBanner solidSurface" role="status">
+              <div>
+                <p className="sectionKicker">Happy hour activo</p>
+                <strong>{data.engagement.promotion.name}</strong>
+                <span>{data.engagement.promotion.description}</span>
+              </div>
+              <b>v{data.engagement.promotion.version}</b>
+            </section>
+          ) : null}
+
           {latestOrder && latestOrder.state !== "delivered" && (
             <button
               className="liveOrderCard"
@@ -529,6 +545,47 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               <Icon name="arrow" />
             </button>
           )}
+
+          {data.engagement.receivedInvitations.some(
+            (invitation) => invitation.state === "pending_claim",
+          ) ? (
+            <section className="receivedInvitation solidSurface" role="status">
+              <p className="sectionKicker">Te invitaron</p>
+              {data.engagement.receivedInvitations
+                .filter((invitation) => invitation.state === "pending_claim")
+                .map((invitation) => (
+                  <article key={invitation.id}>
+                    <div>
+                      <h2>{invitation.productName}</h2>
+                      <p>
+                        Te lo invita {invitation.inviterAlias}. Mostramos su
+                        alias, no su nombre completo.
+                      </p>
+                      {invitation.expiringSoon ? (
+                        <strong>
+                          Está por vencer. Reclámalo para enviarlo a la barra.
+                        </strong>
+                      ) : (
+                        <span>Se prepara solo después de que lo reclames.</span>
+                      )}
+                    </div>
+                    <button
+                      className="solidButton"
+                      disabled={working}
+                      onClick={() =>
+                        void mutate({
+                          action: "invitation.claim",
+                          invitationId: invitation.id,
+                        })
+                      }
+                      type="button"
+                    >
+                      Reclamar invitación
+                    </button>
+                  </article>
+                ))}
+            </section>
+          ) : null}
 
           {data.loyalty.recognition ? (
             <section className="loyaltyRecognition solidSurface">
@@ -716,6 +773,21 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       <strong>{line.productName}</strong>
                       {line.variantName && <small>{line.variantName}</small>}
                       {line.note && <em>“{line.note}”</em>}
+                      {line.invitationTargetTableName ? (
+                        <span className="invitationBadge">
+                          INVITACIÓN · entregar en{" "}
+                          {line.invitationTargetTableName}
+                        </span>
+                      ) : null}
+                      {line.isUpsell ? (
+                        <span className="upsellBadge">SUGERENCIA ACEPTADA</span>
+                      ) : null}
+                      {line.promotionLabel ? (
+                        <span className="promotionBadge">
+                          {line.promotionLabel} · −
+                          {money((line.unitDiscountClp ?? 0) * line.quantity)}
+                        </span>
+                      ) : null}
                       {line.isLoyaltyReward ? (
                         <span className="rewardBadge">PREMIO · $0</span>
                       ) : (
@@ -827,6 +899,53 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
 
           {!data.quote ? (
             <>
+              {data.engagement.upsellSuggestions.length > 0 ? (
+                <section className="upsellBlock solidSurface">
+                  <div>
+                    <p className="sectionKicker">Por si te tinca</p>
+                    <h2>¿Le sumas algo?</h2>
+                    <small>
+                      Opcional. Ignorarlo no cambia tu pedido ni agrega pasos.
+                    </small>
+                  </div>
+                  {data.engagement.upsellSuggestions.map((suggestion) => (
+                    <article key={suggestion.ruleId}>
+                      <span>
+                        <strong>{suggestion.productName}</strong>
+                        <small>{money(suggestion.priceClp)}</small>
+                      </span>
+                      <button
+                        disabled={working}
+                        onClick={() =>
+                          void mutate({
+                            action: "upsell.accept",
+                            ruleId: suggestion.ruleId,
+                            productId: suggestion.productId,
+                          })
+                        }
+                        type="button"
+                      >
+                        Sumar
+                      </button>
+                      <button
+                        aria-label={`Ignorar ${suggestion.productName}`}
+                        className="textButton"
+                        disabled={working}
+                        onClick={() =>
+                          void mutate({
+                            action: "upsell.dismiss",
+                            ruleId: suggestion.ruleId,
+                          })
+                        }
+                        type="button"
+                      >
+                        Ahora no
+                      </button>
+                    </article>
+                  ))}
+                </section>
+              ) : null}
+
               <section className="checkoutBlock">
                 <label htmlFor="display-name">
                   Tu nombre o apodo <span>opcional</span>
@@ -903,11 +1022,42 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     />
                   </label>
                 )}
+                {tipClp > 0 && data.engagement.settings.waiterTipEnabled ? (
+                  <fieldset className="tipRecipient">
+                    <legend>¿Para quién es la propina?</legend>
+                    <p>
+                      Tablio informa la distribución; el dinero lo entrega el
+                      local.
+                    </p>
+                    <label>
+                      <input
+                        checked={tipRecipientEmployeeId === ""}
+                        name="tip-recipient"
+                        onChange={() => setTipRecipientEmployeeId("")}
+                        type="radio"
+                      />
+                      Equipo
+                    </label>
+                    {data.engagement.tipRecipients.map((waiter) => (
+                      <label key={waiter.employeeId}>
+                        <input
+                          checked={tipRecipientEmployeeId === waiter.employeeId}
+                          name="tip-recipient"
+                          onChange={() =>
+                            setTipRecipientEmployeeId(waiter.employeeId)
+                          }
+                          type="radio"
+                        />
+                        {waiter.displayName}
+                      </label>
+                    ))}
+                  </fieldset>
+                ) : null}
               </section>
 
               <div className="financialTotal">
                 <div>
-                  <span>Subtotal</span>
+                  <span>Total de productos</span>
                   <b>{money(subtotal)}</b>
                 </div>
                 <div>
@@ -939,6 +1089,13 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   {data.venue.name} · {data.venue.tableName} ·{" "}
                   {data.session?.displayName || data.session?.alias}
                 </small>
+                {data.quote.promotionDiscountClp > 0 ? (
+                  <small>
+                    Happy hour: −{money(data.quote.promotionDiscountClp)} ·
+                    precio congelado
+                  </small>
+                ) : null}
+                <small>Propina para {data.quote.tipRecipient.label}</small>
               </div>
 
               <section className="paymentMethods">
@@ -1022,6 +1179,48 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   {money(latestOrder.totalClp)}
                 </strong>
               </div>
+
+              {data.engagement.sentInvitations.length > 0 ? (
+                <section className="invitationStatus solidSurface">
+                  <p className="sectionKicker">Tus invitaciones</p>
+                  {data.engagement.sentInvitations.map((invitation) => (
+                    <article key={invitation.id}>
+                      <div>
+                        <strong>
+                          {invitation.productName} ·{" "}
+                          {invitation.destinationTableName}
+                        </strong>
+                        <span>
+                          {invitation.state === "pending_claim"
+                            ? "Pagado · aún no lo reclaman · nada se prepara todavía"
+                            : invitation.state === "claimed"
+                              ? "Reclamado · enviado a la barra"
+                              : invitation.state === "refunded"
+                                ? "Cancelado · dinero devuelto"
+                                : "Venció · reembolso iniciado"}
+                        </span>
+                        {invitation.expiringSoon ? (
+                          <b>Aún no lo reclaman y está por vencer.</b>
+                        ) : null}
+                      </div>
+                      {invitation.canCancel ? (
+                        <button
+                          disabled={working}
+                          onClick={() =>
+                            void mutate({
+                              action: "invitation.cancel",
+                              invitationId: invitation.id,
+                            })
+                          }
+                          type="button"
+                        >
+                          Cancelar y recuperar {money(invitation.amountClp)}
+                        </button>
+                      ) : null}
+                    </article>
+                  ))}
+                </section>
+              ) : null}
 
               <section
                 className={`taxDocumentCard taxDocument-${latestOrder.taxDocument.status}`}
@@ -1519,6 +1718,37 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   value={note}
                 />
               </label>
+              {data.engagement.settings.invitationsEnabled ? (
+                <fieldset className="inviteTarget">
+                  <legend>¿Para quién?</legend>
+                  <label>
+                    <input
+                      checked={invitationTargetTableId === ""}
+                      name="invite-target"
+                      onChange={() => setInvitationTargetTableId("")}
+                      type="radio"
+                    />
+                    Para mí, en {data.venue.tableName}
+                  </label>
+                  {data.engagement.invitationTargets.map((target) => (
+                    <label key={target.tableId}>
+                      <input
+                        checked={invitationTargetTableId === target.tableId}
+                        name="invite-target"
+                        onChange={() =>
+                          setInvitationTargetTableId(target.tableId)
+                        }
+                        type="radio"
+                      />
+                      Invitar a {target.label}
+                    </label>
+                  ))}
+                  <small>
+                    Esperará hasta 60 minutos o hasta que cierre la mesa. Puedes
+                    cancelarlo antes si aún no lo reclaman.
+                  </small>
+                </fieldset>
+              ) : null}
               <div className="modalAction">
                 <div className="quantityControl">
                   <button

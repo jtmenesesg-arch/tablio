@@ -7,6 +7,10 @@ import {
   tableCreditDemoStore,
 } from "./table-credit-demo-store";
 import { loyaltyDemoStore } from "./loyalty-demo-store";
+import {
+  checkoutEngagementDemoMetrics,
+  setDemoPromotion,
+} from "./diner-demo-store";
 
 export const OWNER_DEMO_TENANT_ID = creditDemoActor.tenantId;
 
@@ -184,6 +188,7 @@ export class OwnerDemoStore {
       historyStartsAt,
     });
     const loyaltyMetrics = loyaltyDemoStore.metrics();
+    const checkoutEngagement = checkoutEngagementDemoMetrics();
     const products = [...byProduct.entries()].sort(
       (a, b) => b[1].quantity - a[1].quantity,
     );
@@ -250,6 +255,22 @@ export class OwnerDemoStore {
               ? loyaltyMetrics.rewardKnownCostClp
               : undefined,
         },
+        checkoutEngagement: {
+          upsellExposures: checkoutEngagement.upsellExposures,
+          upsellAcceptances: checkoutEngagement.upsellAcceptances,
+          upsellAcceptanceRatePercent:
+            checkoutEngagement.upsellAcceptanceRatePercent,
+          upsellIncrementalRevenueClp:
+            checkoutEngagement.upsellIncrementalRevenueClp,
+          promotionDiscountClp: checkoutEngagement.promotionDiscountClp,
+          promotionActive: checkoutEngagement.promotionActive,
+          promotionName: checkoutEngagement.promotionName,
+          tipsByWorker: checkoutEngagement.tipAllocations.map((tip) => ({
+            workerName: tip.employeeName,
+            paymentMethod: tip.paymentMethod,
+            amountClp: tip.amountClp,
+          })),
+        },
       },
       topProducts: products.slice(0, 3).map(([name, value]) => ({
         name,
@@ -310,3 +331,8 @@ const shared = globalThis as typeof globalThis & {
 export const ownerDemoStore =
   shared.__tablioOwnerDemoStore ?? new OwnerDemoStore();
 shared.__tablioOwnerDemoStore = ownerDemoStore;
+
+export function mutateOwnerPromotion(enabled: boolean): OwnerDashboard {
+  setDemoPromotion(enabled);
+  return ownerDemoStore.dashboard({ tenantId: OWNER_DEMO_TENANT_ID });
+}

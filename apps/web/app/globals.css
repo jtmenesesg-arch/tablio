@@ -4159,6 +4159,167 @@ input {
   }
 }
 
+/* Sprint 12 · momento del pago, todo sólido y legible */
+.promotionBanner,
+.receivedInvitation,
+.upsellBlock,
+.invitationStatus,
+.ownerCheckoutEngagement,
+.cashierTipReport {
+  background: #fefefe;
+  border: 2px solid #111110;
+  border-radius: 18px;
+  color: #111110;
+  margin: 16px 0;
+  padding: 18px;
+}
+
+.promotionBanner,
+.ownerCheckoutEngagement header,
+.cashierTipReport div,
+.invitationStatus article {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.promotionBanner span,
+.receivedInvitation span,
+.invitationStatus span,
+.ownerCheckoutEngagement small,
+.cashierTipReport small {
+  display: block;
+  margin-top: 4px;
+}
+
+.promotionBanner > b,
+.promotionBadge {
+  background: #fef0e8;
+  color: #b83e10;
+}
+
+.promotionBadge,
+.upsellBadge,
+.invitationBadge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+  margin-top: 7px;
+  padding: 5px 9px;
+  width: fit-content;
+}
+
+.upsellBadge {
+  background: #111110;
+  color: #fefefe;
+}
+
+.invitationBadge {
+  background: #fff4d8;
+  color: #744d00;
+}
+
+.upsellBlock > div:first-child {
+  margin-bottom: 14px;
+}
+
+.upsellBlock article {
+  align-items: center;
+  border-top: 1px solid #d8d5ce;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto auto;
+  padding: 12px 0;
+}
+
+.upsellBlock article span,
+.receivedInvitation article > div,
+.invitationStatus article > div {
+  display: grid;
+  gap: 3px;
+}
+
+.tipRecipient,
+.inviteTarget {
+  border: 1px solid #cbc8c0;
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+}
+
+.tipRecipient label,
+.inviteTarget label {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+  min-height: 38px;
+}
+
+.receivedInvitation article {
+  display: grid;
+  gap: 14px;
+}
+
+.invitationStatus article {
+  border-top: 1px solid #d8d5ce;
+  padding: 14px 0;
+}
+
+.invitationStatus article button,
+.ownerCheckoutEngagement button {
+  background: #e8531d;
+  border: 0;
+  border-radius: 12px;
+  color: #fefefe;
+  font-weight: 800;
+  padding: 12px 14px;
+}
+
+.ownerCheckoutEngagement > div {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 18px 0;
+}
+
+.ownerCheckoutEngagement article {
+  background: #f8f7f3;
+  border-radius: 14px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.ownerCheckoutEngagement article strong {
+  font-size: 1.7rem;
+}
+
+.ownerCheckoutEngagement > p,
+.cashierTipReport div {
+  border-top: 1px solid #d8d5ce;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+@media (max-width: 720px) {
+  .upsellBlock article,
+  .ownerCheckoutEngagement > div {
+    grid-template-columns: 1fr;
+  }
+
+  .invitationStatus article,
+  .ownerCheckoutEngagement header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 /* Sprint 9 — crédito de mesa */
 .creditShell {
   min-height: 100vh;

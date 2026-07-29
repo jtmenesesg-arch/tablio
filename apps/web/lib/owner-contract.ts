@@ -43,6 +43,20 @@ export type OwnerDashboard = Readonly<{
       identityLossRatePercent: number;
       identityRecoveries: number;
     }>;
+    checkoutEngagement: Readonly<{
+      upsellExposures: number;
+      upsellAcceptances: number;
+      upsellAcceptanceRatePercent: number;
+      upsellIncrementalRevenueClp: number;
+      promotionDiscountClp: number;
+      promotionActive: boolean;
+      promotionName: string;
+      tipsByWorker: readonly {
+        workerName: string;
+        paymentMethod: string;
+        amountClp: number;
+      }[];
+    }>;
   };
   topProducts: readonly { name: string; quantity: number; salesClp: number }[];
   lowRotationProducts: readonly { name: string; quantity: number }[];
@@ -60,4 +74,9 @@ export type OwnerDashboard = Readonly<{
     amountClp: number;
   }[];
   serverTime: string;
+}>;
+
+export type OwnerMutation = Readonly<{
+  action: "promotion.toggle";
+  enabled: boolean;
 }>;
