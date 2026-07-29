@@ -18,6 +18,11 @@
   `20260729030817_sprint_05_advisor_fixes.sql`
 - **Suite del garzón:** `supabase/tests/database/005_waiter_operations.test.sql` (`1..31`
   verde en el proyecto remoto, ejecutada dentro de una transacción con rollback)
+- **Tributación:** `20260729041026_sprint_07_tax_documents.sql` y hardening de índices
+  `20260729042449_sprint_07_advisor_fixes.sql`, más corrección de carrera
+  `20260729043100_sprint_07_runtime_fixes.sql`
+- **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..27` verde
+  en el proyecto remoto, ejecutada dentro de una transacción con rollback)
 
 ## Convenciones obligatorias
 
@@ -201,6 +206,30 @@ Una restricción/trigger impide insertar un pedido confirmado sin evento aprobad
 El reintento usa la tabla aprobada de ADR-000 (5 s, 15 s, 45 s, 2 min, 5 min, 15 min, 30 min,
 60 min) con full jitter, ocho intentos por defecto y DLQ. Un replay exige razón y produce
 `audit_log`.
+
+## Boleta electrónica implementada en Sprint 7
+
+- `tenant_tax_settings`: modo, emisor, proveedor y umbrales de alerta/salud por tenant.
+- `private.tax_provider_credentials`: sólo referencia un secreto cifrado en Supabase Vault;
+  no expone credenciales a rutas de usuario.
+- `tax_sale_records`: congela por venta el modo, medio de pago, respaldo esperado y monto.
+- `tax_documents`: obligación idempotente de boleta o nota de crédito, folio, URL/timbre,
+  estado, error y reintentos.
+- `tax_document_attempts`: historial append-only para auditoría y salud reciente.
+- `cashier_tax_provider_health`: vista `security_invoker` con volumen, antigüedad y tasa de
+  fallos.
+- `cashier_reconciliation_trace`: ahora une Tablio, pasarela/liquidación y documento
+  tributario.
+
+Una venta tiene como máximo una boleta DTE y cada reembolso una nota de crédito mediante
+índices únicos. El reembolso monetario no llama al proveedor DTE: escribe una obligación de
+outbox separada. Si falta la boleta original, la nota queda pendiente y visible sin revertir
+la devolución del cliente.
+
+Las cuatro tablas públicas nuevas tienen `tenant_id`, RLS habilitado y forzado. `authenticated`
+sólo lee con `tax.read`; no puede insertar ni marcar documentos emitidos. Preparar y registrar
+resultados pertenece a consumidores `service_role`. El reintento manual usa una RPC estrecha
+con `tax.retry`, motivo y `audit_log`.
 
 ## PWA del comensal implementada en Sprint 3
 

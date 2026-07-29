@@ -369,3 +369,21 @@ después de distribuir propinas.
   sin índice; permanecen sólo índices sin uso informativos por falta de carga real.
 - El lint remoto quedó sin hallazgos de Sprint 6 y conserva tres `warning extra` heredados de
   Sprint 2.
+
+## 2026-07-29 — Sprint 7 · Boleta electrónica
+
+- Se definió `TaxDocumentProvider` y un adaptador DTE simulado con éxito, falla, demora,
+  duplicados, consulta, representación, nota de crédito y reintento.
+- Se aplicaron tres migraciones al Supabase actual: configuración/emisor por tenant,
+  referencias a Vault, venta/documento/intentos, RLS, outbox de reembolso, RPC de reintento,
+  índices y corrección de la carrera entre reembolso y preparación de la boleta original.
+- La devolución de dinero quedó desacoplada del documento tributario: una nota pendiente crea
+  una alerta sin retener la plata del cliente.
+- Caja alerta sobre más de 10 pendientes o 15 minutos de antigüedad y muestra salud
+  funcionando/degradado/caído desde la tasa de fallos reciente.
+- La PWA muestra “emitiendo” después del pago y luego permite ver/descargar la representación
+  demo; correo opcional queda registrado por el simulador.
+- Verificación: 67 Vitest, TypeScript, lint y build verdes; 27/27 pgTAP remoto; los 21 E2E
+  verdes. La suite de garzón requirió una repetición aislada tras un botón transitoriamente
+  deshabilitado y pasó 4/4. Security Advisors sin hallazgos. Los Advisors de rendimiento
+  quedaron sólo con `unused_index`, esperable sin tráfico real.

@@ -60,6 +60,15 @@ test("flujo completo: entrar, pedir, pagar, ver estados y repetir ronda", async 
   await expect(page.getByText("Cata", { exact: true })).toBeVisible();
   await expect(page.getByText("Barra", { exact: true })).toBeVisible();
   await expect(page.getByText("Cocina", { exact: true })).toBeVisible();
+  await expect(page.getByText("Boleta electrónica")).toBeVisible();
+  await expect(page.getByText(/Emitida · folio/)).toBeVisible({
+    timeout: 5_000,
+  });
+  const receipt = page.getByRole("link", { name: "Ver / descargar" });
+  await expect(receipt).toBeVisible();
+  expect((await receipt.getAttribute("href")) ?? "").toContain(
+    "/api/tax/documents/",
+  );
   await page.getByRole("button", { name: "Pedir otra ronda" }).click();
   await expect(
     page.getByRole("heading", { name: "¿Qué te tinca?" }),

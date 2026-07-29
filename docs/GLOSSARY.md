@@ -76,3 +76,21 @@
 - **Visibility timeout:** período durante el que un mensaje leído queda oculto a otros consumidores.
 - **Webhook:** aviso server-side enviado por un proveedor a una URL controlada por Tablio.
 - **Worker:** proceso que consume trabajo durable fuera del flujo inmediato del usuario.
+
+## Términos de Sprint 7
+
+- **DTE:** Documento Tributario Electrónico emitido por un proveedor autorizado e informado
+  al SII.
+- **Boleta electrónica:** DTE que respalda una venta al consumidor final.
+- **Nota de crédito:** documento que corrige o anula total/parcialmente un DTE anterior.
+- **Voucher electrónico:** comprobante del pago electrónico que, bajo condiciones definidas
+  por el SII, puede reemplazar la boleta.
+- **Timbre/TED:** datos electrónicos que identifican y permiten verificar un DTE.
+- **Proveedor DTE:** servicio externo que emite, consulta y representa documentos tributarios;
+  Tablio sólo lo orquesta.
+- **Obligación tributaria pendiente:** documento que aún debe emitirse aunque la venta o el
+  reembolso monetario ya hayan ocurrido.
+- **Salud del proveedor:** indicador funcionando/degradado/caído calculado desde fallos
+  recientes, no una promesa contractual del proveedor.
+- **Supabase Vault:** almacén cifrado donde se guardarán credenciales; las tablas de negocio
+  conservan sólo la referencia al secreto.

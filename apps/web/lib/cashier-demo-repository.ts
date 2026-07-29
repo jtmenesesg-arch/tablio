@@ -39,6 +39,8 @@ const SETTINGS = Object.freeze({
   manualProductionWindowSeconds: 20 * 60,
   reconciliationIntervalSeconds: 45,
   warningAfterSeconds: 75,
+  pendingTaxAlertCount: 10,
+  pendingTaxAlertAgeSeconds: 15 * 60,
 });
 
 type StoredShift = {
@@ -84,7 +86,11 @@ type StoredException = {
   providerReceivedAt?: string;
   manualProductionDeadlineAt?: string;
   resolutionOptions: Array<
-    "refund" | "produce_manually" | "investigate" | "escalate"
+    | "refund"
+    | "produce_manually"
+    | "investigate"
+    | "escalate"
+    | "retry_tax_document"
   >;
   resolutionReason?: string;
 };
@@ -134,6 +140,24 @@ type StoredAudit = {
   occurredAt: string;
 };
 
+type StoredTaxDocument = {
+  id: string;
+  paymentId?: string;
+  refundId?: string;
+  status: "pending" | "issued" | "failed" | "voucher" | "review";
+  amountClp: number;
+  folio?: string;
+  representationUrl?: string;
+  createdAt: string;
+  retryCount: number;
+};
+
+type StoredTaxAttempt = {
+  taxDocumentId: string;
+  outcome: "issued" | "failed";
+  occurredAt: string;
+};
+
 type StoredState = {
   schemaVersion: 1;
   shifts: StoredShift[];
@@ -146,6 +170,8 @@ type StoredState = {
   closures: CashierClosure[];
   audits: StoredAudit[];
   manuallyProducedExceptionIds: string[];
+  taxDocuments: StoredTaxDocument[];
+  taxAttempts: StoredTaxAttempt[];
 };
 
 export class CashierConflictError extends Error {
@@ -171,6 +197,10 @@ function exceptionMessage(type: CashierExceptionType): string {
       "El monto o la moneda no coincide con el pedido congelado.",
     merchant_or_tenant_mismatch: "El comercio o local del pago no coincide.",
     tax_document_failed: "La boleta no pudo emitirse.",
+    tax_credit_note_pending:
+      "El dinero fue devuelto, pero la nota de crédito sigue pendiente.",
+    tax_credit_note_failed:
+      "El dinero fue devuelto y falló la nota de crédito.",
     refund_not_reflected: "El proveedor todavía no refleja el reembolso.",
     settlement_difference: "El abono no coincide con lo esperado.",
     confirmation_after_shift_close:
@@ -380,6 +410,55 @@ function initialState(current: Date): StoredState {
     closures: [],
     audits: [],
     manuallyProducedExceptionIds: [],
+    taxDocuments: [
+      {
+        id: "tax-doc-1041",
+        paymentId: "payment-mesa-8-a",
+        status: "issued",
+        amountClp: 20_000,
+        folio: "10041",
+        representationUrl: "/api/tax/documents/demo-dte%3Acaja-1041",
+        createdAt: iso(current, -69 * 60 * 1000),
+        retryCount: 0,
+      },
+      {
+        id: "tax-doc-1042",
+        paymentId: "payment-mesa-8-b",
+        status: "failed",
+        amountClp: 28_600,
+        createdAt: iso(current, -34 * 60 * 1000),
+        retryCount: 2,
+      },
+      ...Array.from({ length: 10 }, (_, index) => ({
+        id: `tax-doc-backlog-${index + 1}`,
+        status: "pending" as const,
+        amountClp: 10_000 + index * 500,
+        createdAt: iso(current, -(16 + index) * 60 * 1000),
+        retryCount: 0,
+      })),
+    ],
+    taxAttempts: [
+      {
+        taxDocumentId: "tax-doc-1042",
+        outcome: "failed",
+        occurredAt: iso(current, -60_000),
+      },
+      {
+        taxDocumentId: "tax-doc-1042",
+        outcome: "failed",
+        occurredAt: iso(current, -90_000),
+      },
+      {
+        taxDocumentId: "tax-doc-1041",
+        outcome: "issued",
+        occurredAt: iso(current, -120_000),
+      },
+      {
+        taxDocumentId: "tax-doc-backlog-1",
+        outcome: "failed",
+        occurredAt: iso(current, -150_000),
+      },
+    ],
   };
 }
 
@@ -411,7 +490,15 @@ export class CashierDemoRepository {
 
   private read(): StoredState {
     if (!existsSync(this.filePath)) return initialState(this.now());
-    return JSON.parse(readFileSync(this.filePath, "utf8")) as StoredState;
+    const parsed = JSON.parse(
+      readFileSync(this.filePath, "utf8"),
+    ) as StoredState;
+    if (!parsed.taxDocuments || !parsed.taxAttempts) {
+      const seeded = initialState(this.now());
+      parsed.taxDocuments = seeded.taxDocuments;
+      parsed.taxAttempts = seeded.taxAttempts;
+    }
+    return parsed;
   }
 
   private write(state: StoredState): void {
@@ -480,7 +567,22 @@ export class CashierDemoRepository {
         depositedClp: settlement?.depositedClp,
         depositReference: settlement?.depositReference,
         status,
-        taxDocumentStatus: "pending_sprint_7",
+        taxDocumentStatus:
+          state.taxDocuments.find(
+            (document) => document.paymentId === payment.id,
+          )?.status ?? "pending",
+        taxDocumentId: state.taxDocuments.find(
+          (document) => document.paymentId === payment.id,
+        )?.id,
+        taxFolio: state.taxDocuments.find(
+          (document) => document.paymentId === payment.id,
+        )?.folio,
+        taxDocumentAmountClp: state.taxDocuments.find(
+          (document) => document.paymentId === payment.id,
+        )?.amountClp,
+        taxRepresentationUrl: state.taxDocuments.find(
+          (document) => document.paymentId === payment.id,
+        )?.representationUrl,
       };
     });
   }
@@ -502,6 +604,21 @@ export class CashierDemoRepository {
     const orderCount = shiftPayments.filter(
       (payment) => payment.orderNumber !== undefined,
     ).length;
+    const pendingTax = state.taxDocuments.filter((document) =>
+      ["pending", "failed"].includes(document.status),
+    );
+    const oldestPendingAt = pendingTax
+      .map((document) => document.createdAt)
+      .sort()[0];
+    const recentTaxAttempts = state.taxAttempts.filter(
+      (attempt) =>
+        current.getTime() - Date.parse(attempt.occurredAt) <= 5 * 60 * 1000,
+    );
+    const failureRate =
+      recentTaxAttempts.length === 0
+        ? 0
+        : recentTaxAttempts.filter((attempt) => attempt.outcome === "failed")
+            .length / recentTaxAttempts.length;
     return {
       demo: true,
       actor,
@@ -566,6 +683,26 @@ export class CashierDemoRepository {
         providerReceivedAt: payment.providerReceivedAt,
       })),
       reconciliation: this.reconciliation(state),
+      taxOperations: {
+        pendingCount: pendingTax.length,
+        oldestPendingAt,
+        requiresAttention:
+          pendingTax.length > SETTINGS.pendingTaxAlertCount ||
+          (oldestPendingAt !== undefined &&
+            current.getTime() - Date.parse(oldestPendingAt) >
+              SETTINGS.pendingTaxAlertAgeSeconds * 1000),
+        providerStatus:
+          recentTaxAttempts.length < 3
+            ? "unknown"
+            : failureRate >= 0.6
+              ? "down"
+              : failureRate >= 0.2
+                ? "degraded"
+                : "working",
+        recentFailureRate: failureRate,
+        pendingAlertCount: SETTINGS.pendingTaxAlertCount,
+        pendingAlertAgeSeconds: SETTINGS.pendingTaxAlertAgeSeconds,
+      },
       latestClosure: state.closures.at(-1),
       serverTime: current.toISOString(),
     };
@@ -748,6 +885,46 @@ export class CashierDemoRepository {
     };
     payment.refundedClp += input.amountClp;
     state.refunds.push(refund);
+    const originalTax = state.taxDocuments.find(
+      (document) => document.paymentId === payment.id,
+    );
+    if (originalTax?.status === "issued") {
+      state.taxDocuments.push({
+        id: randomUUID(),
+        paymentId: payment.id,
+        refundId: refund.id,
+        status: "issued",
+        amountClp: refund.amountClp,
+        folio: `NC-${Date.now()}`,
+        createdAt: refund.requestedAt,
+        retryCount: 0,
+      });
+    } else {
+      const creditNoteId = randomUUID();
+      state.taxDocuments.push({
+        id: creditNoteId,
+        paymentId: payment.id,
+        refundId: refund.id,
+        status: "pending",
+        amountClp: refund.amountClp,
+        createdAt: refund.requestedAt,
+        retryCount: 0,
+      });
+      state.exceptions.push({
+        id: randomUUID(),
+        deduplicationKey: `refund:${refund.id}:credit-note-pending`,
+        type: "tax_credit_note_pending",
+        status: "open",
+        priority: "critical",
+        version: 0,
+        amountClp: refund.amountClp,
+        createdAt: refund.requestedAt,
+        tableName: payment.tableName,
+        personLabel: payment.personLabel,
+        paymentId: payment.id,
+        resolutionOptions: ["retry_tax_document", "escalate"],
+      });
+    }
     if (closedSource && tipComponent > 0 && sourceShift) {
       state.adjustments.push({
         id: randomUUID(),
@@ -762,7 +939,9 @@ export class CashierDemoRepository {
     }
     for (const exception of state.exceptions.filter(
       (candidate) =>
-        candidate.paymentId === payment.id && candidate.status !== "resolved",
+        candidate.paymentId === payment.id &&
+        candidate.status !== "resolved" &&
+        !candidate.type.startsWith("tax_"),
     )) {
       exception.status = "resolved";
       exception.version += 1;
@@ -787,6 +966,56 @@ export class CashierDemoRepository {
       idempotentReplay: false,
       bootstrap: this.bootstrap(actor),
     };
+  }
+
+  retryTaxDocument(
+    actor: CashierActor,
+    input: { taxDocumentId: string; reason: string },
+  ): CashierBootstrap {
+    if (!input.reason.trim()) {
+      throw new CashierConflictError(
+        "El motivo del reintento es obligatorio.",
+        400,
+      );
+    }
+    const state = this.read();
+    const document = state.taxDocuments.find(
+      (candidate) => candidate.id === input.taxDocumentId,
+    );
+    if (!document) throw new CashierConflictError("Boleta no encontrada.", 404);
+    if (document.status !== "issued") {
+      document.status = "issued";
+      document.folio = document.folio ?? `R-${Date.now()}`;
+      document.representationUrl = `/api/tax/documents/demo-retry-${document.id}`;
+      document.retryCount += 1;
+      state.taxAttempts.push({
+        taxDocumentId: document.id,
+        outcome: "issued",
+        occurredAt: this.now().toISOString(),
+      });
+      for (const exception of state.exceptions) {
+        if (
+          exception.paymentId === document.paymentId &&
+          exception.type.startsWith("tax_") &&
+          exception.status !== "resolved"
+        ) {
+          exception.status = "resolved";
+          exception.version += 1;
+          exception.resolutionReason = input.reason.trim();
+        }
+      }
+      state.audits.push({
+        id: randomUUID(),
+        actorId: actor.id,
+        action: "tax_document.retry_succeeded_demo",
+        targetId: document.id,
+        reason: input.reason.trim(),
+        data: { folio: document.folio, retryCount: document.retryCount },
+        occurredAt: this.now().toISOString(),
+      });
+      this.write(state);
+    }
+    return this.bootstrap(actor);
   }
 
   expireManualProductionWindowForTest(): void {

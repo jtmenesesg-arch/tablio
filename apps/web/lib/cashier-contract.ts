@@ -14,6 +14,8 @@ export type CashierExceptionType =
   | "amount_or_currency_mismatch"
   | "merchant_or_tenant_mismatch"
   | "tax_document_failed"
+  | "tax_credit_note_pending"
+  | "tax_credit_note_failed"
   | "refund_not_reflected"
   | "settlement_difference"
   | "confirmation_after_shift_close"
@@ -58,7 +60,11 @@ export type CashierException = Readonly<{
   manualProductionAvailable: boolean;
   secondsSinceApproval?: number;
   resolutionOptions: readonly (
-    "refund" | "produce_manually" | "investigate" | "escalate"
+    | "refund"
+    | "produce_manually"
+    | "investigate"
+    | "escalate"
+    | "retry_tax_document"
   )[];
   resolutionReason?: string;
 }>;
@@ -92,7 +98,11 @@ export type CashierReconciliationLine = Readonly<{
   depositedClp?: number;
   depositReference?: string;
   status: "matched" | "difference" | "pending";
-  taxDocumentStatus: "pending_sprint_7";
+  taxDocumentStatus: "pending" | "issued" | "failed" | "voucher" | "review";
+  taxDocumentId?: string;
+  taxFolio?: string;
+  taxDocumentAmountClp?: number;
+  taxRepresentationUrl?: string;
 }>;
 
 export type CashierClosure = Readonly<{
@@ -169,6 +179,15 @@ export type CashierBootstrap = Readonly<{
   exceptions: readonly CashierException[];
   payments: readonly CashierPayment[];
   reconciliation: readonly CashierReconciliationLine[];
+  taxOperations: {
+    pendingCount: number;
+    oldestPendingAt?: string;
+    requiresAttention: boolean;
+    providerStatus: "working" | "degraded" | "down" | "unknown";
+    recentFailureRate: number;
+    pendingAlertCount: number;
+    pendingAlertAgeSeconds: number;
+  };
   latestClosure?: CashierClosure;
   serverTime: string;
 }>;
@@ -192,6 +211,11 @@ export type CashierMutation =
       action: "exception.produce";
       exceptionId: string;
       expectedVersion: number;
+      reason: string;
+    }
+  | {
+      action: "tax.retry";
+      taxDocumentId: string;
       reason: string;
     }
   | {

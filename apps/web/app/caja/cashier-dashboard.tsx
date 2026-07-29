@@ -202,6 +202,15 @@ export function CashierDashboard() {
     });
   }
 
+  async function retryTaxDocument(taxDocumentId: string) {
+    const reason = window.prompt(
+      "Motivo del reintento de la boleta (quedará auditado):",
+      "Reintento manual desde caja",
+    );
+    if (!reason?.trim()) return;
+    await mutate({ action: "tax.retry", taxDocumentId, reason });
+  }
+
   async function closeShift() {
     if (!data?.shift) return;
     const cashText = window.prompt("Efectivo contado en caja (CLP):", "0");
@@ -298,6 +307,31 @@ export function CashierDashboard() {
           </div>
           <button type="button" onClick={() => setView("exceptions")}>
             Revisar ahora
+          </button>
+        </section>
+      ) : null}
+
+      {data.taxOperations.requiresAttention ||
+      data.taxOperations.providerStatus === "down" ||
+      data.taxOperations.providerStatus === "degraded" ? (
+        <section className="cashierTaxAlert" role="alert">
+          <div>
+            <p className="eyebrow">PROVEEDOR DTE</p>
+            <h2>
+              {data.taxOperations.providerStatus === "down"
+                ? "Caído"
+                : data.taxOperations.providerStatus === "degraded"
+                  ? "Degradado"
+                  : "Acumulación de boletas"}
+            </h2>
+            <p>
+              {data.taxOperations.pendingCount} documentos pendientes ·{" "}
+              {Math.round(data.taxOperations.recentFailureRate * 100)}% de
+              fallos recientes. Los pagos y pedidos siguen funcionando.
+            </p>
+          </div>
+          <button type="button" onClick={() => setView("reconciliation")}>
+            Revisar tributación
           </button>
         </section>
       ) : null}
@@ -554,9 +588,39 @@ export function CashierDashboard() {
                       <small>{line.depositReference ?? ""}</small>
                     </td>
                     <td>
-                      <span className="cashierTaxPending">
-                        Pendiente · Sprint 7
-                      </span>
+                      <strong>
+                        {line.taxDocumentStatus === "issued"
+                          ? `Emitida · ${line.taxFolio}`
+                          : line.taxDocumentStatus === "voucher"
+                            ? "Voucher electrónico"
+                            : line.taxDocumentStatus === "failed"
+                              ? "Fallida"
+                              : "Pendiente"}
+                      </strong>
+                      {line.taxDocumentAmountClp !== undefined ? (
+                        <span>{money(line.taxDocumentAmountClp)}</span>
+                      ) : null}
+                      {line.taxRepresentationUrl ? (
+                        <a
+                          href={line.taxRepresentationUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Ver documento
+                        </a>
+                      ) : null}
+                      {line.taxDocumentStatus === "failed" &&
+                      line.taxDocumentId ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void retryTaxDocument(line.taxDocumentId!)
+                          }
+                          type="button"
+                        >
+                          Reintentar
+                        </button>
+                      ) : null}
                     </td>
                     <td>
                       <span className={`cashierRecon-${line.status}`}>

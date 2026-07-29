@@ -1946,6 +1946,38 @@ input {
   font-size: clamp(1.85rem, 8vw, 2.8rem);
 }
 
+.taxDocumentCard {
+  align-items: center;
+  background: #fefefe;
+  border: 2px solid #111110;
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 20px;
+  padding: 18px;
+}
+
+.taxDocumentCard div {
+  display: grid;
+  gap: 5px;
+}
+
+.taxDocumentCard span {
+  color: #4c4a46;
+  font-size: 0.88rem;
+}
+
+.taxDocumentCard a {
+  background: #111110;
+  color: #fefefe;
+  font-weight: 800;
+  padding: 12px 14px;
+  text-decoration: none;
+}
+
+.taxDocument-failed {
+  border-color: #c0280f;
+}
+
 .pendingPayment > p:not(.sectionKicker) {
   max-width: 450px;
   margin: 14px auto;
@@ -3048,6 +3080,31 @@ input {
   font: inherit;
   font-weight: 800;
   padding: 14px 18px;
+}
+
+.cashierTaxAlert {
+  align-items: center;
+  background: #fff2cc;
+  border: 3px solid #b87c10;
+  color: #111110;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 24px 20px;
+  padding: 20px 24px;
+}
+
+.cashierTaxAlert h2,
+.cashierTaxAlert p {
+  margin: 3px 0;
+}
+
+.cashierTaxAlert button {
+  background: #111110;
+  border: 0;
+  color: #fefefe;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 13px 16px;
 }
 
 .cashierMetrics {

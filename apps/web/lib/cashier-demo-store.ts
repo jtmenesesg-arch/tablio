@@ -52,6 +52,14 @@ export function mutateCashier(mutation: CashierMutation) {
       });
       return { bootstrap };
     }
+    case "tax.retry": {
+      const bootstrap = repository.retryTaxDocument(actor, mutation);
+      publishCashierEvent({
+        type: "exception",
+        entityId: mutation.taxDocumentId,
+      });
+      return { bootstrap };
+    }
     case "shift.close": {
       const result = repository.closeShift(actor, mutation);
       publishCashierEvent({ type: "shift", entityId: result.closure.id });

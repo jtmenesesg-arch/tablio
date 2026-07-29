@@ -28,6 +28,7 @@ import type {
   TicketStatus,
   WaiterPaymentRequest,
 } from "./diner-contract";
+import { demoReceiptForOrder, enqueueDemoReceipt } from "./tax-demo-service";
 
 const TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina";
@@ -58,6 +59,7 @@ type MutableSession = {
   token: string;
   alias: string;
   displayName?: string;
+  customerEmail?: string;
   createdAt: number;
   lastSeenAt: number;
   idleExpiresAt: number;
@@ -319,7 +321,8 @@ function liveOrders(session: MutableSession): DinerOrder[] {
           )
         ? "in_preparation"
         : "confirmed";
-    return { ...order, state: orderState, tickets };
+    const taxDocument = demoReceiptForOrder(order.id);
+    return { ...order, state: orderState, tickets, taxDocument };
   });
 }
 
@@ -408,6 +411,10 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
       status: "queued",
       itemNames: ticket.items.map((item) => `${item.quantity}× ${item.name}`),
     })),
+    taxDocument: {
+      status: "pending",
+      message: "Tu boleta se está emitiendo. Tu pedido ya está confirmado.",
+    },
   };
   appendPaidOrderToKds({
     orderId,
@@ -420,6 +427,11 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
     tickets: kdsTickets,
   });
   session.orders.unshift(order);
+  enqueueDemoReceipt({
+    orderId,
+    amountClp: quote.totalClp,
+    customerEmail: session.customerEmail,
+  });
   payment.status = "confirmed";
   session.quote = Object.freeze({ ...quote, status: "paid" });
   session.cart.state = "converted_to_order";
@@ -663,6 +675,8 @@ export async function mutateDiner(
       }
       session.displayName =
         mutation.displayName?.trim().slice(0, 60) || undefined;
+      session.customerEmail =
+        mutation.customerEmail?.trim().toLowerCase().slice(0, 254) || undefined;
       for (const line of session.cart.lines) {
         const product = state.products.get(line.productId)!;
         if (product.trackStock) product.reserved += line.quantity;

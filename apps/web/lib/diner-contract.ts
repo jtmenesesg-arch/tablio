@@ -59,6 +59,12 @@ export type DinerOrder = Readonly<{
   state: "confirmed" | "accepted" | "in_preparation" | "ready" | "delivered";
   confirmedAt: string;
   tickets: readonly DinerTicket[];
+  taxDocument: Readonly<{
+    status: "pending" | "issued" | "failed";
+    message: string;
+    folio?: string;
+    representationUrl?: string;
+  }>;
 }>;
 
 export type ServiceAction = Readonly<{
@@ -138,6 +144,7 @@ export type DinerMutation =
       action: "quote.create";
       tipClp: number;
       displayName?: string;
+      customerEmail?: string;
       idempotencyKey: string;
     }
   | {

@@ -90,6 +90,29 @@ describe("CashierDemoRepository", () => {
     expect(repository.getRefundsForTest()).toHaveLength(1);
   });
 
+  it("devuelve el dinero aunque la nota de crédito quede pendiente", () => {
+    // Intenta encadenar la plata a una boleta fallida. Si falla, el cliente
+    // esperaría su devolución porque el proveedor DTE está caído.
+    const result = repository.requestRefund(cashier, {
+      paymentId: "payment-mesa-8-b",
+      amountClp: 2_000,
+      idempotencyKey: "refund:independent-from-dte",
+      reason: "Cliente solicita devolución",
+    });
+    const bootstrap = result.bootstrap;
+    expect(
+      bootstrap.payments.find((payment) => payment.id === "payment-mesa-8-b")
+        ?.refundedClp,
+    ).toBe(2_000);
+    expect(
+      bootstrap.exceptions.some(
+        (exception) =>
+          exception.type === "tax_credit_note_pending" &&
+          exception.status === "open",
+      ),
+    ).toBe(true);
+  });
+
   // Devuelve una parte de un pago del turno abierto. Si falla, el cierre
   // podría pagar al personal una propina que ya fue devuelta al cliente.
   it("calcula proporcionalmente la propina con turno abierto", () => {
@@ -261,15 +284,24 @@ describe("CashierDemoRepository", () => {
     );
   });
 
-  // Revisa la tercera comparación antes del módulo tributario. Si falla,
-  // la interfaz podría afirmar que existe una boleta que Sprint 7 aún no creó.
-  it("marca tributación como pendiente en todas las líneas", () => {
-    expect(
-      repository
-        .bootstrap(cashier)
-        .reconciliation.every(
-          (line) => line.taxDocumentStatus === "pending_sprint_7",
-        ),
-    ).toBe(true);
+  // Intenta dejar tributación como placeholder. Si falla, caja no puede
+  // explicar venta, pasarela y boleta en la misma línea.
+  it("completa la tercera columna con el estado tributario real", () => {
+    const lines = repository.bootstrap(cashier).reconciliation;
+    expect(lines.some((line) => line.taxDocumentStatus === "issued")).toBe(
+      true,
+    );
+    expect(lines.some((line) => line.taxDocumentStatus === "failed")).toBe(
+      true,
+    );
+  });
+
+  // Intenta esconder una caída hasta el cierre. Si falla, el bar acumularía
+  // boletas pendientes sin enterarse mientras todavía está atendiendo.
+  it("alerta por volumen, antigüedad y caída reciente del proveedor DTE", () => {
+    const tax = repository.bootstrap(cashier).taxOperations;
+    expect(tax.requiresAttention).toBe(true);
+    expect(tax.pendingCount).toBeGreaterThan(10);
+    expect(tax.providerStatus).toBe("down");
   });
 });

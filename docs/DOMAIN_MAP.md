@@ -150,6 +150,16 @@ conciliación/reembolso configurables. Tablio no cobra fee sobre propinas.
 Orquesta emisión vía proveedor DTE. Garantiza que una venta no genere dos respaldos tributarios
 por el mismo hecho y relaciona notas de crédito con reembolsos/anulaciones.
 
+El puerto `TaxDocumentProvider` mantiene al dominio independiente de LibreDTE, Nubox, Bsale,
+Facturación.cl u otro proveedor. Pedido/KDS terminan primero; emisión, consulta, reintento y
+nota de crédito viajan por outbox/cola. Una falla tributaria abre una excepción, pero jamás
+desconfirma la venta.
+
+Reembolso monetario y nota de crédito son obligaciones separadas. Si el DTE original no sale,
+el cliente recibe su devolución y caja conserva una alerta crítica hasta completar el
+documento. Caja muestra además salud del proveedor por tasa de fallos y acumulación por
+volumen/antigüedad.
+
 ### 13. Conciliación
 
 Compara CheckoutQuote/pedido, transacción de pasarela, documento tributario y liquidación real.

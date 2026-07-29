@@ -184,3 +184,37 @@ hardware hasta probarla con el piloto.
   comisión y abono observado en una cuenta de comercio de prueba.
 - **Riesgo:** sin esos datos la promesa “el cierre explica cada peso” no se puede cumplir como
   está escrita.
+
+## OI-014 — Proveedor DTE real y matriz tributaria
+
+- **Estado:** bloqueante antes del piloto.
+- **Implementado:** puerto neutral, simulador, configuración por tenant, Vault, idempotencia,
+  boleta/nota de crédito, reintentos, conciliación y alertas operativas.
+- **Pendiente:** contratar un proveedor DTE real y validar con credenciales: emisión,
+  idempotencia, consulta tardía, folio, timbre, representación, correo, nota de crédito,
+  reintentos, límites, SLA y recuperación tras timeout.
+- **Asesoría requerida:** un asesor tributario chileno debe aprobar la matriz para
+  efectivo/transferencia versus medios electrónicos y los tres modos de configuración.
+- **Riesgo:** emitir voucher y boleta por el mismo hecho, o no emitir el respaldo correcto.
+- **Hipótesis:** LibreDTE, Nubox, Bsale y Facturación.cl son candidatos documentales; ninguno
+  fue probado ni recomendado todavía.
+
+## OI-015 — Reembolso monetario versus nota de crédito pendiente
+
+- **Estado:** bloqueante para revisión tributaria antes del piloto.
+- **Decisión operativa implementada:** una caída DTE no retiene el reembolso del cliente. La
+  devolución procede por la pasarela; la nota de crédito queda como obligación vinculada,
+  crítica y reintentable en caja.
+- **Tensión a resolver:** no es aceptable que el cliente espere indefinidamente su dinero,
+  pero la secuencia y plazo legal de la nota de crédito deben confirmarse con asesor y
+  proveedor DTE.
+- **Evidencia pendiente:** ejecutar un reembolso real mientras el proveedor DTE está caído,
+  recuperar la boleta original y emitir exactamente una nota de crédito después.
+
+## OI-016 — Entrega digital de boleta desde marzo de 2026
+
+- **Estado:** bloqueante antes del piloto.
+- **Implementado con simulador:** estado “emitiendo”, URL descargable y correo opcional.
+- **Pendiente:** validar con asesor y proveedor la representación aceptada, conservación,
+  disponibilidad, correo y operación aplicable a la Resolución Exenta SII N.º 53 de 2025
+  desde el 1 de marzo de 2026.

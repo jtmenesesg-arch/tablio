@@ -140,3 +140,54 @@ test("congela el cierre, explica el abono y permite descargar evidencia", async 
     "id,tipo,estado,monto_clp,hora_proveedor,hora_recepcion",
   );
 });
+
+test("alerta la caída DTE y reintenta sin alterar el pedido", async ({
+  page,
+}) => {
+  // Intenta ocultar una caída masiva o duplicar una boleta al reintentar. Si
+  // falla, el bar se entera tarde o pierde la identidad del documento.
+  await reset(page);
+  await openCashier(page);
+  await expect(page.getByRole("heading", { name: "Caído" })).toBeVisible();
+  await expect(page.getByText(/11 documentos pendientes/)).toBeVisible();
+  await page.getByRole("button", { name: "Revisar tributación" }).click();
+  const failed = page.getByRole("row").filter({ hasText: "#1042" });
+  await expect(failed.getByText("Fallida", { exact: true })).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept("Reintento E2E auditado"));
+  await failed.getByRole("button", { name: "Reintentar" }).click();
+  await expect(failed.getByText(/Emitida · R-/)).toBeVisible();
+});
+
+test("el reembolso monetario no espera la nota de crédito", async ({
+  page,
+}) => {
+  // Intenta encadenar la devolución a una boleta fallida. Si falla, el cliente
+  // no recibiría su plata mientras el proveedor tributario está caído.
+  await reset(page);
+  const response = await page.request.post("/api/cashier", {
+    data: {
+      action: "refund.request",
+      paymentId: "payment-mesa-8-b",
+      amountClp: 2_000,
+      idempotencyKey: "e2e:refund:independent-dte",
+      reason: "Devolución con DTE caído",
+    },
+  });
+  expect(response.ok()).toBe(true);
+  const body = (await response.json()) as {
+    bootstrap: {
+      payments: Array<{ id: string; refundedClp: number }>;
+      exceptions: Array<{ type: string; status: string }>;
+    };
+  };
+  expect(
+    body.bootstrap.payments.find((payment) => payment.id === "payment-mesa-8-b")
+      ?.refundedClp,
+  ).toBe(2_000);
+  expect(body.bootstrap.exceptions).toContainEqual(
+    expect.objectContaining({
+      type: "tax_credit_note_pending",
+      status: "open",
+    }),
+  );
+});

@@ -153,6 +153,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
   const [category, setCategory] = useState("all");
   const [presenceCode, setPresenceCode] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [tipPercent, setTipPercent] = useState(10);
   const [customTip, setCustomTip] = useState("");
   const [loading, setLoading] = useState(true);
@@ -307,6 +308,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       action: "quote.create",
       tipClp,
       displayName,
+      customerEmail: customerEmail || undefined,
       idempotencyKey: crypto.randomUUID(),
     });
     if (next?.quote) setScreen("checkout");
@@ -700,6 +702,23 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     value={displayName}
                   />
                 </div>
+                <label htmlFor="receipt-email">
+                  Correo para tu boleta <span>opcional</span>
+                </label>
+                <p>También podrás verla aquí cuando esté emitida.</p>
+                <div className="inputWithIcon">
+                  <Icon name="user" size={19} />
+                  <input
+                    autoComplete="email"
+                    id="receipt-email"
+                    inputMode="email"
+                    maxLength={254}
+                    onChange={(event) => setCustomerEmail(event.target.value)}
+                    placeholder="tu@correo.cl"
+                    type="email"
+                    value={customerEmail}
+                  />
+                </div>
               </section>
 
               <section className="checkoutBlock">
@@ -862,6 +881,32 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   {money(latestOrder.totalClp)}
                 </strong>
               </div>
+
+              <section
+                className={`taxDocumentCard taxDocument-${latestOrder.taxDocument.status}`}
+                aria-live="polite"
+              >
+                <div>
+                  <p className="sectionKicker">Boleta electrónica</p>
+                  <strong>
+                    {latestOrder.taxDocument.status === "issued"
+                      ? `Emitida · folio ${latestOrder.taxDocument.folio}`
+                      : latestOrder.taxDocument.status === "failed"
+                        ? "Emisión pendiente"
+                        : "Emitiendo…"}
+                  </strong>
+                  <span>{latestOrder.taxDocument.message}</span>
+                </div>
+                {latestOrder.taxDocument.representationUrl ? (
+                  <a
+                    href={latestOrder.taxDocument.representationUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Ver / descargar
+                  </a>
+                ) : null}
+              </section>
 
               <section className="orderProgress">
                 <div className="statusSteps" aria-label="Estado general">

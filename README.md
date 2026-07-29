@@ -6,11 +6,11 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto completó **Sprint 6 — caja, cierre y conciliación**. PWA, KDS, garzón y caja ya
-cubren pedido pagado → producción → entrega → cierre financiero, con excepciones accionables,
-reembolsos auditados y datos sintéticos hasta el abono. Las migraciones están aplicadas y los
-40 controles pgTAP de Sprint 6 pasaron en el Supabase actual; no hay pasarela, DTE ni impresora
-física real.
+El proyecto completó **Sprint 7 — boleta electrónica**. PWA, KDS, garzón y caja ya cubren
+pedido pagado → producción → entrega → cierre financiero → respaldo tributario simulado, con
+excepciones accionables y datos sintéticos hasta el abono. Las migraciones están aplicadas y
+los 27 controles pgTAP tributarios pasaron en el Supabase actual; no hay pasarela, proveedor
+DTE ni impresora física real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -84,8 +84,9 @@ pnpm e2e
 pnpm build
 ```
 
-En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 6 suma una suite
-pgTAP de 40 controles y cuatro recorridos de caja a los 15 recorridos previos.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 7 suma una suite
+pgTAP de 27 controles y recorridos de boleta, caída del proveedor, reintento y reembolso
+independiente.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
@@ -126,6 +127,18 @@ cierre es inmutable y exportable; una aprobación tardía conserva hora de prove
 La producción manual de un pago aprobado tras vencer el quote dura 20 minutos configurables.
 Una devolución posterior al cierre no descuenta propina al trabajador: crea un ajuste a cargo
 del local según ADR-005. Todo está marcado como modo demo y no mueve dinero real.
+
+## Boleta electrónica demo
+
+La confirmación del pedido no espera la boleta. La PWA muestra “emitiendo” y luego permite
+abrir la representación demo. Caja completa la tercera columna de conciliación, alerta cuando
+hay más de 10 documentos pendientes o alguno supera 15 minutos y muestra el proveedor DTE
+funcionando, degradado o caído.
+
+El reembolso monetario tampoco espera una nota de crédito: la devolución se completa y la
+obligación tributaria pendiente queda crítica y reintentable. El puerto
+`TaxDocumentProvider` y el adaptador simulado no reemplazan la validación con proveedor real y
+asesor tributario exigida antes del piloto.
 
 ## Laboratorio de pagos
 
