@@ -432,3 +432,45 @@ falla de cobro no puede interrumpir un viernes por la noche ni revelar deuda al 
   warnings intencionales de RPCs `SECURITY DEFINER`, con acceso mínimo y validación interna.
 - Migraciones locales alineadas con el historial remoto: `20260729163957`,
   `20260729164321`, `20260729164723`, `20260729165547` y `20260729165625`.
+
+## 2026-07-29 — Sprint 9 · Crédito de mesa y panel del dueño
+
+### Qué cambió
+
+- Se modeló crédito de mesa desactivado por defecto, con permisos, motivo, límites por mesa y
+  local, vencimiento, ledger append-only, pagos parciales, fuga y código vivo de un uso.
+- `orders.financial_mode` preserva el prepago y permite producir sin pago sólo contra una
+  cuenta de crédito viva. Pedido, comandas, reservas y outbox se crean atómicamente.
+- Caja y garzón presentan prepago y deuda por separado: una venta QR no altera el saldo del
+  crédito de la misma mesa.
+- El spool recibe comprobantes de cada pago parcial. La fuga entra al cierre del turno y al
+  costo mensual acumulado del panel del dueño.
+- `/dueno` cuenta una historia con titular, tres focos, un gráfico horario, productos,
+  operación, locales, excepciones y fuga. Un tenant nuevo conserva datos actuales y explica
+  cuándo aparecerá la primera comparación.
+- ADR-008 congeló el crédito como excepción subordinada al prepago.
+
+### Correcciones encontradas durante la prueba real
+
+- La creación de una comanda reveló un bloque ajeno dentro del trigger KDS de Sprint 4, que
+  referenciaba variables inexistentes. Se reemplazó el trigger y se verificó nuevamente tanto
+  el flujo prepago como el crédito.
+- Se explicitó la resolución de una variable PL/pgSQL ambigua en la creación del pedido.
+- Se revocaron privilegios de escritura que Supabase concede por defecto a roles API.
+- Las implementaciones privilegiadas de ocho RPC de crédito se movieron a `private`, dejando
+  fachadas públicas `SECURITY INVOKER`.
+- Performance Advisors detectó once claves foráneas Sprint 9 sin índice; todas recibieron
+  índice de cobertura.
+
+### Verificación
+
+- Vitest: 94/94; incluye reglas de crédito, relato y aislamiento del store demo.
+- pgTAP remoto: 51/51 dentro de una transacción con rollback; las ventas del dueño cuadran con
+  el snapshot operacional del cierre para el mismo intervalo.
+- Playwright: 30/30 en la regresión completa; 4/4 específicos para coexistencia, pago/código,
+  fuga mensual y tenant nuevo.
+- TypeScript, ESLint, Prettier y build Next.js verdes.
+- Security Advisors: Sprint 9 no agregó warnings; permanecen exactamente los seis OI-019,
+  explicados en lenguaje simple.
+- Performance Advisors: cero claves foráneas Sprint 9 sin índice; los `unused_index` siguen
+  bajo OI-008 hasta disponer de tráfico representativo.

@@ -6,11 +6,11 @@ listos para producir.
 
 ## Estado actual
 
-El proyecto completó **Sprint 8 — onboarding, superadmin y cobro SaaS**. Además del flujo
-pedido pagado → producción → entrega → cierre → respaldo tributario simulado, ya permite
-configurar un local, revisar su carta, proponer plan, simular setup/mensualidad y administrarlo
-desde plataforma. Las migraciones están aplicadas; no hay pasarela, proveedor DTE, billing
-SaaS ni impresora física real.
+El proyecto completó **Sprint 9 — crédito de mesa y panel del dueño**. Además del flujo
+pedido pagado → producción → entrega → cierre → respaldo tributario simulado, permite
+configurar un local, administrar el SaaS, abrir crédito excepcional con límites y entender el
+negocio mediante un panel narrativo. Las migraciones están aplicadas; no hay pasarela,
+proveedor DTE, billing SaaS ni impresora física real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
 Mercado Pago y Transbank se investigaron documentalmente y todo hallazgo permanece como
@@ -18,7 +18,8 @@ hipótesis hasta probarlo con cuentas reales antes del piloto.
 
 ## Principios que no se cambian sin aprobación
 
-- Cada persona paga su propio pedido antes de que el local lo produzca.
+- Cada persona paga su propio pedido antes de producir. La única excepción es crédito de mesa
+  explícitamente habilitado, permisado y visible como deuda.
 - Tablio no recibe, retiene ni reparte el dinero de las ventas del bar.
 - La mensualidad que el bar paga a Tablio es un flujo separado de toda venta del bar.
 - Todos los datos de negocio llevan `tenant_id` y están protegidos con Row Level Security.
@@ -68,6 +69,8 @@ Luego abre estas direcciones:
 - KDS: `http://localhost:3000/kds`; elige Barra, Cocina o Todas.
 - Garzón: `http://localhost:3000/garzon`; PIN demo `2468`.
 - Caja: `http://localhost:3000/caja`.
+- Crédito de mesa: `http://localhost:3000/credito`.
+- Panel del dueño: `http://localhost:3000/dueno`.
 
 La PWA debe decir “MODO DEMO · NO MUEVE DINERO REAL” y el KDS debe mostrar permanentemente su
 conexión y la hora de la última sincronización.
@@ -86,8 +89,8 @@ pnpm e2e
 pnpm build
 ```
 
-En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 8 suma 51 controles
-pgTAP y cinco recorridos E2E de onboarding, revisión, plan, morosidad y superadmin.
+En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 9 suma 51 controles
+pgTAP y cuatro recorridos E2E de coexistencia, cobro, verificación, fuga e historia inicial.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
 su control negativo están versionados; el ciclo rojo → verde se ejecutará en staging aislado,
@@ -118,6 +121,17 @@ El panel usa PIN hasheado, zonas configurables y una cola persistente. Realtime 
 consulta periódica recupera. Una tarea de 12 minutos se vuelve crítica; una zona sin cobertura
 queda visible para todos y escala a administración. Cerrar turno muestra pendientes, deja
 snapshot auditado y nunca borra el trabajo.
+
+## Crédito de mesa y panel del dueño
+
+El crédito está apagado por defecto y se presenta siempre como excepción con riesgo. Límites,
+vencimiento, pagos parciales, código vivo y fuga quedan auditados. Prepago y crédito pueden
+coexistir en una mesa, pero sus cifras nunca se compensan.
+
+El panel del dueño usa cifras calculadas en servidor y reglas deterministas para contar qué
+pasó, qué requiere atención y qué conviene revisar. También muestra el costo mensual del
+crédito. Un tenant nuevo ve datos actuales y una fecha estimada para sus primeras
+comparaciones.
 
 ## Panel de caja
 

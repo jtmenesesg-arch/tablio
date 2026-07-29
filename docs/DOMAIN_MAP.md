@@ -1,7 +1,7 @@
 # Mapa de dominios
 
-- **Estado:** vivo, flujo completo del local más onboarding, billing SaaS y superadmin
-  implementados con proveedores simulados
+- **Estado:** vivo, flujo completo del local, crédito excepcional, panel del dueño,
+  onboarding, billing SaaS y superadmin implementados con proveedores simulados
 - **Fuente:** brief v2.2 congelado y decisiones post-freeze
 
 ## Regla central
@@ -13,7 +13,8 @@ persona → carrito → CheckoutQuote inmutable → confirmación server-side
         → pedido confirmado → comandas por estación
 ```
 
-La mesa entrega contexto físico y operativo. No es una cuenta financiera compartida.
+La mesa entrega contexto físico y operativo. No es una cuenta financiera compartida, salvo
+cuando un rol autorizado abre explícitamente la excepción de crédito descrita en ADR-008.
 
 ## Vista general
 
@@ -36,6 +37,8 @@ flowchart LR
   cart --> quote["CheckoutQuote inmutable"]
   quote --> payment["Pago y eventos del proveedor"]
   payment --> order["Pedido confirmado"]
+  session --> credit["Crédito excepcional autorizado"]
+  credit --> order
   order --> ticket["Comanda por estación"]
   station --> ticket
   device --> action["Acciones y avisos"]
@@ -49,6 +52,8 @@ flowchart LR
   payment --> tip["Propina"]
   payment --> tax["Documento tributario"]
   payment --> settlement["Liquidación y conciliación"]
+  credit --> owner["Historia y costo de fuga"]
+  settlement --> owner
 
   order --> outbox["Outbox y colas durables"]
   outbox --> kds["KDS / impresión / efectos"]
@@ -138,6 +143,28 @@ prioridad normal para impedir inanición.
 
 El grupo enlaza sesiones activas sólo para visualización. No altera QR, carritos, quotes,
 pagos, pedidos ni comandas y puede separarse sin reescribir historia financiera. Ver ADR-004.
+
+### 9.4 Crédito de mesa excepcional
+
+`tenant_table_credit_settings` parte desactivado y fija límites por mesa/local y vencimiento.
+`table_credit_accounts` conserva la autorización y exposición; ledger, vínculos a pedidos,
+pérdidas y verificaciones son evidencia durable. Un pedido con `financial_mode=table_credit`
+puede entrar a producción sin pago sólo si una cuenta viva lo autoriza dentro de límites.
+
+Prepago y crédito no se compensan: el resumen operacional agrega ventas pagadas de la sesión
+y saldo de crédito en columnas separadas. Los pagos parciales reducen sólo el ledger de
+crédito. Un cierre con fuga aparece en el snapshot de turno y en la métrica mensual del dueño.
+Ver ADR-008.
+
+### 9.5 Panel narrativo del dueño
+
+PostgreSQL calcula ventas, ticket, propinas, rounds, productos, horas, excepciones y fuga antes
+de entregarlos. El cliente elige local o consolidado, pero no agrega cifras. Reglas explícitas
+convierten esos datos en titular, atención, mejora y recomendación.
+
+Cuando aún no existe período comparable, se muestran ventas del día, productos y excepciones;
+un mensaje humano indica desde cuándo se guarda historia y la fecha estimada de la primera
+comparación. Nunca se reemplaza información disponible por una pantalla vacía.
 
 ### 10. Durabilidad y efectos
 

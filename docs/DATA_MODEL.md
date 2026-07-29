@@ -1,7 +1,7 @@
 # Modelo de datos
 
-- **Estado:** fundación multi-tenant, núcleo financiero, operación, tributación, onboarding y
-  billing SaaS versionados y aplicados en el proyecto Supabase actual
+- **Estado:** fundación multi-tenant, núcleo financiero, operación, tributación, onboarding,
+  billing SaaS, crédito de mesa y panel del dueño versionados y aplicados
 - **Migración base:** `20260727223243_foundation_multi_tenant.sql`
 - **Verificación remota verde:** `20260727224600_verify_tenant_isolation.sql`
 - **Hardening:** `20260728035137_harden_auth_and_advisor_findings.sql` y
@@ -27,6 +27,9 @@
 - **Onboarding y SaaS:** migraciones `20260729163957`, `20260729164321`,
   `20260729164723`, `20260729165547` y `20260729165625`
 - **Suite Sprint 8:** `supabase/tests/database/008_onboarding_billing_superadmin.test.sql`
+  (`1..51` verde en el proyecto remoto, con rollback)
+- **Crédito y dueño:** migraciones `20260729172848` a `20260729175502`
+- **Suite Sprint 9:** `supabase/tests/database/009_table_credit_owner.test.sql`
   (`1..51` verde en el proyecto remoto, con rollback)
 
 ## Convenciones obligatorias
@@ -667,3 +670,48 @@ bloquea pedidos nuevos.
 - RPCs de superadmin comprueban membresía de plataforma dentro de la transacción.
 - `diner_ordering_availability` devuelve únicamente disponibilidad y texto neutro; no expone
   plan, deuda, factura ni estado comercial.
+
+## Crédito de mesa y panel del dueño implementados en Sprint 9
+
+### Autorización y exposición
+
+- `tenant_table_credit_settings` define habilitación, techo por mesa/local, vencimiento y TTL
+  del código. No existe fila habilitada automáticamente para un tenant nuevo.
+- `table_credit_accounts` enlaza local, mesa y sesión activa; congela límite, autor, motivo,
+  vencimiento y saldos calculables. Un índice parcial impide dos cuentas vivas por sesión.
+- `orders.financial_mode` separa `prepaid` de `table_credit`. El primer modo exige `payment_id`;
+  el segundo lo prohíbe y exige `table_credit_account_id`.
+- La cuenta y configuración se bloquean al autorizar. El pedido, ítems, comandas, consumo de
+  reservas, ledger y outbox se confirman en una transacción.
+
+### Evidencia y cobro
+
+- `table_credit_order_links` aporta idempotencia entre quote, cuenta y pedido.
+- `table_credit_ledger_entries` es append-only y distingue cargo, pago digital aprobado,
+  pago presencial y `write_off`.
+- `table_credit_losses` conserva monto, turno, actor, motivo y hora. Un trigger materializa al
+  cerrar ventas operacionales, cargos/cobros de crédito, exposición final y fuga en
+  `cashier_closure_credit_loss_summaries`.
+- `table_credit_verification_challenges` guarda hash, vencimiento y consumo del código; nunca
+  persiste el código en claro.
+- Cada pago parcial encola un comprobante en el spool. La misma idempotency key devuelve el
+  efecto original.
+
+### Coexistencia y lectura
+
+`table_credit_operational_summary` usa `security_invoker` y entrega por sesión el total
+prepagado y el saldo de crédito en campos distintos. Un pedido pagado por app no toca el
+ledger. Caja y garzón muestran ambas cifras sin compensarlas.
+
+### Historia del dueño
+
+- `owner_dashboard_summary` calcula en servidor ventas, pedidos, ticket, propinas,
+  excepciones, pérdidas y serie horaria para un local autorizado o el consolidado.
+- `owner_monthly_credit_loss` agrupa fuga por mes y local para mostrar costo acumulado y
+  tendencia.
+- El frontend sólo transforma estas cifras en relato mediante reglas deterministas; no
+  recalcula dinero.
+
+Todas las tablas Sprint 9 tienen RLS habilitado y forzado. Roles API sólo reciben `SELECT`;
+las escrituras pasan por fachadas públicas `SECURITY INVOKER` que llaman implementaciones
+permisadas en `private`. Advisors confirmó que Sprint 9 no agregó warnings de seguridad.

@@ -111,8 +111,9 @@ hardware hasta probarla con el piloto.
 
 - **Estado:** abierto, informativo; no bloquea Sprint 4.
 - **Hallazgo:** después de indexar también todas las claves foráneas hasta Sprint 6, los
-  Performance Advisors sólo marcan `unused_index`. El proyecto no tiene carga real y por eso
-  varios índices nuevos todavía registran cero usos.
+  Performance Advisors sólo marcan `unused_index`. Sprint 9 agregó los once índices de claves
+  foráneas que faltaban; el proyecto no tiene carga real y por eso varios índices nuevos
+  todavía registran cero usos.
 - **Acción:** conservarlos para evitar scans y bloqueos costosos en deletes/updates de tablas
   referenciadas. Revisar estadísticas con tráfico representativo antes de retirar alguno.
 - **Evidencia requerida:** `pg_stat_user_indexes`, planes de consulta y carga de piloto.
@@ -250,15 +251,41 @@ hardware hasta probarla con el piloto.
 
 ## OI-019 — RPCs `SECURITY DEFINER` expuestas de forma intencional
 
-- **Estado:** revisado en Sprint 8; revisión final antes de producción.
+- **Estado:** revisado nuevamente en Sprint 9; revisión final antes de producción.
 - **Advisor:** Supabase conserva seis warnings
   [`0028`](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable)
   y
   [`0029`](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
-- **Justificación actual:** `diner_ordering_availability` debe aceptar al comensal anónimo y
-  sólo entrega disponibilidad/texto neutro. Las otras RPCs validan dentro de la transacción
-  tenant, permiso de dueño o membresía superadmin; los grants accidentales a `public/anon`
-  fueron revocados.
+- **Qué significa el warning:** estas funciones ejecutan una operación con privilegios del
+  dueño de la función, no con todos los privilegios del usuario que la llama. Eso permite una
+  transacción controlada, pero obliga a validar identidad y permisos dentro de cada función.
+- **Qué se corrigió en Sprint 9:** las ocho operaciones privilegiadas nuevas de crédito se
+  movieron a `private` detrás de fachadas `SECURITY INVOKER`. No agregaron advertencias.
+
+### Las seis advertencias, en lenguaje simple
+
+1. **`diner_ordering_availability` para anónimos:** el comensal sin cuenta necesita preguntar
+   si la mesa puede recibir pedidos. Se dejó porque devuelve sólo sí/no y un texto neutro, sin
+   deuda, plan ni datos internos. Riesgo: una modificación futura podría agregar información
+   sensible a una ruta pública.
+2. **La misma función para usuarios autenticados:** Supabase cuenta otro warning porque un
+   usuario con sesión también puede llamarla. Se conserva para que el comportamiento no cambie
+   según la presencia de sesión. El riesgo de ampliar su respuesta es el mismo.
+3. **`propose_tenant_plan_change`:** un dueño necesita recalcular su plan a partir del tamaño
+   real y guardar la propuesta atómicamente. La función exige tenant y permiso de dueño.
+   Riesgo: un error futuro en esa comprobación podría permitir proponer un cambio ajeno.
+4. **`start_tenant_impersonation`:** soporte necesita abrir una sesión temporal y auditada
+   dentro del tenant elegido. Comprueba membresía superadmin y motivo. Riesgo: es la operación
+   más sensible; una validación debilitada permitiría acceso de soporte no autorizado.
+5. **`superadmin_set_subscription_status`:** plataforma debe cambiar estado y escribir su
+   historial en una sola transacción. Exige superadmin y motivo. Riesgo: un fallo podría
+   restringir o suspender al tenant equivocado.
+6. **`superadmin_tenant_overview`:** el superadmin necesita una vista multi-tenant que RLS
+   normal impediría construir. Sólo devuelve el resumen de plataforma tras validar membresía.
+   Riesgo: una columna nueva podría exponer más información de la necesaria.
+
+- **Protecciones comunes:** `search_path` vacío, grants mínimos, validación interna, motivos y
+  auditoría en acciones sensibles. Los grants accidentales a `public/anon` están revocados.
 - **Pendiente:** revisión de seguridad para decidir si las implementaciones se mueven a
   `private` detrás de wrappers `SECURITY INVOKER` sin romper el acceso neutro ni la atomicidad.
 - **Riesgo:** una futura modificación podría ampliar el resultado o debilitar una validación

@@ -96,6 +96,24 @@
 - **Límite generoso de layout:** cantidad de zonas/estaciones que no altera el plan por sí
   sola. Sólo exceder ambas dimensiones eleva un nivel sobre el determinado por mesas.
 
+## Términos de Sprint 9
+
+- **Crédito de mesa:** excepción autorizada que permite producir pedidos todavía no pagados.
+  No es el modo por defecto y siempre conserva saldo, límite, vencimiento y responsable.
+- **Exposición de crédito:** suma de saldos pendientes que el local arriesga cobrar después.
+  Se limita por mesa y por local.
+- **Fuga de crédito:** saldo que el local cierra como no recuperado. No se borra: queda en
+  ledger, cierre de turno y métrica mensual del dueño.
+- **Ledger de crédito:** historia append-only de cargos, pagos parciales y fugas de una mesa.
+- **Código vivo de pago:** código de seis dígitos, corto y de un uso, validado contra el
+  servidor para acreditar que el saldo llegó a cero. Una captura reutilizada falla.
+- **Modo financiero del pedido:** marca inmutable que distingue un pedido `prepaid` de uno
+  autorizado como `table_credit`.
+- **Panel narrativo:** panel que ordena cifras calculadas en servidor en un titular, tres
+  focos y un gráfico principal mediante reglas explícitas.
+- **Estado inicial digno:** vista para un tenant nuevo que muestra los datos disponibles y
+  explica cuándo aparecerán comparaciones, en vez de presentar vacíos sin contexto.
+
 ## Términos de Sprint 7
 
 - **DTE:** Documento Tributario Electrónico emitido por un proveedor autorizado e informado
