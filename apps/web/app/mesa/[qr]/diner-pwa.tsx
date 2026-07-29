@@ -403,7 +403,17 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
         </div>
       )}
 
-      {screen === "entry" && (
+      {!data.ordering.available && data.orders.length === 0 && (
+        <section className="entryScreen neutralUnavailable">
+          <div className="entryCard">
+            <p className="sectionKicker">Pedidos no disponibles</p>
+            <h1>Habla con el equipo del local</h1>
+            <p>{data.ordering.message}</p>
+          </div>
+        </section>
+      )}
+
+      {data.ordering.available && screen === "entry" && (
         <section className="entryScreen">
           <div className="entryPhoto" aria-hidden="true">
             <Image alt="" fill priority sizes="100vw" src="/menu/beer.jpg" />
@@ -445,7 +455,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
         </section>
       )}
 
-      {screen === "menu" && (
+      {data.ordering.available && screen === "menu" && (
         <section className="contentScreen menuScreen">
           <div className="menuHero">
             <div>

@@ -86,6 +86,10 @@ export type WaiterPaymentRequest = Readonly<{
 export type DinerBootstrap = Readonly<{
   demo: true;
   authenticated: boolean;
+  ordering: {
+    available: boolean;
+    message?: string;
+  };
   venue: {
     id: string;
     name: string;

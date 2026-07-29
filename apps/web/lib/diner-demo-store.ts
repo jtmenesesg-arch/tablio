@@ -29,6 +29,7 @@ import type {
   WaiterPaymentRequest,
 } from "./diner-contract";
 import { demoReceiptForOrder, enqueueDemoReceipt } from "./tax-demo-service";
+import { getDinerOrderingAvailability } from "./platform-demo-store";
 
 const TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina";
@@ -455,9 +456,14 @@ function releaseQuote(session: MutableSession): void {
 function serialize(session: MutableSession | undefined): DinerBootstrap {
   const lines = session ? cartLines(session.cart) : [];
   const currentTime = new Date().toISOString();
+  const ordering = getDinerOrderingAvailability();
   return {
     demo: true,
     authenticated: Boolean(session),
+    ordering: {
+      available: ordering.orderingAvailable,
+      message: ordering.message,
+    },
     venue: {
       id: "bar-la-esquina",
       name: "Bar La Esquina",
@@ -545,6 +551,10 @@ export function joinDinerSession(
   presenceCode: string,
 ): { token: string; bootstrap: DinerBootstrap } {
   if (qrToken !== QR_TOKEN) throw new DinerError("Este QR no es válido.", 404);
+  const ordering = getDinerOrderingAvailability();
+  if (!ordering.orderingAvailable) {
+    throw new DinerError(ordering.message!, 503);
+  }
   if (presenceCode !== PRESENCE_CODE) {
     throw new DinerError("Ese código no coincide con la mesa.", 403);
   }
@@ -575,6 +585,10 @@ export async function mutateDiner(
 ): Promise<DinerBootstrap> {
   const session = ensureSession(token);
   await settleDuePayment(session);
+  const ordering = getDinerOrderingAvailability();
+  if (!ordering.orderingAvailable && mutation.action !== "service.request") {
+    throw new DinerError(ordering.message!, 503);
+  }
 
   switch (mutation.action) {
     case "cart.add": {

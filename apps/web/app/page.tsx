@@ -18,6 +18,12 @@ export default function Home() {
       <Link className="primaryLink" href="/kds">
         Abrir KDS de Barra y Cocina
       </Link>
+      <Link className="primaryLink" href="/onboarding">
+        Configurar un local
+      </Link>
+      <Link className="primaryLink" href="/superadmin">
+        Abrir Superadmin de Tablio
+      </Link>
     </main>
   );
 }
