@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(27);
+select plan(43);
 
 -- Intenta cerrar el sprint sin persistencia durable; si falla, una caída
 -- podría borrar la obligación tributaria o su historial.
@@ -150,6 +150,97 @@ select ok(
 select has_column(
   'public', 'cashier_reconciliation_trace', 'tax_document_id',
   'reconciliation includes the tax document'
+);
+
+-- Intenta dejar el adaptador sin un camino durable ejecutable. Si falla, la
+-- boleta existiría sólo en la demo visual y un reinicio perdería el trabajo.
+select has_table('pgmq', 'q_tax_documents', 'dedicated DTE queue exists');
+select has_table('pgmq', 'q_tax_documents_dlq', 'dedicated DTE DLQ exists');
+select has_function(
+  'public',
+  'worker_read_tax_messages',
+  array['integer', 'integer'],
+  'DTE worker can lease queue messages'
+);
+select has_function(
+  'public',
+  'worker_prepare_tax_order',
+  array['uuid'],
+  'DTE worker can prepare the sale obligation'
+);
+select has_function(
+  'public',
+  'worker_record_tax_result',
+  array[
+    'uuid', 'text', 'text', 'text', 'text',
+    'text', 'text', 'text', 'integer'
+  ],
+  'DTE worker records provider outcome durably'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.worker_read_tax_messages(integer,integer)',
+    'EXECUTE'
+  ),
+  'user routes cannot consume the DTE queue'
+);
+select ok(
+  has_function_privilege(
+    'service_role',
+    'public.worker_read_tax_messages(integer,integer)',
+    'EXECUTE'
+  ),
+  'only the trusted service worker can consume the DTE queue'
+);
+
+-- Intenta dejar el consumidor como un proceso manual; si falla, las boletas
+-- podrían quedar pendientes hasta que alguien recuerde ejecutar el worker.
+select has_table(
+  'private', 'tax_worker_runtime',
+  'cron runtime stores only Vault references'
+);
+select ok(
+  exists (select 1 from pg_extension where extname = 'pg_cron'),
+  'pg_cron is installed for automatic DTE consumption'
+);
+select ok(
+  exists (select 1 from pg_extension where extname = 'pg_net'),
+  'pg_net is installed for authenticated Edge invocation'
+);
+select has_function(
+  'private', 'invoke_tax_document_consumer', array[]::text[],
+  'database can invoke the DTE Edge worker'
+);
+select has_function(
+  'private', 'configure_tax_worker_schedule', array['text', 'text'],
+  'DTE cron can be configured without storing plaintext keys'
+);
+select has_function(
+  'public', 'worker_validate_tax_cron_secret', array['text'],
+  'Edge worker has a narrow second-factor validator'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.worker_validate_tax_cron_secret(text)',
+    'EXECUTE'
+  ),
+  'user routes cannot validate or probe the cron secret'
+);
+select ok(
+  has_function_privilege(
+    'service_role',
+    'public.worker_validate_tax_cron_secret(text)',
+    'EXECUTE'
+  ),
+  'only the trusted worker can validate the cron secret'
+);
+select ok(
+  not has_table_privilege(
+    'service_role', 'private.tax_worker_runtime', 'SELECT'
+  ),
+  'even service role cannot read the stored Vault references directly'
 );
 
 select * from finish();

@@ -29,6 +29,7 @@ reintento auditado.
 - Venta, boleta, nota de crédito e intentos persistentes con RLS.
 - Idempotencia: una boleta por venta y una nota por reembolso.
 - Outbox/cola separados de la confirmación del pedido.
+- Cola `tax_documents`, DLQ y consumidor Edge desplegado, con `ProcessedEvent`, backoff y ACK.
 - PWA con correo opcional, estado y representación descargable demo.
 - Caja con salud DTE, acumulación, antigüedad, reintento y tercera columna de conciliación.
 - ADR-006 con LibreDTE, Nubox, Bsale y Facturación.cl como hipótesis no verificadas.
@@ -54,7 +55,8 @@ reintentar la boleta fallida del pedido #1042.
 ## Evidencia ejecutada
 
 - Vitest: **67/67** verde.
-- pgTAP remoto de Sprint 7: **27/27** verde con rollback.
+- pgTAP remoto de Sprint 7: **43/43** verde con rollback.
+- pgTAP remoto de aislamiento entre tenants: **19/19** verde con rollback.
 - E2E: **21/21** recorridos verdes. La suite de garzón tuvo una espera transitoria en la
   corrida conjunta y pasó **4/4** al repetirla de forma aislada.
 - TypeScript: verde.
@@ -63,8 +65,13 @@ reintentar la boleta fallida del pedido #1042.
 - Security Advisors de Supabase: **0 hallazgos**.
 - Performance Advisors: se corrigieron cuatro claves foráneas sin índice; quedan sólo
   `unused_index`, informativo mientras no hay tráfico real.
-- Migraciones `20260729041026`, `20260729042449` y `20260729043100`: aplicadas al proyecto
-  Supabase actual.
+- Migraciones `20260729041026`, `20260729042449`, `20260729043100`, `20260729043804`,
+  `20260729044446`, `20260729044806`, `20260729044925` y `20260729045057`: aplicadas al
+  proyecto Supabase actual.
+- Edge Function `tax-document-consumer`: desplegada, activa y con JWT obligatorio. `pg_cron`
+  la ejecuta cada minuto con un segundo factor cifrado en Vault; dos invocaciones reales
+  consecutivas —incluida una automática— respondieron HTTP 200. Una llamada sin JWT fue
+  rechazada con HTTP 401.
 
 ## Qué sigue abierto
 

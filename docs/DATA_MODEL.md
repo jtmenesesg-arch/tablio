@@ -20,8 +20,9 @@
   verde en el proyecto remoto, ejecutada dentro de una transacción con rollback)
 - **Tributación:** `20260729041026_sprint_07_tax_documents.sql` y hardening de índices
   `20260729042449_sprint_07_advisor_fixes.sql`, más corrección de carrera
-  `20260729043100_sprint_07_runtime_fixes.sql`
-- **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..27` verde
+  `20260729043100_sprint_07_runtime_fixes.sql` y cola/consumidor
+  `20260729043804_sprint_07_tax_queue_consumer.sql`
+- **Suite tributaria:** `supabase/tests/database/007_tax_documents.test.sql` (`1..34` verde
   en el proyecto remoto, ejecutada dentro de una transacción con rollback)
 
 ## Convenciones obligatorias
@@ -216,6 +217,8 @@ El reintento usa la tabla aprobada de ADR-000 (5 s, 15 s, 45 s, 2 min, 5 min, 15
 - `tax_documents`: obligación idempotente de boleta o nota de crédito, folio, URL/timbre,
   estado, error y reintentos.
 - `tax_document_attempts`: historial append-only para auditoría y salud reciente.
+- PGMQ `tax_documents` y `tax_documents_dlq`: cola y bandeja de fallos dedicadas, sin competir
+  con impresión/KDS.
 - `cashier_tax_provider_health`: vista `security_invoker` con volumen, antigüedad y tasa de
   fallos.
 - `cashier_reconciliation_trace`: ahora une Tablio, pasarela/liquidación y documento
@@ -230,6 +233,17 @@ Las cuatro tablas públicas nuevas tienen `tenant_id`, RLS habilitado y forzado.
 sólo lee con `tax.read`; no puede insertar ni marcar documentos emitidos. Preparar y registrar
 resultados pertenece a consumidores `service_role`. El reintento manual usa una RPC estrecha
 con `tax.retry`, motivo y `audit_log`.
+
+`supabase/functions/tax-document-consumer` está desplegada con verificación JWT. `pg_cron`
+la invoca cada minuto mediante `pg_net`, combinando el JWT público del proyecto con un segundo
+secreto aleatorio cifrado en Vault. La función valida ese secreto y usa `service_role` sólo
+internamente. Encola outbox pendiente, toma mensajes con visibility timeout, reclama
+`ProcessedEvent`, prepara la obligación, invoca el adaptador simulado y registra resultado
+antes del ACK. Las fallas usan el backoff común, DLQ dedicada y replay auditado.
+
+`private.tax_worker_runtime` guarda exclusivamente referencias a Vault, nunca claves en
+texto plano. Ni usuarios autenticados ni `service_role` pueden leer la tabla directamente;
+el worker sólo dispone de un RPC estrecho que responde si el segundo factor coincide.
 
 ## PWA del comensal implementada en Sprint 3
 

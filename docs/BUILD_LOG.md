@@ -374,16 +374,22 @@ después de distribuir propinas.
 
 - Se definió `TaxDocumentProvider` y un adaptador DTE simulado con éxito, falla, demora,
   duplicados, consulta, representación, nota de crédito y reintento.
-- Se aplicaron tres migraciones al Supabase actual: configuración/emisor por tenant,
+- Se aplicaron ocho migraciones al Supabase actual: configuración/emisor por tenant,
   referencias a Vault, venta/documento/intentos, RLS, outbox de reembolso, RPC de reintento,
-  índices y corrección de la carrera entre reembolso y preparación de la boleta original.
+  índices, corrección de la carrera entre reembolso y boleta original, cola DTE/DLQ dedicada
+  y ejecución automática con `pg_cron` + `pg_net`.
+- Se desplegó `tax-document-consumer` en Supabase Edge Functions. El cron usa un JWT válido
+  más un secreto aleatorio cifrado en Vault; la función usa `service_role` sólo internamente,
+  reclama mensajes idempotentes y aplica ACK, backoff o DLQ. Dos llamadas reales consecutivas
+  —una automática— respondieron HTTP 200.
 - La devolución de dinero quedó desacoplada del documento tributario: una nota pendiente crea
   una alerta sin retener la plata del cliente.
 - Caja alerta sobre más de 10 pendientes o 15 minutos de antigüedad y muestra salud
   funcionando/degradado/caído desde la tasa de fallos reciente.
 - La PWA muestra “emitiendo” después del pago y luego permite ver/descargar la representación
   demo; correo opcional queda registrado por el simulador.
-- Verificación: 67 Vitest, TypeScript, lint y build verdes; 27/27 pgTAP remoto; los 21 E2E
-  verdes. La suite de garzón requirió una repetición aislada tras un botón transitoriamente
-  deshabilitado y pasó 4/4. Security Advisors sin hallazgos. Los Advisors de rendimiento
-  quedaron sólo con `unused_index`, esperable sin tráfico real.
+- Verificación: 67 Vitest, TypeScript, lint y build verdes; 43/43 pgTAP de Sprint 7 y 19/19
+  del aislamiento multi-tenant remotos; los 21 E2E verdes. La suite de garzón requirió una
+  repetición aislada tras un botón transitoriamente deshabilitado y pasó 4/4. Security
+  Advisors sin hallazgos. Los Advisors de rendimiento quedaron sólo con `unused_index`,
+  esperable sin tráfico real.

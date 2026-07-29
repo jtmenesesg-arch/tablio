@@ -9,7 +9,7 @@ listos para producir.
 El proyecto completó **Sprint 7 — boleta electrónica**. PWA, KDS, garzón y caja ya cubren
 pedido pagado → producción → entrega → cierre financiero → respaldo tributario simulado, con
 excepciones accionables y datos sintéticos hasta el abono. Las migraciones están aplicadas y
-los 27 controles pgTAP tributarios pasaron en el Supabase actual; no hay pasarela, proveedor
+los 34 controles pgTAP tributarios pasaron en el Supabase actual; no hay pasarela, proveedor
 DTE ni impresora física real.
 
 [`ADR-001`](docs/adr/ADR-001-payment-gateway-spike.md) está **PROPUESTO, NO DECIDIDO**.
@@ -85,7 +85,7 @@ pnpm build
 ```
 
 En incrementos que cambien PostgreSQL se agrega `supabase test db`. Sprint 7 suma una suite
-pgTAP de 27 controles y recorridos de boleta, caída del proveedor, reintento y reembolso
+pgTAP de 34 controles y recorridos de boleta, caída del proveedor, reintento y reembolso
 independiente.
 
 La verificación remota verde y el recorrido real Auth → JWT → RLS ya pasaron. La suite pgTAP y
@@ -139,6 +139,12 @@ El reembolso monetario tampoco espera una nota de crédito: la devolución se co
 obligación tributaria pendiente queda crítica y reintentable. El puerto
 `TaxDocumentProvider` y el adaptador simulado no reemplazan la validación con proveedor real y
 asesor tributario exigida antes del piloto.
+
+En Supabase, el outbox tributario va a una cola y DLQ propias. La Edge Function
+`tax-document-consumer` está desplegada y se ejecuta cada minuto con `pg_cron`. La llamada
+automática combina un JWT público válido con un segundo secreto aleatorio guardado en Vault;
+la función usa `service_role` sólo internamente. Ninguna ruta de la PWA o caja puede consumir
+esa cola.
 
 ## Laboratorio de pagos
 

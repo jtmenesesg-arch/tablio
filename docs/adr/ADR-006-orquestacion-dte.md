@@ -40,6 +40,12 @@ vivirán cifradas en Supabase Vault; las tablas guardan sólo `vault_secret_id`.
 `service_role` para jobs/consumidores accede a esa referencia. Ninguna ruta de usuario usa
 `service_role`.
 
+La implementación usa una cola PGMQ `tax_documents` y su DLQ dedicada. La Edge Function
+`tax-document-consumer` está desplegada con JWT obligatorio. `pg_cron` la ejecuta cada minuto
+por `pg_net`; además del JWT público exige un secreto aleatorio cifrado en Vault, validado por
+un RPC que sólo puede usar `service_role`. Mensajes repetidos se reclaman mediante
+`ProcessedEvent`.
+
 ## Matriz propuesta — hipótesis sin verificar
 
 | Modo del tenant              | Tarjeta/wallet         | Efectivo/transferencia | Medio desconocido |

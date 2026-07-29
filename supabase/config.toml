@@ -4,6 +4,11 @@
 # working directory name when running `supabase init`.
 project_id = "tablio"
 
+[functions.tax-document-consumer]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/tax-document-consumer/index.ts"
+
 [api]
 enabled = true
 # Port to use for the API URL.
