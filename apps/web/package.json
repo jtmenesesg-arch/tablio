@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@tablio/tax-simulated": "workspace:*",
     "@tablio/application": "workspace:*",
     "@tablio/payments-simulated": "workspace:*",
     "next": "16.2.12",

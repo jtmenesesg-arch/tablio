@@ -5,3 +5,5 @@ export * from "./financial/stock-policy";
 export * from "./financial/durable-effect-consumer";
 export * from "./printing/printer-port";
 export * from "./printing/print-spool-worker";
+export * from "./tax/tax-document-provider";
+export * from "./tax/tax-document-handler";

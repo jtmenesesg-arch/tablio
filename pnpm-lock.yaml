@@ -48,6 +48,9 @@ importers:
       '@tablio/payments-simulated':
         specifier: workspace:*
         version: link:../../packages/payments-simulated
+      '@tablio/tax-simulated':
+        specifier: workspace:*
+        version: link:../../packages/tax-simulated
       next:
         specifier: 16.2.12
         version: 16.2.12(@babel/core@7.29.7)(@playwright/test@1.62.0)(@types/node@24.10.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -74,6 +77,12 @@ importers:
   packages/application: {}
 
   packages/payments-simulated:
+    dependencies:
+      '@tablio/application':
+        specifier: workspace:*
+        version: link:../application
+
+  packages/tax-simulated:
     dependencies:
       '@tablio/application':
         specifier: workspace:*
