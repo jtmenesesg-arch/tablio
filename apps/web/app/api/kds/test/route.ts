@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createPaidTicketForLatencyTest,
   getKdsBootstrap,
+  kdsTicketStates,
   KdsConflictError,
   resetKdsForTest,
 } from "../../../../lib/kds-demo-store";
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
       action?: string;
       stationId?: "barra" | "cocina";
       orderNumber?: number;
+      ticketId?: string;
     };
     if (body.action === "reset") {
       resetKdsForTest();
@@ -27,6 +29,11 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ticketId,
         bootstrap: getKdsBootstrap(body.stationId),
+      });
+    }
+    if (body.action === "ticket_state" && body.ticketId) {
+      return NextResponse.json({
+        state: kdsTicketStates([body.ticketId]).get(body.ticketId),
       });
     }
     throw new KdsConflictError("Acción de prueba inválida.", 400);

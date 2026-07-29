@@ -53,6 +53,7 @@ export function mutateKds(
 export function appendPaidOrderToKds(input: {
   orderId: string;
   orderNumber: number;
+  amountClp?: number;
   tableName: string;
   alias: string;
   displayName?: string;
@@ -108,6 +109,7 @@ export function createPaidTicketForLatencyTest(input: {
   appendPaidOrderToKds({
     orderId,
     orderNumber: input.orderNumber ?? Math.floor(100 + Math.random() * 800),
+    amountClp: 14_400,
     tableName: "Mesa 8",
     alias: "Zorro Azul",
     displayName: "Prueba",

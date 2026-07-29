@@ -210,6 +210,7 @@ export class KdsDemoRepository {
   appendPaidOrder(input: {
     orderId: string;
     orderNumber: number;
+    amountClp?: number;
     tableName: string;
     alias: string;
     displayName?: string;
@@ -242,6 +243,7 @@ export class KdsDemoRepository {
         tenantId: DEMO_TENANT_ID,
         orderId: input.orderId,
         orderNumber: input.orderNumber,
+        amountClp: input.amountClp,
         tableName: input.tableName,
         alias: input.alias,
         displayName: input.displayName,

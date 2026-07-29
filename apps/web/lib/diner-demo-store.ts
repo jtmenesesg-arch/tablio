@@ -13,6 +13,10 @@ import {
   kdsTicketStates,
   mutateKds,
 } from "./kds-demo-store";
+import {
+  appendDinerPaymentTask,
+  appendDinerServiceTask,
+} from "./waiter-demo-store";
 import type {
   CartLine,
   DinerBootstrap,
@@ -68,7 +72,7 @@ type MutableSession = {
     settlesAt: number;
   };
   orders: DinerOrder[];
-  actionRequests: Map<string, number>;
+  actionRequests: Map<string, { id: string; requestedAt: number }>;
   waiterPaymentRequest?: WaiterPaymentRequest;
 };
 
@@ -408,6 +412,7 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
   appendPaidOrderToKds({
     orderId,
     orderNumber,
+    amountClp: quote.totalClp,
     tableName: "Mesa 8",
     alias: session.alias,
     displayName: session.displayName,
@@ -480,7 +485,9 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
     actions: actionSeed.map((action) => ({
       ...action,
       lastRequestedAt: session?.actionRequests.has(action.id)
-        ? new Date(session.actionRequests.get(action.id)!).toISOString()
+        ? new Date(
+            session.actionRequests.get(action.id)!.requestedAt,
+          ).toISOString()
         : undefined,
     })),
     waiterPaymentRequest: session?.waiterPaymentRequest,
@@ -720,13 +727,26 @@ export async function mutateDiner(
         throw new DinerError("Agrega algo antes de llamar al garzón.", 409);
       }
       releaseQuote(session);
+      const requestedAt = new Date().toISOString();
+      const requestId = randomUUID();
       session.waiterPaymentRequest = {
-        id: randomUUID(),
-        requestedAt: new Date().toISOString(),
+        id: requestId,
+        requestedAt,
         status: "notified",
         message:
           "Pendiente de pago con el garzón · tu pedido aún no fue enviado a la barra",
       };
+      appendDinerPaymentTask({
+        id: requestId,
+        alias: session.alias,
+        displayName: session.displayName,
+        requestedAt,
+        items: cartLines(session.cart).map((line) => ({
+          name: `${line.productName}${line.variantName ? ` · ${line.variantName}` : ""}`,
+          quantity: line.quantity,
+          note: line.note,
+        })),
+      });
       break;
     }
     case "service.request": {
@@ -738,9 +758,23 @@ export async function mutateDiner(
       const lastRequested = session.actionRequests.get(action.id);
       if (
         !lastRequested ||
-        now() - lastRequested >= action.cooldownSeconds * 1000
+        now() - lastRequested.requestedAt >= action.cooldownSeconds * 1000
       ) {
-        session.actionRequests.set(action.id, now());
+        const requestedAt = now();
+        const requestId = randomUUID();
+        session.actionRequests.set(action.id, {
+          id: requestId,
+          requestedAt,
+        });
+        appendDinerServiceTask({
+          id: requestId,
+          actionId: action.id,
+          label: action.label,
+          description: action.description,
+          alias: session.alias,
+          displayName: session.displayName,
+          requestedAt: new Date(requestedAt).toISOString(),
+        });
       }
       break;
     }

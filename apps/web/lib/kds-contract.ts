@@ -18,6 +18,7 @@ export type KdsTicket = Readonly<{
   tenantId: string;
   orderId: string;
   orderNumber: number;
+  amountClp?: number;
   tableName: string;
   alias: string;
   displayName?: string;
