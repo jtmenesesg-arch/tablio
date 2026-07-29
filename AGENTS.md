@@ -36,8 +36,10 @@ Contexto de uso real: un bar lleno, viernes 23:30. Ruido, poca luz, apuro, gente
 3. **Modelo A:** cada bar es comercio directo ante la pasarela y recibe sus propios fondos.
    **Tablio NUNCA custodia, retiene ni distribuye dinero de las ventas.**
 4. **Multi-tenant:** PostgreSQL (Supabase) + `tenant_id` obligatorio + **Row Level Security**.
-5. **Nada se produce sin confirmación de pago server-side verificable.** El frontend JAMÁS
-   es fuente de verdad de un pago.
+5. **Nada se produce sin confirmación de pago server-side verificable**, salvo un pedido con
+   crédito de mesa explícitamente habilitado, permisado, vigente y dentro de límites en la
+   misma transacción. Esa excepción jamás se marca como pagada. El frontend JAMÁS es fuente
+   de verdad de un pago.
 6. **CheckoutQuote inmutable** antes de iniciar cualquier pago.
 7. **Idempotencia:** cero efectos comerciales duplicados ante mensajes repetidos.
 8. **Conciliación** hasta el abono real, como dominio central del sistema.
@@ -244,7 +246,9 @@ y agrégalo a `GLOSSARY.md`. Si algo puede afectar plata o datos, **adviértelo 
 - No cambiar decisiones congeladas en silencio.
 - No custodiar, retener ni dispersar fondos de las ventas.
 - No implementar fee por transacción, `application_fee` ni split de pagos.
-- No dejar rutas de plata sin idempotencia, sin confirmación server-side o sin test.
+- No dejar rutas de plata sin idempotencia, sin confirmación server-side o sin test. La única
+  excepción es crédito de mesa autorizado según ADR-008, que conserva deuda explícita y
+  auditoría en vez de fingir un pago.
 - No usar colas en memoria para nada crítico.
 - No avanzar varios incrementos sin feedback.
 - No entregar código sin el reporte de la sección 7.
