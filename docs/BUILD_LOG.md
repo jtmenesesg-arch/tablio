@@ -563,11 +563,9 @@ impresión física, despliegue/observabilidad y validaciones de infraestructura 
 ### Verificación
 
 - Vitest 125/125, TypeScript, ESLint y build verdes.
-- Playwright Sprint 12 4/4 en la última ejecución completa; el quinto caso de misma mesa quedó
-  añadido y cubierto en dominio, pero el límite del entorno impidió su reejecución.
-- Última ejecución conservada de pgTAP Sprint 12: 31/31; aislamiento 19/19. La suite actual
-  tiene 38 casos y queda pendiente de repetición después de aplicar el último ajuste aditivo de
-  reembolsos.
-- Advisors sin hallazgos Sprint 12 tras cubrir claves foráneas y separar policies.
-- Pendiente operativo transitorio: aplicar
-  `20260729214000_sprint_12_tip_refund_policy.sql` cuando vuelva el acceso del conector.
+- Playwright Sprint 12: 5/5, incluido el reclamo desde otro dispositivo de la misma mesa.
+- pgTAP Sprint 12: 38/38 remoto; aislamiento existente: 19/19.
+- Las seis migraciones quedaron aplicadas en Supabase, incluida la política final de
+  reembolsos de propina, límite antiabuso y vencimiento durable de invitaciones.
+- Advisors ejecutados después de migrar: ningún hallazgo nuevo de seguridad ni clave foránea
+  sin índice atribuible a Sprint 12. Se mantienen OI-008, OI-019 y OI-023.

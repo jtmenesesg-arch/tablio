@@ -1,5 +1,7 @@
 # Sprint 12 — Momento del pago
 
+**Estado: CERRADO.**
+
 ## Para una persona no técnica
 
 Tablio ahora puede ofrecer uno o dos productos adicionales sin entorpecer el pago, activar un
@@ -46,24 +48,19 @@ pnpm dev:e2e
 
 - Vitest: 125/125.
 - TypeScript, ESLint y build productivo: verdes.
-- Playwright Sprint 12: 4/4 recorridos verdes antes de agregar el quinto recorrido de misma
-  mesa. Ese caso adicional está cubierto por test unitario y compilación, pero su última
-  ejecución Playwright quedó impedida por el límite temporal del entorno Codex.
-- La última ejecución completa conservada de pgTAP Sprint 12 fue 31/31, antes de las
-  migraciones aditivas finales. La suite actual quedó ampliada a 38 casos y requiere aplicar
-  primero la migración pendiente para poder ejecutarse íntegra.
+- Playwright Sprint 12: 5/5 recorridos verdes, incluida invitación a otro dispositivo de la
+  misma mesa y cancelación con devolución.
+- pgTAP Sprint 12: 38/38 en el proyecto remoto, ejecutado con rollback.
 - Aislamiento multi-tenant existente: 19/19.
-- Advisors: cero hallazgos de seguridad o claves foráneas sin índice para las tablas Sprint 12
-  aplicadas.
+- Advisors: ningún hallazgo nuevo de seguridad ni clave foránea sin índice atribuible a Sprint 12. Permanecen los avisos históricos OI-019/OI-023 y los índices sin uso observables sólo con
+  tráfico real bajo OI-008.
 
 ## Estado de aplicación remota
 
-Supabase recibió el esquema principal, correcciones de índices, guard de mesa destino y soporte
-de invitaciones en la misma mesa. La migración aditiva final
-`20260729214000_sprint_12_tip_refund_policy.sql` quedó preparada y verificada por compilación,
-pero el conector alcanzó su límite de uso antes de aplicarla. El sprint no debe considerarse
-cerrado remotamente hasta aplicar esa migración y volver a ejecutar los 38 casos pgTAP y los
-advisors.
+Supabase recibió las seis migraciones de Sprint 12, incluida
+`20260729214000_sprint_12_tip_refund_policy.sql`. El historial remoto registra
+`sprint_12_tip_refund_policy`, pgTAP llegó a `ok 38` y los advisors fueron ejecutados después
+de la aplicación. No quedan migraciones ni verificaciones remotas pendientes para este sprint.
 
 ## Decisiones y asuntos abiertos
 
