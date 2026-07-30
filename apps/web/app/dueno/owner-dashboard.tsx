@@ -57,6 +57,7 @@ export function OwnerDashboard() {
     <main className="ownerShell">
       <header className="ownerTop">
         <div>
+          <span className="demoPill">MODO DEMO · NO MUEVE DINERO REAL</span>
           <p>Panel del dueño · {data.tenant.name}</p>
           <h1>{data.story.headline}</h1>
         </div>

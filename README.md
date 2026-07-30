@@ -191,18 +191,26 @@ pagos de sus comensales.
 
 ## Cómo desplegar
 
-El repositorio local está vinculado al proyecto Vercel `tablio`. Antes del primer despliegue se
-debe verificar que Root Directory apunte a `apps/web`; Sprint 1 no publica producción.
+La demo pública está desplegada en `https://tabliocl.vercel.app`:
 
-Cuando `apps/web` esté creado y la configuración de Vercel apunte a ese directorio:
+- PWA: `https://tabliocl.vercel.app/mesa/demo-mesa-8`, código `4826`.
+- KDS: `https://tabliocl.vercel.app/kds`.
+- Garzón: `https://tabliocl.vercel.app/garzon`, PIN `2468`.
+- Caja: `https://tabliocl.vercel.app/caja`.
+- Dueño: `https://tabliocl.vercel.app/dueno`.
+
+El proyecto Vercel `tablio` usa `apps/web` como Root Directory e incluye los paquetes
+compartidos del monorepo. La configuración versionada está en `apps/web/vercel.json`.
+Para publicar desde el CLI:
 
 ```bash
-vercel
-vercel --prod
+vercel deploy --prod --yes --logs
 ```
 
-- `vercel` crea una versión de prueba.
-- `vercel --prod` publica en producción.
+Producción configura `TABLIO_PAYMENT_GATEWAY=simulated`. La aplicación además falla cerrada si
+se intenta iniciar esta demo con otro adaptador. KDS, garzón y caja escriben sus snapshots demo
+en `/tmp/tablio/`: es almacenamiento temporal de Vercel y puede reiniciarse al reciclar una
+instancia o desplegar una versión nueva. No contiene dinero ni datos reales.
 
 Las variables se configuran en Supabase/Vercel o en `.env.local`. Los archivos `.env*` y
 `.vercel/` están ignorados por Git. Nunca se pega una clave en código, documentación, commits

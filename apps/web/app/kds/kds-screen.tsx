@@ -471,6 +471,7 @@ export function KdsScreen() {
           <div>
             <strong>Tablio KDS</strong>
             <span>{data?.venue.name ?? "Conectando…"}</span>
+            <span className="kdsDemoFlag">DEMO · SIN DINERO REAL</span>
           </div>
         </div>
         <nav className="kdsStationTabs" aria-label="Estación">

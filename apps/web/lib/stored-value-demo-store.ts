@@ -15,6 +15,7 @@ import {
   InMemoryPaymentEventStore,
   SimulatedPaymentGateway,
 } from "@tablio/payments-simulated";
+import { assertSimulatedPaymentGateway } from "./demo-payment-runtime";
 
 export const STORED_VALUE_TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina:stored-value";
@@ -117,6 +118,7 @@ type DemoState = {
 };
 
 function createState(): DemoState {
+  assertSimulatedPaymentGateway();
   const gateway = new SimulatedPaymentGateway(
     "tablio-stored-value-demo-webhook-secret",
   );

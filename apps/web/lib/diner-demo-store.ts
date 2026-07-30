@@ -41,6 +41,7 @@ import { demoReceiptForOrder, enqueueDemoReceipt } from "./tax-demo-service";
 import { getDinerOrderingAvailability } from "./platform-demo-store";
 import { loyaltyDemoStore, LOYALTY_DEMO_TENANT_ID } from "./loyalty-demo-store";
 import { storedValueDemoStore } from "./stored-value-demo-store";
+import { assertSimulatedPaymentGateway } from "./demo-payment-runtime";
 
 const TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina";
@@ -331,6 +332,7 @@ function newCart(): MutableCart {
 }
 
 function createState(): DemoState {
+  assertSimulatedPaymentGateway();
   const gateway = new SimulatedPaymentGateway(
     "tablio-diner-demo-webhook-secret",
   );

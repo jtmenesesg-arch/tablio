@@ -3137,6 +3137,18 @@ input {
   line-height: 1;
 }
 
+.kdsBrand .kdsDemoFlag {
+  width: fit-content;
+  margin-top: 3px;
+  padding: 3px 7px;
+  color: #111110;
+  background: #f8b84e;
+  border-radius: 4px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
 .kdsBrand span:last-child,
 .kdsConnection span {
   color: #c9c9c5;

@@ -2,6 +2,38 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-07-30 — Demo pública en Vercel
+
+### Qué cambió
+
+- Se corrigió el proyecto Vercel `tablio`: framework Next.js, Root Directory `apps/web`,
+  paquetes compartidos incluidos y Node.js 24.
+- Se publicó la demo en `https://tabliocl.vercel.app` sin protección SSO para que abra desde
+  cualquier celular.
+- Se configuró `TABLIO_PAYMENT_GATEWAY=simulated` y rutas temporales escribibles para los
+  snapshots demo de KDS, garzón y caja. No se subieron llaves de Supabase ni credenciales
+  financieras.
+- La PWA, KDS, garzón, caja y dueño muestran modo demo. Una guarda server-side impide iniciar
+  esta aplicación con una pasarela distinta del adaptador simulado.
+- Se retiró la integración Git antigua de otro repositorio `tablio`. Vercel no autorizó
+  conectar `jtmenesesg-arch/tablio`; por ahora la publicación se hace explícitamente por CLI.
+
+### Verificación
+
+- Build local y build remoto Vercel verdes con Next.js 16.2.12.
+- TypeScript, ESLint, Prettier y 141/141 tests Vitest verdes.
+- Las cinco rutas públicas respondieron HTTP 200 sin login Vercel.
+- Se recorrió por Internet código de mesa `4826` → carrito → quote `$4.500` → pago simulado
+  → confirmación server-side → un pedido → una comanda recuperada por KDS.
+- El laboratorio remoto devolvió `x-tablio-demo-mode: true`,
+  `MODO DEMO — NO MUEVE DINERO REAL`, un evento de proveedor simulado y un outbox.
+
+### Límite conocido
+
+Los snapshots de interfaz usan `/tmp` y pueden reiniciarse cuando Vercel recicla una instancia
+o al desplegar. Es aceptable para esta demostración sin dinero; no reemplaza PostgreSQL ni la
+durabilidad exigida para un piloto.
+
 ## 2026-07-27 — Conexiones de infraestructura
 
 ### Qué cambió
