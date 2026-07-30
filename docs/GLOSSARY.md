@@ -178,3 +178,19 @@
   por el cierre de la mesa destino.
 - **Propina congelada:** destinatario trabajador/turno validado al crear el quote y que no se
   reasigna silenciosamente.
+
+## Términos de Sprint 13
+
+- **Saldo prepagado:** obligación del bar con un cliente que ya entregó dinero y todavía no
+  recibió productos. No es ingreso al cargar.
+- **Dinero cargado:** parte pagada por el cliente; permanece separada del bono.
+- **Bono:** valor regalado por el bar. Nunca se transforma silenciosamente en devolución de
+  dinero.
+- **Ledger de saldo:** movimientos append-only cuya suma determina el balance.
+- **Lote:** origen identificable de dinero o bono, con fecha y eventual vencimiento.
+- **FEFO:** primero vence, primero se usa dentro de cada componente.
+- **Pago mixto:** un quote cubierto en parte con saldo y en parte por pasarela.
+- **Pasivo de clientes:** suma que el local aún debe entregar en productos o devolver; jamás se
+  presenta como caja disponible.
+- **Wind-down:** período controlado sin nuevas recargas para consumir o devolver saldos antes
+  de cerrar un local.

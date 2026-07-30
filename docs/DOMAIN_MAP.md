@@ -313,3 +313,32 @@ carrito mutable
 Realtime refresca happy hour y avisos; PostgreSQL conserva precio, estado e idempotencia. Una
 invitación no reclamada nunca llega al KDS. La propina usa el trabajador congelado aunque
 termine su turno antes del cierre del local.
+
+## Saldo prepagado
+
+```text
+identidad recuperable + consentimiento
+              ↓
+CheckoutQuote de recarga → pago externo → confirmación server-side
+              ↓                              ↓ duplicado
+      lote dinero + lote bono          mismo comprobante
+              ↓
+carrito → quote de compra inmutable
+          ├─ saldo reservado (bono primero + FEFO)
+          └─ diferencia externa
+                    ↓ pago confirmado
+        pedido + consumo ledger, atómicos
+                    ↓
+ cierre: recargas | ingreso consumido | pasivo pendiente
+                                      ├─ dueño
+                                      └─ superadmin + alerta
+```
+
+El dominio de pagos sigue confirmando; saldo sólo aporta otra fuente de pago. El frontend no
+puede acreditar, asignar lotes ni recalcular la diferencia. El agregado financiero que
+contiene quote, asignaciones, pago, pedido, ledger y outbox conserva la misma idempotencia del
+núcleo.
+
+En suspensión se detienen recargas y se abre wind-down. En cierre se conservan devoluciones y
+se bloquea la eliminación del tenant hasta llevar el pasivo a cero. La política legal y
+tributaria permanece en OI-025.

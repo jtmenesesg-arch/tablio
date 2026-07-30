@@ -775,3 +775,46 @@ cero, referencia y costo por premio. Ambas vistas son `security_invoker`.
 
 Todas las tablas nuevas tienen `tenant_id`, claves compuestas, RLS habilitado/forzado y grants
 de lectura según permiso. Las escrituras operativas permanecen en funciones internas.
+
+## Saldo prepagado implementado en Sprint 13
+
+### Cuenta, lotes y ledger
+
+- `tenant_stored_value_settings` nace apagada y bloqueada para producción. Configura bono,
+  orden de consumo, vigencias, aviso, tope individual ($40.000 por defecto), tope total
+  opcional y umbral de superadmin.
+- `stored_value_accounts` enlaza una identidad recuperable con un tenant. Un perfil no puede
+  tener dos cuentas en el mismo bar.
+- `stored_value_lots` conserva cada origen como `loaded_money` o `bonus`; es inmutable.
+- `stored_value_ledger_entries` acredita o debita recarga, consumo, devolución, expiración y
+  ajuste. Su suma es el saldo; no existe balance mutable.
+- `stored_value_expiry_notifications` demuestra qué aviso se generó antes de una expiración.
+
+### Quotes, pagos y pedidos
+
+- `stored_value_topup_quotes` tipa un `CheckoutQuote` como recarga y congela dinero, bono,
+  política y expiración.
+- `stored_value_quote_allocations` reserva lotes al quote con bono-primero y FEFO. Rechazo,
+  abandono o expiración liberan; un pedido confirmado consume exactamente esa asignación.
+- `stored_value_topup_receipts` exige `payment_id` y `provider_payment_event_id`; una
+  restricción única impide acreditar dos veces.
+- `orders.stored_value_applied_clp`, `external_payment_clp` y
+  `stored_value_policy_version` copian la mezcla. El total comercial no cambia.
+- `stored_value_topup_refunds` enlaza una recarga intacta con un `Refund`; los débitos del
+  ledger eliminan tanto dinero como bono sin borrar evidencia.
+- `stored_value_manual_adjustments` enlaza el movimiento con trabajador y motivo.
+
+### Conciliación y plataforma
+
+- El cierre agrega `stored_value_topups_cash_in_clp`,
+  `stored_value_consumed_revenue_clp`, `stored_value_expired_clp` y
+  `stored_value_liability_clp`.
+- `stored_value_account_balances` y `tenant_stored_value_liabilities` derivan pasivos desde
+  el ledger. `owner_stored_value_metrics` separa las tres historias financieras.
+- `superadmin_stored_value_liabilities()` cruza tenants sólo tras comprobar membresía de
+  plataforma. `superadmin_set_stored_value_alert_threshold` exige motivo y audita.
+- `tenants_block_delete_with_stored_value` impide borrar un tenant si la suma del ledger sigue
+  positiva.
+
+Todas las tablas de Sprint 13 tienen RLS habilitado y forzado. Los usuarios autenticados sólo
+leen el tenant de su claim; las escrituras financieras pasan por funciones internas.

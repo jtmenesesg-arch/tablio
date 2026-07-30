@@ -569,3 +569,31 @@ impresión física, despliegue/observabilidad y validaciones de infraestructura 
   reembolsos de propina, límite antiabuso y vencimiento durable de invitaciones.
 - Advisors ejecutados después de migrar: ningún hallazgo nuevo de seguridad ni clave foránea
   sin índice atribuible a Sprint 12. Se mantienen OI-008, OI-019 y OI-023.
+
+## 2026-07-29 — Sprint 13 · Saldo prepagado
+
+### Qué cambió
+
+- Se agregó saldo por perfil y tenant con ledger append-only y lotes separados de dinero/bono.
+- La recarga usa quote, pago simulado y confirmación server-side idempotente; nunca crea pedido.
+- El quote congela asignaciones y política. El intento externo cobra sólo la diferencia.
+- Se eligió bono primero + FEFO y se agregaron vigencias/avisos separados.
+- El tope individual es $40.000 por defecto; el local puede fijar un tope total.
+- Caja consulta, ajusta con motivo y devuelve recargas intactas. Dueño y cierre separan entrada
+  por recarga, ingreso por consumo y pasivo acumulado.
+- Superadmin ve el pasivo por tenant, configura alerta y no puede cerrar un tenant con saldo.
+- Revocar identidad congela la cuenta con referencia de recuperación.
+
+### Seguridad y verificación
+
+- Diez tablas nuevas tienen RLS habilitado y forzado; el test principal prueba que el saldo de
+  Tenant A no existe para Tenant B y que falta de claim falla cerrado.
+- El RPC multi-tenant de superadmin valida membresía de plataforma y no depende de
+  `service_role` en una ruta de usuario.
+- Vitest 140/140 cubre confirmación, duplicados, tope, pago mixto, devolución y borrado de
+  identidad. Playwright 42/42 recorrió la regresión completa más recarga, alerta, mezcla y
+  límite.
+- pgTAP remoto: 48/48 Sprint 13 y 21/21 aislamiento/fail-closed. TypeScript, ESLint y build
+  verdes.
+- Security Advisors no agregó hallazgos. Performance Advisors confirmó cero claves foráneas
+  Sprint 13 sin índice; `unused_index` sigue bajo OI-008 hasta tener tráfico representativo.

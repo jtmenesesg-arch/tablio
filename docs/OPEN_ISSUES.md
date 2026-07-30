@@ -360,6 +360,23 @@ hardware hasta probarla con el piloto.
 - **Riesgo:** que la conciliación sea correcta pero el documento use una representación fiscal
   no aceptada.
 
+## OI-025 — Saldo prepagado: tributación, consumo y protección al cliente
+
+- **Estado:** bloqueante antes de habilitar saldo con dinero real.
+- **Implementado con simulador:** ledger append-only, dinero/bono separados, tope individual
+  de $40.000 por defecto, tope total opcional, FEFO, pago mixto, comprobante, devoluciones,
+  expiración auditada, wind-down y pasivo visible para dueño/superadmin.
+- **Pendiente tributario:** confirmar cuándo se emite DTE en recarga y consumo, cuándo se
+  reconoce ingreso, cómo se representa el bono y cómo se concilian devolución/nota de crédito.
+- **Pendiente legal/consumo:** confirmar si el dinero cargado puede caducar, plazo y forma del
+  aviso, derecho a devolución, textos de consentimiento, tratamiento del saldo al anonimizar,
+  y obligaciones si el bar cierra o se suspende.
+- **Pendiente operativo:** pasarela real para recargas, comunicación real de vencimientos y
+  protocolo contractual/financiero de wind-down del comercio.
+- **Riesgo:** el comercio custodia fondos de clientes. Aunque Tablio no los reciba, un cierre
+  con pasivo perjudica al cliente y reputacionalmente también a Tablio.
+- **Regla hasta cerrar:** función apagada por defecto y `production_validated = false`.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación al cierre de Sprint 11                                 |
@@ -387,3 +404,4 @@ hardware hasta probarla con el piloto.
 | OI-022 | Bloqueante de identidad real y privacidad antes del piloto           |
 | OI-023 | No bloqueante hoy; revisión de seguridad antes de producción         |
 | OI-024 | Bloqueante tributario antes del piloto                               |
+| OI-025 | Bloqueante legal y tributario antes de usar saldo con dinero real    |
