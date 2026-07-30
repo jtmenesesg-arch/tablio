@@ -1,0 +1,431 @@
+{
+  "generatedAt": "2026-07-30T04:32:16.709Z",
+  "environment": {
+    "baseUrl": "http://localhost:3102",
+    "route": "/dueno",
+    "readySelector": "[data-owner-dashboard-ready]",
+    "viewport": "360x740",
+    "browser": "system Google Chrome",
+    "cpuThrottle": 4,
+    "network": {
+      "profile": "slow_4g",
+      "roundTripLatencyMs": 150,
+      "downloadKbps": 1600,
+      "uploadKbps": 750,
+      "cache": "disabled",
+      "serviceWorker": "blocked"
+    }
+  },
+  "samples": [
+    {
+      "run": 1,
+      "usableMs": 2184,
+      "domContentLoadedMs": 831,
+      "loadMs": 1532,
+      "firstContentfulPaintMs": 864,
+      "transferredBytes": 209639,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/favicon.ico",
+          "transferSize": 2526
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "usableMs": 2097,
+      "domContentLoadedMs": 777,
+      "loadMs": 1483,
+      "firstContentfulPaintMs": 804,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "usableMs": 2106,
+      "domContentLoadedMs": 784,
+      "loadMs": 1490,
+      "firstContentfulPaintMs": 820,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "usableMs": 2105,
+      "domContentLoadedMs": 789,
+      "loadMs": 1487,
+      "firstContentfulPaintMs": 824,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 5,
+      "usableMs": 2109,
+      "domContentLoadedMs": 788,
+      "loadMs": 1488,
+      "firstContentfulPaintMs": 820,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 6,
+      "usableMs": 2104,
+      "domContentLoadedMs": 783,
+      "loadMs": 1489,
+      "firstContentfulPaintMs": 820,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    },
+    {
+      "run": 7,
+      "usableMs": 2097,
+      "domContentLoadedMs": 775,
+      "loadMs": 1482,
+      "firstContentfulPaintMs": 812,
+      "transferredBytes": 207113,
+      "resources": [
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3r7a1iygpkdx8.js",
+          "transferSize": 71273
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0b538wmmhgztd.js",
+          "transferSize": 39356
+        },
+        {
+          "name": "http://localhost:3102/fonts/plus-jakarta-sans-latin.woff2",
+          "transferSize": 27572
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/35gw_uugr81w6.css",
+          "transferSize": 16940
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/0tm-20pqj0n_4.js",
+          "transferSize": 13178
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/2zpj_qrwmx7b3.js",
+          "transferSize": 10858
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3v4xnr9n9yah7.js",
+          "transferSize": 10574
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/3-vjn5gxjv4r3.js",
+          "transferSize": 7891
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/turbopack-42czl12rfll4q.js",
+          "transferSize": 4451
+        },
+        {
+          "name": "http://localhost:3102/api/owner?venue=all",
+          "transferSize": 3268
+        },
+        {
+          "name": "http://localhost:3102/_next/static/chunks/37w1g0nisi9mq.js",
+          "transferSize": 1752
+        }
+      ]
+    }
+  ],
+  "usableSummary": {
+    "samples": 7,
+    "p50Ms": 2105,
+    "p95Ms": 2162,
+    "p99Ms": 2180,
+    "maxMs": 2184
+  },
+  "timingSummary": {
+    "domContentLoadedMs": {
+      "p50": 784,
+      "p95": 818,
+      "p99": 828
+    },
+    "loadMs": {
+      "p50": 1488,
+      "p95": 1519,
+      "p99": 1529
+    },
+    "firstContentfulPaintMs": {
+      "p50": 820,
+      "p95": 852,
+      "p99": 862
+    }
+  },
+  "transferSummary": {
+    "p50Bytes": 207113,
+    "p95Bytes": 208881
+  }
+}

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": false,
+    "baseUrl": ".",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
@@ -9,6 +10,9 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
+    "paths": {
+      "@/*": ["apps/web/*"]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,

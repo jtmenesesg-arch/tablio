@@ -13,4 +13,12 @@ páginas de origen:
 - [Papas crujientes](https://unsplash.com/photos/a-pile-of-french-fries-sitting-on-top-of-a-table-rTXgNusQbus),
   Shraga Kopstein.
 
-Plus Jakarta Sans se sirve localmente desde los archivos publicados por Google Fonts.
+Plus Jakarta Sans se sirve localmente como WOFF2 variable latino, publicado por
+[Google Fonts](https://fonts.google.com/specimen/Plus+Jakarta+Sans) bajo SIL Open Font
+License. El archivo de producción corresponde al subconjunto oficial
+`LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2` (SHA-256
+`cd8db90cd950e26bc8761f65d323588bd5cd112d326d6d322bc7c8ea86771215`).
+
+El brand book de `/brand/tablio_branding.html` y la aplicación de referencia
+`/reference/table-tray-qr/` fueron entregados por el fundador. La referencia se conserva sólo
+para tokens, shell y convenciones visuales; no aporta lógica de negocio a Tablio.

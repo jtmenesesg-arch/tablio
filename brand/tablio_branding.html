@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablio — Brand Guidelines</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --naranja:       #E8531D;
+  --naranja-dark:  #B83E10;
+  --naranja-mid:   #F2784A;
+  --naranja-light: #FEF0E8;
+  --naranja-pale:  #FFF8F4;
+  --negro:         #111110;
+  --gris-900:      #1C1C1A;
+  --gris-700:      #3D3D3A;
+  --gris-500:      #6B6B66;
+  --gris-300:      #BEBDB8;
+  --gris-100:      #F0EFE9;
+  --gris-50:       #F8F7F3;
+  --blanco:        #FEFEFE;
+  --verde:         #1A6B45;
+  --verde-light:   #E8F5EE;
+  --rojo:          #C0280F;
+  --rojo-light:    #FDECEA;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--gris-50);
+  color:var(--negro);
+  font-size:15px;
+  line-height:1.6;
+}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:99;
+  background:var(--negro);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 3rem;height:54px;
+}
+.nav-logo{
+  display:flex;align-items:center;gap:10px;
+}
+.logo-mark{
+  width:28px;height:28px;border-radius:7px;
+  background:var(--naranja);
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-mark svg{width:16px;height:16px;fill:white;}
+.logo-type{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:17px;font-weight:800;
+  color:var(--blanco);letter-spacing:-.4px;
+}
+.nav-tag{
+  font-size:10px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.3);
+}
+.nav-links{display:flex;gap:2px;}
+.nav-links a{
+  font-size:12px;color:rgba(255,255,255,.4);
+  text-decoration:none;padding:6px 12px;border-radius:5px;transition:.15s;
+}
+.nav-links a:hover{color:var(--blanco);background:rgba(255,255,255,.07);}
+
+/* HERO */
+.hero{
+  background:var(--negro);
+  padding:100px 3rem 80px;
+  position:relative;overflow:hidden;
+}
+.hero-grain{
+  position:absolute;inset:0;pointer-events:none;opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size:200px;
+}
+.hero-glow{
+  position:absolute;top:-120px;right:-80px;
+  width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle,rgba(232,83,29,.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-inner{max-width:920px;margin:0 auto;position:relative;}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(232,83,29,.12);border:1px solid rgba(232,83,29,.25);
+  color:var(--naranja);
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 14px 5px 8px;border-radius:20px;margin-bottom:28px;
+}
+.hero-pill span{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--naranja);
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-pill span svg{width:9px;height:9px;fill:white;}
+.hero h1{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:clamp(40px,7vw,72px);font-weight:800;
+  color:var(--blanco);line-height:1.02;letter-spacing:-2.5px;
+  margin-bottom:20px;
+}
+.hero h1 em{font-style:normal;color:var(--naranja);}
+.hero-sub{
+  font-size:16px;color:rgba(255,255,255,.4);
+  max-width:500px;font-weight:400;margin-bottom:0;line-height:1.7;
+}
+
+/* WRAP */
+.wrap{max-width:920px;margin:0 auto;padding:0 3rem;}
+section{padding:80px 0;}
+.section-rule{height:1px;background:rgba(0,0,0,.07);}
+
+/* LABELS */
+.label{
+  font-size:10px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gris-500);
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+}
+.label::after{content:'';flex:1;height:1px;background:rgba(0,0,0,.08);}
+
+h2{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:clamp(24px,3.5vw,36px);font-weight:800;
+  letter-spacing:-1px;line-height:1.1;margin-bottom:8px;
+}
+.sec-sub{
+  font-size:15px;color:var(--gris-500);max-width:500px;
+  font-weight:400;margin-bottom:48px;line-height:1.65;
+}
+
+/* ── LOGO ── */
+.logo-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin-bottom:24px;
+}
+.logo-card{
+  border-radius:16px;padding:48px 40px;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:24px;
+  border:1px solid rgba(0,0,0,.07);
+}
+.logo-card.light{background:var(--blanco);}
+.logo-card.dark{background:var(--negro);}
+.logo-card.orange{background:var(--naranja);}
+.logo-card.warm{background:var(--gris-100);}
+
+.logo-display{
+  display:flex;align-items:center;gap:12px;
+}
+.lm{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.lm svg{width:22px;height:22px;}
+.lm-orange{background:var(--naranja);}
+.lm-white{background:rgba(255,255,255,.15);}
+.lm-dark{background:var(--negro);}
+
+.lt{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:28px;font-weight:800;letter-spacing:-.8px;
+}
+.lt-dark{color:var(--negro);}
+.lt-white{color:var(--blanco);}
+.lt-orange-on-white{color:var(--naranja);}
+
+.logo-tag{
+  font-size:11px;font-weight:500;letter-spacing:.04em;
+  color:var(--gris-300);text-transform:uppercase;
+}
+.logo-card.dark .logo-tag{color:rgba(255,255,255,.25);}
+.logo-card.orange .logo-tag{color:rgba(255,255,255,.6);}
+
+/* logotipo tagline */
+.logo-sub-text{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:9px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gris-300);
+  margin-top:-18px;margin-left:52px;
+}
+.logo-card.dark .logo-sub-text{color:rgba(255,255,255,.25);}
+
+/* icono solo */
+.icon-row{
+  display:flex;align-items:center;gap:16px;
+  margin-bottom:12px;
+}
+.icon-solo{
+  width:56px;height:56px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+}
+.icon-solo svg{width:30px;height:30px;}
+.is-orange{background:var(--naranja);}
+.is-dark{background:var(--negro);}
+.is-white{background:var(--blanco);border:1px solid var(--gris-100);}
+
+/* ── COLORES ── */
+.color-section{display:flex;flex-direction:column;gap:32px;}
+.color-group-label{
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris-500);
+  margin-bottom:12px;
+}
+.color-row{display:flex;gap:12px;flex-wrap:wrap;}
+
+.swatch{
+  display:flex;flex-direction:column;
+  border-radius:14px;overflow:hidden;
+  border:1px solid rgba(0,0,0,.07);
+  width:160px;flex-shrink:0;
+}
+.swatch-color{height:80px;}
+.swatch-info{
+  background:var(--blanco);padding:14px 16px;
+}
+.swatch-name{font-size:13px;font-weight:700;margin-bottom:2px;}
+.swatch-hex{font-size:12px;color:var(--gris-500);font-family:monospace;}
+.swatch-use{font-size:11px;color:var(--gris-300);margin-top:4px;line-height:1.4;}
+
+.swatch-big{width:220px;}
+.swatch-big .swatch-color{height:110px;}
+
+/* ── TIPOGRAFÍA ── */
+.type-card{
+  background:var(--blanco);border:1px solid rgba(0,0,0,.07);
+  border-radius:16px;padding:36px 40px;margin-bottom:16px;
+}
+.type-family{
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris-500);margin-bottom:4px;
+}
+.type-role{
+  font-size:13px;color:var(--gris-500);margin-bottom:24px;
+}
+.type-sample-main{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:52px;font-weight:800;
+  letter-spacing:-2px;line-height:1;
+  margin-bottom:20px;
+}
+.type-sample-serif{
+  font-family:'Instrument Serif',serif;
+  font-size:48px;font-style:italic;
+  line-height:1.1;margin-bottom:20px;
+  color:var(--gris-700);
+}
+.type-weights{
+  display:flex;flex-direction:column;gap:8px;
+  border-top:1px solid var(--gris-100);padding-top:20px;
+}
+.tw{display:flex;align-items:baseline;gap:16px;}
+.tw-label{
+  width:80px;font-size:11px;color:var(--gris-300);
+  font-weight:400;flex-shrink:0;
+}
+.tw-sample{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;}
+.tw-400{font-weight:400;}
+.tw-500{font-weight:500;}
+.tw-700{font-weight:700;}
+.tw-800{font-weight:800;}
+
+.type-scale{
+  display:flex;flex-direction:column;gap:0;
+  background:var(--blanco);border:1px solid rgba(0,0,0,.07);
+  border-radius:16px;overflow:hidden;
+}
+.ts-row{
+  display:grid;grid-template-columns:100px 80px 1fr;
+  align-items:center;
+  padding:16px 24px;border-bottom:1px solid var(--gris-100);
+  gap:16px;
+}
+.ts-row:last-child{border-bottom:none;}
+.ts-name{font-size:11px;color:var(--gris-300);font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+.ts-size{font-size:11px;color:var(--gris-500);font-family:monospace;}
+.ts-sample{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;}
+
+/* ── ELEMENTOS ── */
+.elements-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+}
+.el-card{
+  background:var(--blanco);border:1px solid rgba(0,0,0,.07);
+  border-radius:16px;padding:28px 32px;
+}
+.el-card h4{
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris-500);margin-bottom:20px;
+}
+
+/* botones */
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.btn{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;font-weight:700;
+  border:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:.15s;
+}
+.btn-primary{
+  background:var(--naranja);color:white;
+  padding:11px 22px;border-radius:10px;
+}
+.btn-secondary{
+  background:var(--negro);color:white;
+  padding:11px 22px;border-radius:10px;
+}
+.btn-ghost{
+  background:transparent;color:var(--negro);
+  padding:10px 22px;border-radius:10px;
+  border:1.5px solid rgba(0,0,0,.15);
+}
+.btn-sm{
+  background:var(--naranja);color:white;
+  padding:7px 14px;border-radius:7px;font-size:12px;
+}
+.btn-pill{
+  background:var(--naranja-light);color:var(--naranja-dark);
+  padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;
+}
+
+/* badges */
+.badge-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.badge{
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:4px 10px;border-radius:20px;
+}
+.bd-orange{background:var(--naranja-light);color:var(--naranja-dark);}
+.bd-green{background:var(--verde-light);color:var(--verde);}
+.bd-red{background:var(--rojo-light);color:var(--rojo);}
+.bd-grey{background:var(--gris-100);color:var(--gris-700);}
+.bd-dark{background:var(--negro);color:white;}
+
+/* tags */
+.tag{
+  font-size:11px;font-weight:600;
+  padding:3px 10px;border-radius:5px;
+  border:1px solid;display:inline-block;
+}
+.tag-orange{border-color:var(--naranja-mid);color:var(--naranja-dark);}
+.tag-dark{border-color:rgba(0,0,0,.2);color:var(--gris-700);}
+
+/* inputs */
+.input-row{display:flex;flex-direction:column;gap:10px;}
+.inp{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;font-weight:400;
+  border:1.5px solid rgba(0,0,0,.12);
+  border-radius:10px;padding:11px 16px;
+  outline:none;background:var(--blanco);
+  color:var(--negro);transition:.15s;width:100%;
+}
+.inp:focus{border-color:var(--naranja);}
+.inp-label{font-size:12px;font-weight:600;color:var(--gris-700);margin-bottom:4px;}
+
+/* cards */
+.card-row{display:flex;gap:12px;}
+.mini-card{
+  flex:1;border-radius:12px;
+  border:1px solid rgba(0,0,0,.07);
+  background:var(--blanco);
+  padding:20px;
+}
+.mc-label{font-size:11px;color:var(--gris-500);margin-bottom:6px;}
+.mc-val{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.mc-trend{font-size:11px;margin-top:3px;}
+.mc-up{color:var(--verde);}
+
+/* ── ESPACIO Y RADIO ── */
+.spacing-row{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;}
+.sp{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.sp-box{background:var(--naranja);border-radius:4px;}
+.sp-label{font-size:11px;color:var(--gris-500);font-family:monospace;}
+
+.radius-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.rr{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.rr-box{
+  width:60px;height:60px;background:var(--naranja-light);
+  border:2px solid var(--naranja-mid);
+}
+.rr-label{font-size:11px;color:var(--gris-500);font-family:monospace;}
+
+/* ── TONO ── */
+.tone-grid{display:flex;flex-direction:column;gap:12px;}
+.tone-row{
+  display:grid;grid-template-columns:180px 1fr;gap:24px;
+  align-items:start;
+  background:var(--blanco);border:1px solid rgba(0,0,0,.07);
+  border-radius:12px;padding:20px 24px;
+}
+.tone-tag{
+  font-size:12px;font-weight:700;
+  display:flex;align-items:center;gap:8px;
+}
+.tone-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--naranja);flex-shrink:0;
+}
+.tone-ex{font-size:14px;color:var(--gris-700);line-height:1.55;}
+.tone-ex s{color:var(--gris-300);}
+.tone-ex strong{color:var(--negro);font-weight:600;}
+
+/* ── USOS ── */
+.uso-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+}
+.uso-card{border-radius:16px;padding:24px 28px;}
+.uso-si{background:var(--verde-light);border:1px solid #B8DECA;}
+.uso-no{background:var(--rojo-light);border:1px solid #EDBBBB;}
+.uso-label{
+  font-size:10px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:16px;
+}
+.uso-si .uso-label{color:var(--verde);}
+.uso-no .uso-label{color:var(--rojo);}
+.uso-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.uso-list li{
+  font-size:13px;display:flex;gap:10px;align-items:flex-start;
+  padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.05);
+}
+.uso-list li:last-child{border-bottom:none;padding-bottom:0;}
+.uso-si .uso-list li{color:#1A4D30;}
+.uso-no .uso-list li{color:#7A1A1A;}
+.uso-si .uso-list li::before{content:'✓';font-weight:700;color:var(--verde);flex-shrink:0;}
+.uso-no .uso-list li::before{content:'✕';font-weight:700;color:var(--rojo);flex-shrink:0;}
+
+/* ── FOOTER ── */
+.brand-footer{
+  background:var(--negro);padding:64px 3rem;
+}
+.bf-inner{max-width:920px;margin:0 auto;}
+.bf-logo{
+  display:flex;align-items:center;gap:12px;margin-bottom:32px;
+}
+.bf-lm{
+  width:44px;height:44px;border-radius:11px;
+  background:var(--naranja);
+  display:flex;align-items:center;justify-content:center;
+}
+.bf-lm svg{width:24px;height:24px;fill:white;}
+.bf-lt{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:24px;font-weight:800;
+  color:var(--blanco);letter-spacing:-.7px;
+}
+.bf-bottom{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:24px;border-top:1px solid rgba(255,255,255,.06);
+  flex-wrap:wrap;gap:12px;
+}
+.bf-note{font-size:12px;color:rgba(255,255,255,.2);}
+.bf-version{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,.2);
+}
+
+@media(max-width:680px){
+  nav{padding:0 1.25rem;}
+  .nav-links{display:none;}
+  .hero{padding:64px 1.25rem 56px;}
+  .wrap{padding:0 1.25rem;}
+  .logo-grid,.elements-grid,.uso-grid{grid-template-columns:1fr;}
+  .color-row{flex-direction:column;}
+  .swatch,.swatch-big{width:100%;}
+  .brand-footer{padding:48px 1.25rem;}
+  .tone-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16"><path d="M2 3.5C2 2.67 2.67 2 3.5 2h9C13.33 2 14 2.67 14 3.5v2C14 6.33 13.33 7 12.5 7h-9C2.67 7 2 6.33 2 5.5v-2zm0 6C2 8.67 2.67 8 3.5 8H8c.83 0 1.5.67 1.5 1.5v3c0 .83-.67 1.5-1.5 1.5H3.5C2.67 14 2 13.33 2 12.5v-3zm8 0C10 8.67 10.67 8 11.5 8H12.5C13.33 8 14 8.67 14 9.5v3c0 .83-.67 1.5-1.5 1.5H11.5C10.67 14 10 13.33 10 12.5v-3z"/></svg>
+    </div>
+    <div class="logo-type">tablio</div>
+  </div>
+  <div class="nav-tag">Brand Guidelines v1.0</div>
+  <div class="nav-links">
+    <a href="#logo">Logo</a>
+    <a href="#colores">Colores</a>
+    <a href="#tipografia">Tipografía</a>
+    <a href="#elementos">Elementos</a>
+    <a href="#tono">Tono</a>
+    <a href="#uso">Uso correcto</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grain"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-pill">
+      <span><svg viewBox="0 0 10 10"><path d="M5 1l1.2 2.5L9 4.1 7 6l.5 2.9L5 7.6 2.5 8.9 3 6 1 4.1l2.8-.6z"/></svg></span>
+      Brand Guidelines · 2025
+    </div>
+    <h1>Tablio.<br><em>Simple, cálido,</em><br>confiable.</h1>
+    <p class="hero-sub">El sistema visual completo de Tablio. Colores, tipografía, logo, componentes y voz. Todo lo que necesitas para comunicar la marca de forma coherente.</p>
+  </div>
+</div>
+
+<!-- LOGO -->
+<section id="logo">
+  <div class="wrap">
+    <div class="label">Identidad visual</div>
+    <h2>El logo</h2>
+    <p class="sec-sub">El símbolo representa una mesa con pedidos organizados — simple, legible a cualquier tamaño. El nombre en minúscula refuerza la cercanía.</p>
+
+    <div class="logo-grid">
+      <div class="logo-card light">
+        <div class="logo-display">
+          <div class="lm lm-orange">
+            <svg viewBox="0 0 22 22" fill="none">
+              <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+              <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+              <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+            </svg>
+          </div>
+          <div class="lt lt-dark">tablio</div>
+        </div>
+        <div class="logo-sub-text">Gestión de mesas · Chile</div>
+        <div class="logo-tag">Fondo claro · Principal</div>
+      </div>
+
+      <div class="logo-card dark">
+        <div class="logo-display">
+          <div class="lm lm-orange">
+            <svg viewBox="0 0 22 22" fill="none">
+              <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+              <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+              <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+            </svg>
+          </div>
+          <div class="lt lt-white">tablio</div>
+        </div>
+        <div class="logo-sub-text">Gestión de mesas · Chile</div>
+        <div class="logo-tag">Fondo oscuro</div>
+      </div>
+
+      <div class="logo-card orange">
+        <div class="logo-display">
+          <div class="lm lm-dark">
+            <svg viewBox="0 0 22 22" fill="none">
+              <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+              <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+              <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+            </svg>
+          </div>
+          <div class="lt lt-white">tablio</div>
+        </div>
+        <div class="logo-tag">Fondo naranja · Uso limitado</div>
+      </div>
+
+      <div class="logo-card warm">
+        <div class="logo-display">
+          <div class="lm lm-orange">
+            <svg viewBox="0 0 22 22" fill="none">
+              <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+              <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+              <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+            </svg>
+          </div>
+          <div class="lt lt-dark">tablio</div>
+        </div>
+        <div class="logo-tag">Fondo cálido · Materiales</div>
+      </div>
+    </div>
+
+    <div style="background:var(--blanco);border:1px solid rgba(0,0,0,.07);border-radius:16px;padding:28px 32px;margin-top:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-500);margin-bottom:20px;">Ícono solo · para app icon, favicon y redes</div>
+      <div class="icon-row">
+        <div class="icon-solo is-orange">
+          <svg viewBox="0 0 22 22" fill="none">
+            <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+            <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+            <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+          </svg>
+        </div>
+        <div class="icon-solo is-dark">
+          <svg viewBox="0 0 22 22" fill="none">
+            <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+            <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+            <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+          </svg>
+        </div>
+        <div class="icon-solo is-white">
+          <svg viewBox="0 0 22 22" fill="none">
+            <rect x="1" y="2" width="20" height="6" rx="2" fill="#E8531D"/>
+            <rect x="1" y="11" width="9" height="9" rx="2" fill="#E8531D"/>
+            <rect x="13" y="11" width="8" height="9" rx="2" fill="#E8531D"/>
+          </svg>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--gris-500);margin-top:8px;">Naranja sobre blanco · Blanco sobre negro · Naranja sobre blanco (inversión)</p>
+    </div>
+  </div>
+</section>
+
+<div class="section-rule"></div>
+
+<!-- COLORES -->
+<section id="colores">
+  <div class="wrap">
+    <div class="label">Sistema de color</div>
+    <h2>Paleta de marca</h2>
+    <p class="sec-sub">El naranja es el alma de Tablio. Cálido, enérgico, humano. El negro lo ancla. Los grises y el blanco dan espacio para respirar.</p>
+
+    <div class="color-section">
+      <div>
+        <div class="color-group-label">Colores principales</div>
+        <div class="color-row">
+          <div class="swatch swatch-big">
+            <div class="swatch-color" style="background:#E8531D;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Tablio Orange</div>
+              <div class="swatch-hex">#E8531D</div>
+              <div class="swatch-use">CTAs, logo, acentos, elementos activos</div>
+            </div>
+          </div>
+          <div class="swatch swatch-big">
+            <div class="swatch-color" style="background:#111110;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Tablio Black</div>
+              <div class="swatch-hex">#111110</div>
+              <div class="swatch-use">Nav, headers, texto primario, fondos</div>
+            </div>
+          </div>
+          <div class="swatch swatch-big">
+            <div class="swatch-color" style="background:#FEFEFE;border-bottom:1px solid #eee;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Blanco</div>
+              <div class="swatch-hex">#FEFEFE</div>
+              <div class="swatch-use">Tarjetas, fondos de sección, superficies</div>
+            </div>
+          </div>
+          <div class="swatch swatch-big">
+            <div class="swatch-color" style="background:#F8F7F3;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Warm White</div>
+              <div class="swatch-hex">#F8F7F3</div>
+              <div class="swatch-use">Fondo de página, superficies suaves</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="color-group-label">Escala del naranja</div>
+        <div class="color-row">
+          <div class="swatch">
+            <div class="swatch-color" style="background:#B83E10;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Dark</div>
+              <div class="swatch-hex">#B83E10</div>
+              <div class="swatch-use">Hover en botones</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#E8531D;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Base</div>
+              <div class="swatch-hex">#E8531D</div>
+              <div class="swatch-use">Principal</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#F2784A;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Mid</div>
+              <div class="swatch-hex">#F2784A</div>
+              <div class="swatch-use">Ilustraciones</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#FEF0E8;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Light</div>
+              <div class="swatch-hex">#FEF0E8</div>
+              <div class="swatch-use">Fondos de badges</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="color-group-label">Grises de soporte</div>
+        <div class="color-row">
+          <div class="swatch">
+            <div class="swatch-color" style="background:#3D3D3A;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">700</div>
+              <div class="swatch-hex">#3D3D3A</div>
+              <div class="swatch-use">Texto secundario</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#6B6B66;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">500</div>
+              <div class="swatch-hex">#6B6B66</div>
+              <div class="swatch-use">Labels, subtítulos</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#BEBDB8;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">300</div>
+              <div class="swatch-hex">#BEBDB8</div>
+              <div class="swatch-use">Placeholders, bordes</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#F0EFE9;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">100</div>
+              <div class="swatch-hex">#F0EFE9</div>
+              <div class="swatch-use">Separadores, fondos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="color-group-label">Colores semánticos</div>
+        <div class="color-row">
+          <div class="swatch">
+            <div class="swatch-color" style="background:#1A6B45;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Éxito</div>
+              <div class="swatch-hex">#1A6B45</div>
+              <div class="swatch-use">Confirmaciones, activo</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#C0280F;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Error</div>
+              <div class="swatch-hex">#C0280F</div>
+              <div class="swatch-use">Errores, alertas</div>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background:#B87C10;"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Aviso</div>
+              <div class="swatch-hex">#B87C10</div>
+              <div class="swatch-use">Pendiente, advertencia</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-rule"></div>
+
+<!-- TIPOGRAFÍA -->
+<section id="tipografia">
+  <div class="wrap">
+    <div class="label">Sistema tipográfico</div>
+    <h2>Tipografía</h2>
+    <p class="sec-sub">Una sola familia para toda la interfaz. Legible, moderna, con carácter propio. Para momentos editoriales, el serif en itálica agrega calidez.</p>
+
+    <div class="type-card">
+      <div class="type-family">Plus Jakarta Sans</div>
+      <div class="type-role">Fuente principal · Interfaz, headings, cuerpo, todo</div>
+      <div class="type-sample-main">Tablio</div>
+      <div class="type-weights">
+        <div class="tw"><span class="tw-label">Regular 400</span><span class="tw-sample tw-400">El restaurante del futuro, hoy.</span></div>
+        <div class="tw"><span class="tw-label">Medium 500</span><span class="tw-sample tw-500">El restaurante del futuro, hoy.</span></div>
+        <div class="tw"><span class="tw-label">Bold 700</span><span class="tw-sample tw-700">El restaurante del futuro, hoy.</span></div>
+        <div class="tw"><span class="tw-label">ExtraBold 800</span><span class="tw-sample tw-800">El restaurante del futuro, hoy.</span></div>
+      </div>
+    </div>
+
+    <div class="type-card">
+      <div class="type-family">Instrument Serif · Itálica</div>
+      <div class="type-role">Fuente editorial · Solo para frases de impacto, taglines, titulares de campaña</div>
+      <div class="type-sample-serif">"Menos viajes, más atención."</div>
+      <p style="font-size:13px;color:var(--gris-500);">Usar con moderación. Solo cuando queremos agregar calidez y carácter humano en piezas de marketing. Nunca en la interfaz del producto.</p>
+    </div>
+
+    <div class="type-scale">
+      <div class="ts-row" style="background:#F8F7F3;">
+        <span class="ts-name">Display</span>
+        <span class="ts-size">64–72px / 800</span>
+        <span class="ts-sample" style="font-size:40px;letter-spacing:-1.5px;">Tablio</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-name">H1</span>
+        <span class="ts-size">36–48px / 800</span>
+        <span class="ts-sample" style="font-size:32px;letter-spacing:-1px;">Gestión de mesas</span>
+      </div>
+      <div class="ts-row" style="background:#F8F7F3;">
+        <span class="ts-name">H2</span>
+        <span class="ts-size">24–30px / 800</span>
+        <span class="ts-sample" style="font-size:24px;letter-spacing:-.5px;">Cómo funciona</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-name">H3</span>
+        <span class="ts-size">18–20px / 700</span>
+        <span class="ts-sample" style="font-size:19px;font-weight:700;">El mozo ve todo en tiempo real</span>
+      </div>
+      <div class="ts-row" style="background:#F8F7F3;">
+        <span class="ts-name">Body</span>
+        <span class="ts-size">15–16px / 400</span>
+        <span class="ts-sample" style="font-size:15px;font-weight:400;letter-spacing:0;">El pedido llega directo a la cocina sin intermediarios.</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-name">Small</span>
+        <span class="ts-size">12–13px / 500</span>
+        <span class="ts-sample" style="font-size:12px;font-weight:500;letter-spacing:0;">Disponible en iOS y Android · Sin descarga</span>
+      </div>
+      <div class="ts-row" style="background:#F8F7F3;">
+        <span class="ts-name">Label</span>
+        <span class="ts-size">10–11px / 700</span>
+        <span class="ts-sample" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">NUEVO PEDIDO</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-rule"></div>
+
+<!-- ELEMENTOS -->
+<section id="elementos">
+  <div class="wrap">
+    <div class="label">Componentes UI</div>
+    <h2>Elementos visuales</h2>
+    <p class="sec-sub">La librería base de botones, badges, inputs y tarjetas que se usa en el producto y en materiales de comunicación.</p>
+
+    <div class="elements-grid">
+      <div class="el-card">
+        <h4>Botones</h4>
+        <div class="btn-row">
+          <button class="btn btn-primary">Empezar gratis</button>
+          <button class="btn btn-secondary">Ver demo</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost">Saber más</button>
+          <button class="btn btn-sm">Confirmar</button>
+          <button class="btn btn-pill">Nuevo ✦</button>
+        </div>
+        <p style="font-size:11px;color:var(--gris-300);margin-top:8px;">Radio: 10px estándar · 7px pequeño · 20px pill</p>
+      </div>
+
+      <div class="el-card">
+        <h4>Badges y estados</h4>
+        <div class="badge-row" style="margin-bottom:12px;">
+          <span class="badge bd-orange">En cocina</span>
+          <span class="badge bd-green">Entregado</span>
+          <span class="badge bd-red">Cancelado</span>
+          <span class="badge bd-grey">Pendiente</span>
+          <span class="badge bd-dark">Nuevo</span>
+        </div>
+        <div class="badge-row">
+          <span class="tag tag-orange">Plan Restaurante</span>
+          <span class="tag tag-dark">Mesa 4</span>
+        </div>
+      </div>
+
+      <div class="el-card">
+        <h4>Inputs</h4>
+        <div class="input-row">
+          <div>
+            <div class="inp-label">Nombre del restaurante</div>
+            <input class="inp" type="text" placeholder="Ej: La Piola Italiana" />
+          </div>
+          <div>
+            <div class="inp-label">Correo electrónico</div>
+            <input class="inp" type="email" placeholder="hola@mirestaurante.cl" />
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--gris-300);margin-top:8px;">Borde activo: Tablio Orange · Radio: 10px</p>
+      </div>
+
+      <div class="el-card">
+        <h4>Tarjetas métricas</h4>
+        <div class="card-row">
+          <div class="mini-card">
+            <div class="mc-label">Pedidos hoy</div>
+            <div class="mc-val">47</div>
+            <div class="mc-trend mc-up">↑ 12% vs ayer</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-label">Ticket promedio</div>
+            <div class="mc-val">$14.200</div>
+            <div class="mc-trend mc-up">↑ 8%</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-label">Mesas activas</div>
+            <div class="mc-val">6/12</div>
+            <div class="mc-trend" style="color:var(--gris-500);">50% ocupación</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--blanco);border:1px solid rgba(0,0,0,.07);border-radius:16px;padding:28px 32px;margin-top:16px;">
+      <h4 style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-500);margin-bottom:24px;">Espaciado y radio</h4>
+      <p style="font-size:12px;font-weight:700;color:var(--gris-500);margin-bottom:14px;letter-spacing:.06em;text-transform:uppercase;">Escala de espaciado</p>
+      <div class="spacing-row" style="margin-bottom:28px;">
+        <div class="sp"><div class="sp-box" style="width:4px;height:4px;"></div><span class="sp-label">4px</span></div>
+        <div class="sp"><div class="sp-box" style="width:8px;height:8px;"></div><span class="sp-label">8px</span></div>
+        <div class="sp"><div class="sp-box" style="width:12px;height:12px;"></div><span class="sp-label">12px</span></div>
+        <div class="sp"><div class="sp-box" style="width:16px;height:16px;"></div><span class="sp-label">16px</span></div>
+        <div class="sp"><div class="sp-box" style="width:24px;height:24px;"></div><span class="sp-label">24px</span></div>
+        <div class="sp"><div class="sp-box" style="width:32px;height:32px;"></div><span class="sp-label">32px</span></div>
+        <div class="sp"><div class="sp-box" style="width:48px;height:48px;"></div><span class="sp-label">48px</span></div>
+        <div class="sp"><div class="sp-box" style="width:64px;height:64px;"></div><span class="sp-label">64px</span></div>
+      </div>
+      <p style="font-size:12px;font-weight:700;color:var(--gris-500);margin-bottom:14px;letter-spacing:.06em;text-transform:uppercase;">Radio de borde</p>
+      <div class="radius-row">
+        <div class="rr"><div class="rr-box" style="border-radius:4px;"></div><span class="rr-label">4px · sm</span></div>
+        <div class="rr"><div class="rr-box" style="border-radius:8px;"></div><span class="rr-label">8px · md</span></div>
+        <div class="rr"><div class="rr-box" style="border-radius:12px;"></div><span class="rr-label">12px · lg</span></div>
+        <div class="rr"><div class="rr-box" style="border-radius:16px;"></div><span class="rr-label">16px · xl</span></div>
+        <div class="rr"><div class="rr-box" style="border-radius:24px;"></div><span class="rr-label">24px · 2xl</span></div>
+        <div class="rr"><div class="rr-box" style="border-radius:9999px;width:60px;height:30px;"></div><span class="rr-label">full · pill</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-rule"></div>
+
+<!-- TONO -->
+<section id="tono">
+  <div class="wrap">
+    <div class="label">Voz de marca</div>
+    <h2>Cómo hablamos</h2>
+    <p class="sec-sub">Tablio habla como una persona que entiende el mundo del restaurante. Directo, simple, sin tecnicismos. Nunca corporativo.</p>
+    <div class="tone-grid">
+      <div class="tone-row">
+        <div class="tone-tag"><div class="tone-dot"></div>Directo, no brusco</div>
+        <div class="tone-ex"><s>"Optimiza los procesos de gestión de pedidos de su establecimiento"</s><br><br><strong>"Tu equipo pide menos veces a la cocina. El cliente espera menos. Todo fluye mejor."</strong></div>
+      </div>
+      <div class="tone-row">
+        <div class="tone-tag"><div class="tone-dot"></div>Simple, no simplón</div>
+        <div class="tone-ex"><s>"Nuestra solución SaaS integra un KDS con realtime sync vía Supabase"</s><br><br><strong>"El pedido aparece en pantalla de cocina al instante. Sin papel, sin gritos."</strong></div>
+      </div>
+      <div class="tone-row">
+        <div class="tone-tag"><div class="tone-dot"></div>Cercano, no informal</div>
+        <div class="tone-ex"><s>"¡Hola! ¿Cómo estás? Sabemos que puede ser difícil a veces jeje"</s><br><br><strong>"Sabemos que cada restaurante es distinto. Por eso el primer mes es gratis, sin preguntas."</strong></div>
+      </div>
+      <div class="tone-row">
+        <div class="tone-tag"><div class="tone-dot"></div>Confiado, no arrogante</div>
+        <div class="tone-ex"><s>"Somos la solución número uno del mercado"</s><br><br><strong>"Más de 30 restaurantes en Chile ya reducen errores con Tablio."</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-rule"></div>
+
+<!-- USO CORRECTO -->
+<section id="uso">
+  <div class="wrap">
+    <div class="label">Uso correcto de marca</div>
+    <h2>Lo que se puede y lo que no</h2>
+    <p class="sec-sub">Para mantener la marca coherente en todos los puntos de contacto.</p>
+    <div class="uso-grid">
+      <div class="uso-card uso-si">
+        <div class="uso-label">Siempre</div>
+        <ul class="uso-list">
+          <li>Escribir "tablio" en minúscula en el logotipo</li>
+          <li>Usar el naranja #E8531D como color principal</li>
+          <li>Respetar el espacio mínimo alrededor del logo</li>
+          <li>Usar Plus Jakarta Sans en todo el producto</li>
+          <li>Hablar en segunda persona singular: "tu restaurante"</li>
+          <li>Mantener fondos claros o negro puro</li>
+          <li>Usar el ícono solo en formatos pequeños (app icon, favicon)</li>
+        </ul>
+      </div>
+      <div class="uso-card uso-no">
+        <div class="uso-label">Nunca</div>
+        <ul class="uso-list">
+          <li>Escribir "Tablio" con mayúscula en el logo</li>
+          <li>Cambiar el naranja por otro color</li>
+          <li>Estirar o distorsionar el logo</li>
+          <li>Poner el logo sobre fondos con bajo contraste</li>
+          <li>Usar gradientes en elementos de marca</li>
+          <li>Combinar el naranja con colores brillantes que compitan</li>
+          <li>Usar otras fuentes mezcladas con Jakarta Sans</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="brand-footer">
+  <div class="bf-inner">
+    <div class="bf-logo">
+      <div class="bf-lm">
+        <svg viewBox="0 0 22 22" fill="none">
+          <rect x="1" y="2" width="20" height="6" rx="2" fill="white"/>
+          <rect x="1" y="11" width="9" height="9" rx="2" fill="white"/>
+          <rect x="13" y="11" width="8" height="9" rx="2" fill="white"/>
+        </svg>
+      </div>
+      <div class="bf-lt">tablio</div>
+    </div>
+    <div class="bf-bottom">
+      <div class="bf-note">Naranja #E8531D · Negro #111110 · Plus Jakarta Sans · tablio.cl</div>
+      <div class="bf-version">Brand Guidelines v1.0 · 2025</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

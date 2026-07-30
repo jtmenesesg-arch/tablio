@@ -171,6 +171,24 @@ semánticas, estados no comunicados solo por color y pruebas automáticas de los
 
 No se construye ninguna pantalla en Sprint 0.
 
+### Auditoría de implementación (2026-07-29)
+
+La decisión de UI fue aprobada en Sprint 0, pero no se verificó cuando comenzaron a construirse
+las pantallas:
+
+- **Sí se implementó:** Next.js, TypeScript, Plus Jakarta Sans y variables CSS parciales.
+- **No se implementó:** Tailwind CSS, Radix Primitives ni la biblioteca interna de componentes
+  basada en shadcn/ui.
+- **Qué ocurrió en la práctica:** las pantallas se construyeron con un archivo CSS manual y
+  familias de componentes independientes. Esto no cambia la decisión aprobada; documenta una
+  desviación de ejecución.
+- **Impacto medido al detectarla:** 135 colores, 82 tamaños tipográficos y 412 declaraciones de
+  espaciado fuera de la escala aprobada. La consecuencia es inconsistencia visual, mayor costo
+  de mantenimiento y controles táctiles que no comparten una garantía común de accesibilidad.
+- **Corrección autorizada:** incorporar el stack que este ADR ya exigía, empezar por tokens
+  semánticos y un shell común, migrar una pantalla piloto y validar la dirección antes de
+  extenderlo al resto.
+
 ### Alternativas consideradas
 
 - **CSS Modules solamente:** máximo control y cero dependencia, pero aumenta trabajo repetido

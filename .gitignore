@@ -7,3 +7,4 @@ playwright-report/
 test-results/
 .tablio-demo/
 *.tsbuildinfo
+reference/table-tray-qr/.env

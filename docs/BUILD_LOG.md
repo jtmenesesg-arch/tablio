@@ -2,6 +2,38 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-07-30 — Sprint 14 · sistema visual y panel Dueño piloto
+
+### Qué cambió
+
+- Se detectó y registró la desviación de ADR-000: Tailwind, Radix y componentes propios
+  basados en shadcn/ui estaban aprobados, pero nunca se instalaron.
+- Se agregó al cierre de sprint la verificación obligatoria de cada ADR usado contra la
+  implementación real.
+- Se incorporaron Tailwind 4, Radix Slot y la base mínima de componentes internos.
+- El brand book oficial quedó versionado en `/brand`; la aplicación de referencia quedó en
+  `/reference` y su `.env` está excluido.
+- Se creó el sistema HSL semántico, escala de tipografía/espaciado, objetivos táctiles de
+  56 px y Plus Jakarta Sans variable autohospedada.
+- Se construyó el shell reutilizable de 224 px con navegación móvil y se migró únicamente
+  `/dueno`, como pantalla de validación.
+- Se documentó la matriz oscura como decisión pendiente; no se inventaron tokens.
+
+### Verificación
+
+- Panel Dueño: 9/9 E2E relevantes verdes, incluyendo tenant nuevo, fuga mensual y métricas del
+  checkout.
+- Accesibilidad calculada en escritorio y móvil: cero fallos de contraste WCAG AA, tacto,
+  foco, gradientes o desborde horizontal.
+- Rendimiento CPU 4× + 4G lenta: utilizable p95 2.162 s frente a 2.106 s (+2,7%);
+  transferencia p50 207 KB frente a 201 KB (+3,1%). La puerta del 5% se cumple.
+- TypeScript, ESLint y build Next.js verdes.
+
+### Límite deliberado
+
+No se migró ninguna otra pantalla. Caja, garzón, onboarding, superadmin, crédito, PWA y KDS
+esperan validación del fundador sobre este piloto antes de cambiar.
+
 ## 2026-07-30 — Demo pública en Vercel
 
 ### Qué cambió

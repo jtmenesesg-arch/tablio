@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-07-30T03:54:07.035Z",
+  "environment": {
+    "baseUrl": "http://localhost:3102",
+    "route": "/dueno",
+    "readySelector": ".ownerTop",
+    "viewport": "360x740",
+    "browser": "system Google Chrome",
+    "cpuThrottle": 4,
+    "network": {
+      "profile": "slow_4g",
+      "roundTripLatencyMs": 150,
+      "downloadKbps": 1600,
+      "uploadKbps": 750,
+      "cache": "disabled",
+      "serviceWorker": "blocked"
+    }
+  },
+  "samples": [
+    {
+      "run": 1,
+      "usableMs": 2125,
+      "domContentLoadedMs": 763,
+      "loadMs": 1513,
+      "firstContentfulPaintMs": 788,
+      "transferredBytes": 203394
+    },
+    {
+      "run": 2,
+      "usableMs": 2022,
+      "domContentLoadedMs": 698,
+      "loadMs": 1453,
+      "firstContentfulPaintMs": 728,
+      "transferredBytes": 200871
+    },
+    {
+      "run": 3,
+      "usableMs": 2024,
+      "domContentLoadedMs": 701,
+      "loadMs": 1443,
+      "firstContentfulPaintMs": 744,
+      "transferredBytes": 200871
+    },
+    {
+      "run": 4,
+      "usableMs": 2021,
+      "domContentLoadedMs": 696,
+      "loadMs": 1453,
+      "firstContentfulPaintMs": 736,
+      "transferredBytes": 200871
+    },
+    {
+      "run": 5,
+      "usableMs": 2025,
+      "domContentLoadedMs": 704,
+      "loadMs": 1443,
+      "firstContentfulPaintMs": 728,
+      "transferredBytes": 200871
+    },
+    {
+      "run": 6,
+      "usableMs": 2052,
+      "domContentLoadedMs": 715,
+      "loadMs": 1460,
+      "firstContentfulPaintMs": 748,
+      "transferredBytes": 200871
+    },
+    {
+      "run": 7,
+      "usableMs": 2061,
+      "domContentLoadedMs": 715,
+      "loadMs": 1464,
+      "firstContentfulPaintMs": 744,
+      "transferredBytes": 200871
+    }
+  ],
+  "usableSummary": {
+    "samples": 7,
+    "p50Ms": 2025,
+    "p95Ms": 2106,
+    "p99Ms": 2121,
+    "maxMs": 2125
+  },
+  "transferSummary": {
+    "p50Bytes": 200871,
+    "p95Bytes": 202637
+  }
+}

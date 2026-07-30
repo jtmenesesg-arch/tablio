@@ -13,6 +13,7 @@ de su mesa, arma su propio pedido y **paga lo suyo** desde su celular. El bar so
 pedidos **ya pagados**.
 
 **Unidad atómica del sistema:**
+
 ```
 persona → carrito → CheckoutQuote inmutable → confirmación de pago server-side
         → pedido → comandas por estación
@@ -23,6 +24,7 @@ La mesa es un **contexto físico y operativo**, NO una cuenta financiera compart
 Contexto de uso real: un bar lleno, viernes 23:30. Ruido, poca luz, apuro, gente esperando.
 
 **Documentos de referencia obligatoria:**
+
 - `/brief/TABLIO_PRODUCT_BUSINESS_BRIEF_v2.2_FROZEN.md` — la constitución del producto.
 - `/brief/TABLIO_BACKLOG_Y_DECISIONES_POST_FREEZE.md` — decisiones y backlog posteriores.
 
@@ -56,6 +58,7 @@ en `/docs/DECISION_RECORD.md` con evidencia e impacto, y **espera aprobación ex
 ## 3. Stack
 
 **Dado (no se discute):**
+
 - **Supabase** — Postgres, Auth, Realtime, Storage. Usa el **MCP de Supabase** para
   migraciones, consultas, tipos y advisors de seguridad.
 - **Vercel** — hosting y despliegue. Usa el **CLI de Vercel**.
@@ -77,9 +80,9 @@ Aplica a todo lo que toque pagos, pedidos, boletas, reembolsos o datos de tenant
   impuestos, propina, total, tenant, mesa, persona y expiración. La conciliación compara
   contra **el snapshot que originó el pago**, jamás contra el menú actual.
 - **Idempotencia real:** clave de idempotencia por intento + `provider_transaction_id` único
-  + constraint único en base de datos + procesamiento transaccional + transactional outbox
-  + consumidores idempotentes. Aunque la confirmación llegue 8 veces, se crea **un** pedido,
-  **una** comanda, **una** boleta.
+  - constraint único en base de datos + procesamiento transaccional + transactional outbox
+  - consumidores idempotentes. Aunque la confirmación llegue 8 veces, se crea **un** pedido,
+    **una** comanda, **una** boleta.
   ```sql
   UNIQUE (payment_provider, merchant_account_id, provider_transaction_id)
   ```
@@ -161,6 +164,7 @@ Detente y pide decisión —no improvises— cuando:
 - Descubres que algo del brief no es implementable como está escrito.
 
 Formato para pedir decisión:
+
 ```
 DECISIÓN NECESARIA: <título>
 Contexto (simple):
@@ -185,7 +189,11 @@ debería ocurrir dos veces.
 ### 5.6 Cierre de sprint
 
 Un sprint no se cierra sin:
+
 - Todos los criterios de aceptación verificados **ejecutándolos**, uno por uno.
+- Toda decisión aprobada en un ADR que el sprint use debe verificarse contra la implementación
+  real antes del cierre. Si falta o quedó parcial, se declara explícitamente en el summary; nunca
+  se deja la desviación en silencio.
 - Docs vivos actualizados.
 - ADRs escritos.
 - Tests pasando en CI.

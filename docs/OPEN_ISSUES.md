@@ -377,9 +377,21 @@ hardware hasta probarla con el piloto.
   con pasivo perjudica al cliente y reputacionalmente también a Tablio.
 - **Regla hasta cerrar:** función apagada por defecto y `production_validated = false`.
 
+## OI-026 — Matriz semántica para modo oscuro
+
+- **Estado:** no bloquea el panel Dueño; requiere decisión antes de migrar KDS o garzón.
+- **Evidencia:** el brand book permite fondos claros o negro puro, pero no define valores
+  oscuros para `card`, `muted`, `accent`, bordes, estados ni superficies elevadas.
+- **Pendiente:** aprobar una matriz semántica oscura derivada de la misma paleta, con contraste
+  medido y sin introducir grises o naranjas nuevos.
+- **Riesgo:** resolver cada pantalla por separado recrearía la deriva de colores que este
+  incremento corrige.
+- **Regla hasta cerrar:** no inventar un tema global. KDS conserva su tratamiento actual y
+  queda fuera del shell hasta su migración aprobada.
+
 ## Clasificación final de asuntos
 
-| Asunto | Clasificación al cierre de Sprint 11                                 |
+| Asunto | Clasificación actual                                                 |
 | ------ | -------------------------------------------------------------------- |
 | OI-001 | Bloqueante para piloto con pagos y para producción con dinero real   |
 | OI-002 | Bloqueante para producción con dinero real                           |
@@ -405,3 +417,4 @@ hardware hasta probarla con el piloto.
 | OI-023 | No bloqueante hoy; revisión de seguridad antes de producción         |
 | OI-024 | Bloqueante tributario antes del piloto                               |
 | OI-025 | Bloqueante legal y tributario antes de usar saldo con dinero real    |
+| OI-026 | No bloquea negocio; bloquea migración visual de superficies oscuras  |

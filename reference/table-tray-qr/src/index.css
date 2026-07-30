@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 33% 97%;
+    --foreground: 60 4% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 4% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 4% 7%;
+
+    --primary: 16 82% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 4% 7%;
+    --secondary-foreground: 0 0% 99%;
+
+    --muted: 40 18% 93%;
+    --muted-foreground: 60 3% 41%;
+
+    --accent: 16 95% 95%;
+    --accent-foreground: 16 82% 51%;
+
+    --destructive: 7 88% 41%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 12% 87%;
+    --input: 40 12% 87%;
+    --ring: 16 82% 51%;
+
+    --radius: 0.75rem;
+
+    /* tablio. custom tokens */
+    --overlay-dark: 0 0% 0% / 0.55;
+    --overlay-medium: 0 0% 0% / 0.35;
+    --text-on-overlay: 0 0% 100%;
+    --text-on-overlay-muted: 0 0% 100% / 0.7;
+    --splash-button-radius: 0.75rem;
+    --touch-min: 3.5rem;
+
+    --sidebar-background: 40 33% 97%;
+    --sidebar-foreground: 60 4% 7%;
+    --sidebar-primary: 16 82% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 16 95% 95%;
+    --sidebar-accent-foreground: 16 82% 51%;
+    --sidebar-border: 40 12% 87%;
+    --sidebar-ring: 16 82% 51%;
+  }
+
+  .dark {
+    --background: 60 4% 7%;
+    --foreground: 40 33% 97%;
+
+    --card: 60 3% 12%;
+    --card-foreground: 40 33% 97%;
+
+    --popover: 60 3% 12%;
+    --popover-foreground: 40 33% 97%;
+
+    --primary: 16 82% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 3% 18%;
+    --secondary-foreground: 40 33% 97%;
+
+    --muted: 60 3% 16%;
+    --muted-foreground: 60 3% 55%;
+
+    --accent: 16 50% 15%;
+    --accent-foreground: 16 82% 60%;
+
+    --destructive: 7 88% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 60 3% 20%;
+    --input: 60 3% 20%;
+    --ring: 16 82% 51%;
+
+    --sidebar-background: 60 4% 7%;
+    --sidebar-foreground: 40 33% 97%;
+    --sidebar-primary: 16 82% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 16 50% 15%;
+    --sidebar-accent-foreground: 16 82% 60%;
+    --sidebar-border: 60 3% 20%;
+    --sidebar-ring: 16 82% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* Utility classes for dynamic tenant colors */
+.tenant-bg {
+  background-color: var(--tenant-primary, hsl(var(--primary)));
+}
+
+.tenant-text {
+  color: var(--tenant-primary, hsl(var(--primary)));
+}

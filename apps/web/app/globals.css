@@ -1,6 +1,167 @@
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --tracking-tight: -0.025em;
+  --tracking-wide: 0.05em;
+
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  --spacing-0: 0px;
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-px: 1px;
+  --spacing-icon: 1.25rem;
+  --spacing-loading-card: 10rem;
+  --spacing-chart: 16rem;
+  --spacing-skeleton-label: 8rem;
+
+  --container-3xl: 48rem;
+  --container-5xl: 64rem;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-hover: hsl(var(--primary-hover));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-placeholder: hsl(var(--placeholder));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-brand: hsl(var(--brand));
+  --color-brand-soft: hsl(var(--brand-soft));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-soft: hsl(var(--destructive-soft));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-soft: hsl(var(--success-soft));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-soft: hsl(var(--warning-soft));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --radius-button: var(--component-radius-button);
+  --radius-button-sm: var(--component-radius-button-sm);
+  --radius-input: var(--component-radius-input);
+  --radius-surface-sm: var(--surface-radius-sm);
+  --radius-surface-md: var(--surface-radius-md);
+  --radius-surface-lg: var(--surface-radius-lg);
+  --radius-surface-xl: var(--surface-radius-xl);
+  --radius-surface-2xl: var(--surface-radius-2xl);
+  --radius-full: 9999px;
+
+  --spacing-touch: var(--touch-min);
+  --spacing-sidebar: var(--sidebar-width);
+
+  --text-display: 4rem;
+  --text-display--line-height: 1;
+  --text-display--font-weight: 800;
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.1;
+  --text-h1--font-weight: 800;
+  --text-h1-lg: 3rem;
+  --text-h1-lg--line-height: 1.05;
+  --text-h1-lg--font-weight: 800;
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--font-weight: 800;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--font-weight: 700;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 400;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.4;
+  --text-small--font-weight: 500;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.3;
+  --text-label--font-weight: 700;
+}
+
 :root {
+  /* Sistema semántico Tablio · fuente: /brand/tablio_branding.html */
+  --background: 48 26.3% 96.3%;
+  --foreground: 60 3% 6.5%;
+  --card: 0 0% 99.6%;
+  --card-foreground: 60 3% 6.5%;
+  --popover: 0 0% 99.6%;
+  --popover-foreground: 60 3% 6.5%;
+  --primary: 16.4 84% 39.2%;
+  --primary-hover: 16.4 85.7% 30.2%;
+  --primary-foreground: 0 0% 99.6%;
+  --secondary: 60 3% 6.5%;
+  --secondary-foreground: 0 0% 99.6%;
+  --muted: 51.4 18.9% 92.7%;
+  --muted-foreground: 60 2.5% 23.3%;
+  --placeholder: 60 2.4% 41%;
+  --accent: 21.8 91.7% 95.3%;
+  --accent-foreground: 16.4 84% 39.2%;
+  --brand: 16 81.5% 51.2%;
+  --brand-soft: 21.8 91.7% 95.3%;
+  --destructive: 8.5 85.5% 40.6%;
+  --destructive-soft: 21.8 91.7% 95.3%;
+  --destructive-foreground: 0 0% 99.6%;
+  --success: 151.9 60.9% 26.1%;
+  --success-soft: 151.9 32% 92%;
+  --success-foreground: 0 0% 99.6%;
+  --warning: 38.6 84% 39.2%;
+  --warning-soft: 38.6 60% 93%;
+  --border: 50 4.4% 73.3%;
+  --input: 50 4.4% 73.3%;
+  --ring: 16 81.5% 51.2%;
+  --sidebar: 0 0% 99.6%;
+  --sidebar-foreground: 60 3% 6.5%;
+  --sidebar-primary: 16.4 84% 39.2%;
+  --sidebar-primary-foreground: 0 0% 99.6%;
+  --sidebar-accent: 21.8 91.7% 95.3%;
+  --sidebar-accent-foreground: 16.4 84% 39.2%;
+  --sidebar-border: 50 4.4% 73.3%;
+  --sidebar-ring: 16 81.5% 51.2%;
+
+  --component-radius-button: 0.625rem;
+  --component-radius-button-sm: 0.4375rem;
+  --component-radius-input: 0.625rem;
+  --surface-radius-sm: 0.25rem;
+  --surface-radius-md: 0.5rem;
+  --surface-radius-lg: 0.75rem;
+  --surface-radius-xl: 1rem;
+  --surface-radius-2xl: 1.5rem;
+  --touch-min: 3.5rem;
+  --sidebar-width: 14rem;
+  --motion-feedback: 120ms;
+  --motion-state: 180ms;
+  --motion-modal: 240ms;
+
   --ink: #111110;
-  --muted: #66645f;
+  --legacy-muted: #66645f;
   --paper: #f8f7f3;
   --surface: #fefefe;
   --line: #dedbd3;
@@ -10,9 +171,9 @@
   --orange-dark: #b83e10;
   --orange-medium: #f2784a;
   --orange-light: #fef0e8;
-  --success: #1a6b45;
-  --error: #c0280f;
-  --warning: #b87c10;
+  --legacy-success: #1a6b45;
+  --legacy-error: #c0280f;
+  --legacy-warning: #b87c10;
   --shadow: 0 18px 45px rgba(17, 17, 16, 0.09);
 }
 
@@ -24,40 +185,12 @@
   font-display: swap;
   font-family: "Plus Jakarta Sans";
   font-style: normal;
-  font-weight: 400;
-  src: url("/fonts/plus-jakarta-sans-400.ttf") format("truetype");
-}
-
-@font-face {
-  font-display: swap;
-  font-family: "Plus Jakarta Sans";
-  font-style: normal;
-  font-weight: 500;
-  src: url("/fonts/plus-jakarta-sans-500.ttf") format("truetype");
-}
-
-@font-face {
-  font-display: swap;
-  font-family: "Plus Jakarta Sans";
-  font-style: normal;
-  font-weight: 600;
-  src: url("/fonts/plus-jakarta-sans-600.ttf") format("truetype");
-}
-
-@font-face {
-  font-display: swap;
-  font-family: "Plus Jakarta Sans";
-  font-style: normal;
-  font-weight: 700;
-  src: url("/fonts/plus-jakarta-sans-700.ttf") format("truetype");
-}
-
-@font-face {
-  font-display: swap;
-  font-family: "Plus Jakarta Sans";
-  font-style: normal;
-  font-weight: 800;
-  src: url("/fonts/plus-jakarta-sans-800.ttf") format("truetype");
+  font-weight: 200 800;
+  src: url("/fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
 }
 
 body {
@@ -144,7 +277,7 @@ body {
 }
 
 .progressCard span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -178,7 +311,7 @@ body {
   gap: 6px;
   min-height: 72px;
   padding: 9px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   background: #ebe9e3;
   border: 1px solid transparent;
   border-radius: 14px;
@@ -204,7 +337,7 @@ body {
 }
 
 .stepNav button.complete {
-  color: var(--success);
+  color: var(--legacy-success);
   background: var(--mint);
 }
 
@@ -234,7 +367,7 @@ body {
 .panelHeading p {
   max-width: 720px;
   margin: 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .platformForm label {
@@ -305,7 +438,7 @@ body {
 }
 
 .platformTextButton.danger {
-  color: var(--error);
+  color: var(--legacy-error);
 }
 
 .platformPrimary:disabled,
@@ -331,7 +464,7 @@ body {
 
 .platformAlert.error {
   color: white;
-  background: var(--error);
+  background: var(--legacy-error);
 }
 
 .planProposal {
@@ -466,7 +599,7 @@ body {
 }
 
 .verificationGrid strong {
-  color: var(--success);
+  color: var(--legacy-success);
   font-size: 1.5rem;
   text-transform: capitalize;
 }
@@ -483,7 +616,7 @@ body {
 }
 
 .metricGrid span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -538,7 +671,7 @@ body {
 }
 
 .tenantTable small {
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .tenantStatus {
@@ -550,7 +683,7 @@ body {
 }
 
 .tenantStatus.active {
-  color: var(--success);
+  color: var(--legacy-success);
   background: var(--mint);
 }
 
@@ -563,7 +696,7 @@ body {
 
 .tenantStatus.suspended {
   color: white;
-  background: var(--error);
+  background: var(--legacy-error);
 }
 
 .tenantDetail {
@@ -584,7 +717,7 @@ body {
 }
 
 .detailList dt {
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .detailList dd {
@@ -602,7 +735,7 @@ body {
 }
 
 .adminActionGroup small {
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .flagList {
@@ -1187,7 +1320,7 @@ input {
 .landing > p:not(.eyebrow) {
   max-width: 620px;
   margin: 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 1.2rem;
   line-height: 1.6;
 }
@@ -1330,7 +1463,7 @@ input {
 
 .scenarioCard small {
   margin-top: 10px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   line-height: 1.4;
 }
 
@@ -1363,7 +1496,7 @@ input {
 }
 
 .panelHeading > span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -1375,7 +1508,7 @@ input {
 .emptyState {
   max-width: 420px;
   margin: 90px auto;
-  color: var(--muted);
+  color: var(--legacy-muted);
   text-align: center;
   line-height: 1.6;
 }
@@ -1426,7 +1559,7 @@ input {
 
 .timeline li p {
   margin: 6px 0 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   line-height: 1.45;
 }
 
@@ -1455,7 +1588,7 @@ input {
 }
 
 .counterRow span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -1468,7 +1601,7 @@ input {
 
 .boundaryPanel p {
   margin: 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   line-height: 1.5;
 }
 
@@ -1617,7 +1750,7 @@ input {
 
 .dinerTopbar > div > span {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.72rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1734,7 +1867,7 @@ input {
   align-items: center;
   padding: 11px 13px;
   color: #fefefe;
-  background: var(--error);
+  background: var(--legacy-error);
   border-radius: 13px;
   box-shadow: 0 14px 36px rgba(82, 14, 4, 0.24);
   font-size: 0.78rem;
@@ -1774,7 +1907,7 @@ input {
 
 .dinerLoading p {
   margin: 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .entryScreen {
@@ -1829,7 +1962,7 @@ input {
 
 .entryCard > p:not(.sectionKicker, .demoHint) {
   margin: 13px 0 24px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.95rem;
   line-height: 1.55;
 }
@@ -1868,7 +2001,7 @@ input {
 
 .demoHint {
   margin: 18px 0 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.76rem;
   text-align: center;
 }
@@ -1884,7 +2017,7 @@ input {
 .menuHero > div > p:last-child {
   max-width: 390px;
   margin: 10px 0 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.83rem;
   line-height: 1.5;
 }
@@ -1954,7 +2087,7 @@ input {
   flex: none;
   min-height: 38px;
   padding: 8px 15px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -2036,7 +2169,7 @@ input {
 
 .productCopy > small {
   margin-top: 6px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.7rem;
   line-height: 1.4;
 }
@@ -2119,7 +2252,7 @@ input {
 
 .cartLines article small,
 .cartLines article em {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.68rem;
   font-style: normal;
 }
@@ -2205,7 +2338,7 @@ input {
 .waiterClarification {
   max-width: 440px;
   margin: -3px auto 0;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.68rem;
   line-height: 1.5;
   text-align: center;
@@ -2258,7 +2391,7 @@ input {
 
 .emptyCart p {
   margin: 0 0 22px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.8rem;
 }
 
@@ -2281,7 +2414,7 @@ input {
 }
 
 .checkoutContext span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.64rem;
 }
 
@@ -2298,7 +2431,7 @@ input {
 }
 
 .checkoutBlock > label > span {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.67rem;
   font-weight: 500;
 }
@@ -2306,7 +2439,7 @@ input {
 .checkoutBlock > p,
 .labelRow p {
   margin: 5px 0 12px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.69rem;
   line-height: 1.45;
 }
@@ -2324,7 +2457,7 @@ input {
 }
 
 .inputWithIcon svg {
-  color: var(--muted);
+  color: var(--legacy-muted);
 }
 
 .inputWithIcon input,
@@ -2476,7 +2609,7 @@ input {
 }
 
 .paymentMethods small {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.62rem;
 }
 
@@ -2503,14 +2636,14 @@ input {
   align-items: center;
   gap: 9px;
   padding: 14px 4px 3px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.68rem;
   line-height: 1.4;
 }
 
 .securityNote svg {
   flex: none;
-  color: var(--success);
+  color: var(--legacy-success);
 }
 
 .pendingPayment,
@@ -2609,7 +2742,7 @@ input {
   place-items: center;
   margin: 0 auto 20px;
   color: #fefefe;
-  background: var(--success);
+  background: var(--legacy-success);
   border-radius: 50%;
 }
 
@@ -2690,7 +2823,7 @@ input {
 }
 
 .statusSteps > span.done i {
-  background: var(--success);
+  background: var(--legacy-success);
 }
 
 .statusSteps > span.active i {
@@ -2736,7 +2869,7 @@ input {
 
 .ticketList article small {
   overflow: hidden;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.61rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2756,7 +2889,7 @@ input {
 }
 
 .stationIcon.ready {
-  background: var(--success);
+  background: var(--legacy-success);
 }
 
 .ticketBadge {
@@ -2778,7 +2911,7 @@ input {
 .actionsIntro {
   max-width: 450px;
   margin: -13px 0 20px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.8rem;
   line-height: 1.5;
 }
@@ -2822,7 +2955,7 @@ input {
 
 .actionGrid > button small {
   margin-top: 4px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.62rem;
   line-height: 1.35;
 }
@@ -2836,7 +2969,7 @@ input {
 
 .actionGrid > button.requested > span {
   color: #fefefe;
-  background: var(--success);
+  background: var(--legacy-success);
 }
 
 .actionGrid > button > i {
@@ -2848,7 +2981,7 @@ input {
   right: 13px;
   place-items: center;
   color: #fefefe;
-  background: var(--success);
+  background: var(--legacy-success);
   border-radius: 50%;
 }
 
@@ -2946,7 +3079,7 @@ input {
 
 .modalBody > p:not(.sectionKicker) {
   margin: 8px 0 13px;
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.78rem;
   line-height: 1.5;
 }
@@ -2994,7 +3127,7 @@ input {
 }
 
 .variantList b {
-  color: var(--muted);
+  color: var(--legacy-muted);
   font-size: 0.63rem;
 }
 

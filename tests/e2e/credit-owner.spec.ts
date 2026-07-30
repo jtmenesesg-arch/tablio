@@ -108,8 +108,8 @@ test("una fuga alimenta el costo mensual y su tendencia para el dueño", async (
   await expect(
     page.getByText("El costo real del crédito de mesa este mes"),
   ).toBeVisible();
-  await expect(page.locator(".ownerLeakage")).toContainText("$54.500");
-  await expect(page.locator(".ownerLeakage")).toContainText("14% más");
+  await expect(page.getByTestId("owner-leakage")).toContainText("$54.500");
+  await expect(page.getByTestId("owner-leakage")).toContainText("14% más");
 });
 
 test("un tenant nuevo muestra datos actuales y explica cuándo comparará", async ({
@@ -121,9 +121,11 @@ test("un tenant nuevo muestra datos actuales y explica cuándo comparará", asyn
   await page.goto("/dueno");
   await page.getByRole("button", { name: "Ver instalación nueva" }).click();
   await expect(
-    page.getByText("Estamos aprendiendo cómo funciona tu local."),
+    page.getByText("Estamos aprendiendo cómo funciona tu bar."),
   ).toBeVisible();
   await expect(page.getByText(/Hoy llevas \$\d/)).toBeVisible();
-  await expect(page.getByText(/Primera comparación estimada:/)).toBeVisible();
+  await expect(
+    page.getByText(/La primera comparación aparecerá desde el/),
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
 });

@@ -1,0 +1,1 @@
+ALTER TABLE public.tables ADD COLUMN assigned_waiter_id uuid REFERENCES public.staff_users(id) ON DELETE SET NULL DEFAULT NULL;
