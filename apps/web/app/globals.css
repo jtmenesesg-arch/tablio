@@ -5047,3 +5047,55 @@ input {
     flex: 0 0 56px;
   }
 }
+
+/* Sprint 13: saldo prepagado. Cifras, topes y pasivo siempre son opacos. */
+.storedValueWallet,
+.storedValueTender,
+.ownerStoredValue {
+  background: #fefefe;
+  border: 1px solid #dedbd3;
+  border-radius: 18px;
+  color: #111110;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.storedValueTopUp {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.storedValueTopUp select {
+  background: #fefefe;
+  border: 1px solid #999287;
+  border-radius: 12px;
+  color: #111110;
+  min-height: 46px;
+  padding: 0 0.75rem;
+}
+
+.storedValueHistory {
+  border-top: 1px solid #dedbd3;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  text-align: left;
+}
+
+.storedValueHistory p {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.metricGrid article.metricAlert {
+  background: #fff1ee;
+  border-color: #c0280f;
+}
+
+.dangerText {
+  color: #c0280f !important;
+  font-weight: 900;
+}

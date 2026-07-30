@@ -8,7 +8,13 @@ import type {
   CashierTableState,
 } from "../../lib/cashier-contract";
 
-type View = "tables" | "exceptions" | "reconciliation" | "loyalty" | "close";
+type View =
+  | "tables"
+  | "exceptions"
+  | "reconciliation"
+  | "loyalty"
+  | "stored_value"
+  | "close";
 
 function money(value = 0) {
   return new Intl.NumberFormat("es-CL", {
@@ -237,6 +243,40 @@ export function CashierDashboard() {
     });
   }
 
+  async function adjustStoredValue(profileId: string) {
+    const raw = window.prompt(
+      "Ajuste CLP. Usa negativo para descontar:",
+      "1000",
+    );
+    if (!raw) return;
+    const deltaClp = Number(raw.replace(/[^\d-]/g, ""));
+    const reason = window.prompt(
+      "Motivo obligatorio. El ajuste quedará auditado:",
+    );
+    if (!reason?.trim() || !deltaClp) return;
+    await mutate({
+      action: "stored_value.adjust",
+      profileId,
+      bucket: "loaded_money",
+      deltaClp,
+      reason,
+      idempotencyKey: `cashier:stored-value:${profileId}:${crypto.randomUUID()}`,
+    });
+  }
+
+  async function refundStoredValueTopUp(receiptId: string) {
+    const reason = window.prompt(
+      "Motivo obligatorio de devolución de la recarga no consumida:",
+    );
+    if (!reason?.trim()) return;
+    await mutate({
+      action: "stored_value.topup_refund",
+      receiptId,
+      reason,
+      idempotencyKey: `cashier:stored-value-refund:${receiptId}`,
+    });
+  }
+
   async function restoreStamp(profileId: string) {
     const reason = window.prompt(
       "Motivo obligatorio de la restitución. Quedará asociado a tu usuario en auditoría:",
@@ -397,6 +437,7 @@ export function CashierDashboard() {
             ["exceptions", `Excepciones (${data.exceptions.length})`],
             ["reconciliation", "Conciliación"],
             ["loyalty", "Sellos"],
+            ["stored_value", "Saldo"],
             ["close", "Cierre"],
           ] as const
         ).map(([id, label]) => (
@@ -728,6 +769,72 @@ export function CashierDashboard() {
         </section>
       ) : null}
 
+      {view === "stored_value" ? (
+        <section className="cashierLoyalty">
+          <div className="cashierSectionHeader">
+            <div>
+              <p className="eyebrow">OBLIGACIÓN DEL LOCAL</p>
+              <h2>Saldo de clientes</h2>
+              <p>
+                {money(data.storedValue.liabilityClp)} pendientes. No es caja
+                disponible ni venta del turno.
+              </p>
+            </div>
+          </div>
+          <div className="cashierMetricStrip">
+            <article>
+              <span>Entró por recargas</span>
+              <strong>{money(data.storedValue.topUpsCashInClp)}</strong>
+            </article>
+            <article>
+              <span>Consumido como venta</span>
+              <strong>{money(data.storedValue.consumedRevenueClp)}</strong>
+            </article>
+            <article>
+              <span>Expirado</span>
+              <strong>{money(data.storedValue.expiredClp)}</strong>
+            </article>
+          </div>
+          <div className="cashierLoyaltyList">
+            {data.storedValue.accounts.map((account) => (
+              <article key={account.id}>
+                <div>
+                  <strong>{account.maskedIdentity}</strong>
+                  <small>
+                    {money(account.loadedMoneyClp)} cargados ·{" "}
+                    {money(account.bonusClp)} bono · {account.status}
+                  </small>
+                </div>
+                <b>{money(account.balanceClp)}</b>
+                <button
+                  disabled={busy}
+                  onClick={() => void adjustStoredValue(account.profileId)}
+                  type="button"
+                >
+                  Ajustar con motivo
+                </button>
+                {account.latestTopUpReceiptId ? (
+                  <button
+                    disabled={busy || !account.latestTopUpRefundable}
+                    onClick={() =>
+                      void refundStoredValueTopUp(account.latestTopUpReceiptId!)
+                    }
+                    type="button"
+                  >
+                    {account.latestTopUpRefundable
+                      ? "Devolver última recarga"
+                      : "Recarga ya consumida"}
+                  </button>
+                ) : null}
+              </article>
+            ))}
+          </div>
+          {data.storedValue.accounts.length === 0 ? (
+            <p className="cashierEmpty">Aún no hay saldo pendiente.</p>
+          ) : null}
+        </section>
+      ) : null}
+
       {view === "close" ? (
         <section className="cashierClose">
           <div className="cashierSectionHeader">
@@ -757,6 +864,24 @@ export function CashierDashboard() {
             ) : (
               <small>Aún no hay propinas atribuidas en este turno.</small>
             )}
+          </article>
+          <article className="cashierTipReport solidSurface">
+            <h3>Saldo prepagado · tres cifras separadas</h3>
+            <p>
+              Recargas recibidas:{" "}
+              <strong>{money(data.storedValue.topUpsCashInClp)}</strong>{" "}
+              (obligación creada, no ingreso).
+            </p>
+            <p>
+              Consumo desde saldo:{" "}
+              <strong>{money(data.storedValue.consumedRevenueClp)}</strong>{" "}
+              (venta reconocida sin efectivo nuevo).
+            </p>
+            <p>
+              Pasivo acumulado:{" "}
+              <strong>{money(data.storedValue.liabilityClp)}</strong> (nunca
+              caja disponible).
+            </p>
           </article>
           {data.shift ? (
             <article className="cashierCloseCard">

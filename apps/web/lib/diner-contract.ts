@@ -48,6 +48,9 @@ export type DinerQuote = Readonly<{
   taxClp: number;
   tipClp: number;
   totalClp: number;
+  storedValueAppliedClp: number;
+  externalPaymentDueClp: number;
+  storedValuePolicyVersion?: number;
   tipRecipient: Readonly<{
     type: "team" | "employee";
     employeeId?: string;
@@ -74,6 +77,8 @@ export type DinerOrder = Readonly<{
   alias: string;
   displayName?: string;
   totalClp: number;
+  storedValueAppliedClp?: number;
+  externalPaidClp?: number;
   discountClp?: number;
   upsellIncrementalClp?: number;
   tipRecipientLabel?: string;
@@ -170,6 +175,45 @@ export type DinerBootstrap = Readonly<{
     }>;
     identityLossMessage?: string;
   }>;
+  storedValue: Readonly<{
+    enabled: boolean;
+    productionBlocked: boolean;
+    consented: boolean;
+    status?: "active" | "frozen_for_recovery" | "wind_down";
+    balanceClp: number;
+    loadedMoneyClp: number;
+    bonusClp: number;
+    maxConsumerBalanceClp: number;
+    maxVenueLiabilityClp?: number;
+    bonusBps: number;
+    expiring: readonly {
+      bucket: "loaded_money" | "bonus";
+      amountClp: number;
+      expiresAt: string;
+    }[];
+    latestReceipt?: {
+      id: string;
+      loadedMoneyClp: number;
+      bonusClp: number;
+      occurredAt: string;
+    };
+    recoveryReference?: string;
+    history: readonly {
+      id: string;
+      type:
+        | "topup_loaded_money"
+        | "topup_bonus"
+        | "order_consumption"
+        | "order_refund"
+        | "topup_refund"
+        | "expiry"
+        | "manual_adjustment";
+      bucket: "loaded_money" | "bonus";
+      amountClp: number;
+      reason?: string;
+      occurredAt: string;
+    }[];
+  }>;
   engagement: Readonly<{
     settings: Readonly<{
       upsellEnabled: boolean;
@@ -246,6 +290,7 @@ export type DinerMutation =
   | {
       action: "quote.create";
       tipClp: number;
+      requestedStoredValueClp?: number;
       displayName?: string;
       customerEmail?: string;
       tipRecipientEmployeeId?: string;
@@ -290,6 +335,14 @@ export type DinerMutation =
     }
   | {
       action: "loyalty.revoke";
+    }
+  | {
+      action: "stored_value.consent";
+    }
+  | {
+      action: "stored_value.topup";
+      loadedMoneyClp: number;
+      idempotencyKey: string;
     }
   | {
       action: "upsell.accept";

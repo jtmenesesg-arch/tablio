@@ -11,6 +11,7 @@ import {
   checkoutEngagementDemoMetrics,
   setDemoPromotion,
 } from "./diner-demo-store";
+import { storedValueDemoStore } from "./stored-value-demo-store";
 
 export const OWNER_DEMO_TENANT_ID = creditDemoActor.tenantId;
 
@@ -189,6 +190,7 @@ export class OwnerDemoStore {
     });
     const loyaltyMetrics = loyaltyDemoStore.metrics();
     const checkoutEngagement = checkoutEngagementDemoMetrics();
+    const storedValue = storedValueDemoStore.metrics();
     const products = [...byProduct.entries()].sort(
       (a, b) => b[1].quantity - a[1].quantity,
     );
@@ -270,6 +272,18 @@ export class OwnerDemoStore {
             paymentMethod: tip.paymentMethod,
             amountClp: tip.amountClp,
           })),
+        },
+        storedValue: {
+          liabilityClp: storedValue.liabilityClp,
+          loadedMoneyLiabilityClp: storedValue.loadedMoneyLiabilityClp,
+          bonusLiabilityClp: storedValue.bonusLiabilityClp,
+          topUpsCashInClp: storedValue.topUpsCashInClp,
+          topUpBonusClp: storedValue.topUpBonusClp,
+          consumedRevenueClp: storedValue.consumedRevenueClp,
+          expiredClp: storedValue.expiredClp,
+          accountCount: storedValue.accountCount,
+          maxConsumerBalanceClp: storedValue.maxConsumerBalanceClp,
+          maxVenueLiabilityClp: storedValue.maxVenueLiabilityClp,
         },
       },
       topProducts: products.slice(0, 3).map(([name, value]) => ({

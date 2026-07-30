@@ -271,6 +271,48 @@ export function OwnerDashboard() {
         </small>
       </section>
 
+      <section className="ownerStoredValue solidSurface">
+        <header>
+          <div>
+            <span>Saldo de clientes</span>
+            <h2>Plata recibida que el local todavía debe</h2>
+          </div>
+          <strong>{money(data.metrics.storedValue.liabilityClp)}</strong>
+        </header>
+        <p>
+          Este monto es un pasivo: no se suma a ventas ni se presenta como caja
+          disponible.
+        </p>
+        <div>
+          <article>
+            <span>Entró por recargas</span>
+            <strong>{money(data.metrics.storedValue.topUpsCashInClp)}</strong>
+            <small>
+              Obligación creada hoy; bono otorgado{" "}
+              {money(data.metrics.storedValue.topUpBonusClp)}.
+            </small>
+          </article>
+          <article>
+            <span>Se consumió en pedidos</span>
+            <strong>
+              {money(data.metrics.storedValue.consumedRevenueClp)}
+            </strong>
+            <small>Venta reconocida sin entrada de efectivo hoy.</small>
+          </article>
+          <article>
+            <span>Composición del pasivo</span>
+            <strong>
+              {money(data.metrics.storedValue.loadedMoneyLiabilityClp)}
+            </strong>
+            <small>
+              Dinero cargado +{" "}
+              {money(data.metrics.storedValue.bonusLiabilityClp)} de bono ·{" "}
+              {data.metrics.storedValue.accountCount} cuentas.
+            </small>
+          </article>
+        </div>
+      </section>
+
       <section className="ownerDetails">
         <article>
           <h3>Productos</h3>

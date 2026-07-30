@@ -57,6 +57,18 @@ export type OwnerDashboard = Readonly<{
         amountClp: number;
       }[];
     }>;
+    storedValue: Readonly<{
+      liabilityClp: number;
+      loadedMoneyLiabilityClp: number;
+      bonusLiabilityClp: number;
+      topUpsCashInClp: number;
+      topUpBonusClp: number;
+      consumedRevenueClp: number;
+      expiredClp: number;
+      accountCount: number;
+      maxConsumerBalanceClp: number;
+      maxVenueLiabilityClp?: number;
+    }>;
   };
   topProducts: readonly { name: string; quantity: number; salesClp: number }[];
   lowRotationProducts: readonly { name: string; quantity: number }[];

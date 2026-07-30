@@ -40,6 +40,7 @@ import type {
 import { demoReceiptForOrder, enqueueDemoReceipt } from "./tax-demo-service";
 import { getDinerOrderingAvailability } from "./platform-demo-store";
 import { loyaltyDemoStore, LOYALTY_DEMO_TENANT_ID } from "./loyalty-demo-store";
+import { storedValueDemoStore } from "./stored-value-demo-store";
 
 const TENANT_ID = "00000000-0000-4000-8000-000000000301";
 const MERCHANT_ACCOUNT_ID = "demo-merchant:bar-la-esquina";
@@ -109,6 +110,7 @@ type MutableSession = {
   actionRequests: Map<string, { id: string; requestedAt: number }>;
   waiterPaymentRequest?: WaiterPaymentRequest;
   loyaltyProfileId?: string;
+  storedValueProfileId?: string;
   loyaltyRecognitionProfileId?: string;
   loyaltyChallenge?: DinerBootstrap["loyalty"]["challenge"];
   lastPaidOrder?: {
@@ -566,23 +568,42 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
     return;
   }
 
-  const scope = { tenantId: TENANT_ID, merchantAccountId: MERCHANT_ACCOUNT_ID };
-  state.gateway.setPaymentOutcome(
-    scope,
-    payment.providerPaymentId,
-    "confirmed",
-  );
-  const signed = state.gateway.createSignedWebhook({
-    providerPaymentId: payment.providerPaymentId,
-    eventKind: "payment.confirmed",
-  });
-  const processed = await state.paymentProcessor.handle(scope, signed.envelope);
-  if (processed.payment.status !== "confirmed") {
-    payment.status = "rejected";
-    return;
+  if (quote.externalPaymentDueClp > 0) {
+    const scope = {
+      tenantId: TENANT_ID,
+      merchantAccountId: MERCHANT_ACCOUNT_ID,
+    };
+    state.gateway.setPaymentOutcome(
+      scope,
+      payment.providerPaymentId,
+      "confirmed",
+    );
+    const signed = state.gateway.createSignedWebhook({
+      providerPaymentId: payment.providerPaymentId,
+      eventKind: "payment.confirmed",
+    });
+    const processed = await state.paymentProcessor.handle(
+      scope,
+      signed.envelope,
+    );
+    if (processed.payment.status !== "confirmed") {
+      payment.status = "rejected";
+      storedValueDemoStore.releaseQuote(quote.id);
+      return;
+    }
   }
 
   const sourceLines = session.quoteSnapshotLines ?? cartLines(session.cart);
+  const confirmedAt = new Date().toISOString();
+  const orderId = randomUUID();
+  const orderNumber = ++state.orderSequence;
+  if (quote.storedValueAppliedClp > 0 && session.loyaltyProfileId) {
+    storedValueDemoStore.consumeForOrder({
+      profileId: session.loyaltyProfileId,
+      quoteId: quote.id,
+      orderId,
+    });
+  }
   const stations = new Map<
     string,
     {
@@ -620,9 +641,6 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
     }
   }
 
-  const confirmedAt = new Date().toISOString();
-  const orderId = randomUUID();
-  const orderNumber = ++state.orderSequence;
   const kdsTickets = [...stations.entries()].map(
     ([stationId, station], index) => ({
       id: `${orderId}:${stationId}:${index}`,
@@ -637,6 +655,8 @@ async function settleDuePayment(session: MutableSession): Promise<void> {
     alias: session.alias,
     displayName: session.displayName,
     totalClp: quote.totalClp,
+    storedValueAppliedClp: quote.storedValueAppliedClp,
+    externalPaidClp: quote.externalPaymentDueClp,
     discountClp: quote.discountClp,
     upsellIncrementalClp: quote.upsellIncrementalClp,
     tipRecipientLabel: quote.tipRecipient.label,
@@ -784,6 +804,7 @@ function releaseQuote(session: MutableSession): void {
   if (session.loyaltyProfileId) {
     loyaltyDemoStore.releaseReward(session.loyaltyProfileId, session.cart.id);
   }
+  storedValueDemoStore.releaseQuote(session.quote.id);
   session.quote = undefined;
   session.quoteSnapshotLines = undefined;
   session.payment = undefined;
@@ -802,6 +823,8 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
   const recognition = session?.loyaltyRecognitionProfileId
     ? loyaltyDemoStore.profile(session.loyaltyRecognitionProfileId)
     : undefined;
+  const storedValueProfileId =
+    session?.loyaltyProfileId ?? session?.storedValueProfileId;
   return {
     demo: true,
     authenticated: Boolean(session),
@@ -883,6 +906,7 @@ function serialize(session: MutableSession | undefined): DinerBootstrap {
           ? "Tus sellos se recuperan sin depender del teléfono anterior ni del equipo del bar."
           : undefined,
     },
+    storedValue: storedValueDemoStore.snapshot(storedValueProfileId),
     engagement: {
       settings: {
         upsellEnabled: true,
@@ -1243,17 +1267,45 @@ export async function mutateDiner(
             label: recipient.displayName,
           }
         : { type: "team", label: "Equipo" };
+      const quoteId = randomUUID();
+      const quoteExpiresAt = new Date(now() + QUOTE_TTL_MS).toISOString();
+      const commercialTotalClp =
+        subtotalClp - promotionDiscountClp + mutation.tipClp;
+      let storedValueAppliedClp = 0;
+      let externalPaymentDueClp = commercialTotalClp;
+      let storedValuePolicyVersion: number | undefined;
+      if ((mutation.requestedStoredValueClp ?? 0) > 0) {
+        if (!session.loyaltyProfileId) {
+          throw new DinerError(
+            "Recupera tu perfil antes de usar saldo del local.",
+            409,
+          );
+        }
+        const reservation = storedValueDemoStore.reserveForQuote({
+          profileId: session.loyaltyProfileId,
+          quoteId,
+          commercialTotalClp,
+          requestedStoredValueClp: mutation.requestedStoredValueClp ?? 0,
+          expiresAt: quoteExpiresAt,
+        });
+        storedValueAppliedClp = reservation.storedValueAppliedClp;
+        externalPaymentDueClp = reservation.externalPaymentDueClp;
+        storedValuePolicyVersion = reservation.policyVersion;
+      }
       const quote: DinerQuote = Object.freeze({
-        id: randomUUID(),
+        id: quoteId,
         subtotalClp,
         discountClp: promotionDiscountClp,
         promotionDiscountClp,
         upsellIncrementalClp,
         taxClp: 0,
         tipClp: mutation.tipClp,
-        totalClp: subtotalClp - promotionDiscountClp + mutation.tipClp,
+        totalClp: commercialTotalClp,
+        storedValueAppliedClp,
+        externalPaymentDueClp,
+        storedValuePolicyVersion,
         tipRecipient,
-        expiresAt: new Date(now() + QUOTE_TTL_MS).toISOString(),
+        expiresAt: quoteExpiresAt,
         status: "active",
       });
       state.quoteIdempotency.set(scopedKey, quote.id);
@@ -1283,22 +1335,37 @@ export async function mutateDiner(
       const existingId = state.paymentIdempotency.get(scopedKey);
       if (existingId && session.payment?.id === existingId)
         return serialize(session);
-      const attempt = await state.gateway.createPaymentAttempt({
-        tenantId: TENANT_ID,
-        merchantAccountId: MERCHANT_ACCOUNT_ID,
-        amount: { amount: quote.totalClp, currency: "CLP" },
-        checkoutQuoteId: quote.id,
-        idempotencyKey: scopedKey,
-        returnUrl: "/mesa/demo-mesa-8",
-      });
-      session.payment = {
-        id: attempt.attemptId,
-        providerPaymentId: attempt.providerPaymentId,
-        quoteId: quote.id,
-        status: "pending",
-        settlesAt: now() + 650,
-      };
-      state.paymentIdempotency.set(scopedKey, attempt.attemptId);
+      if (quote.externalPaymentDueClp === 0) {
+        const internalId = `stored-value:${quote.id}`;
+        session.payment = {
+          id: internalId,
+          providerPaymentId: internalId,
+          quoteId: quote.id,
+          status: "pending",
+          settlesAt: now() + 250,
+        };
+        state.paymentIdempotency.set(scopedKey, internalId);
+      } else {
+        const attempt = await state.gateway.createPaymentAttempt({
+          tenantId: TENANT_ID,
+          merchantAccountId: MERCHANT_ACCOUNT_ID,
+          amount: {
+            amount: quote.externalPaymentDueClp,
+            currency: "CLP",
+          },
+          checkoutQuoteId: quote.id,
+          idempotencyKey: scopedKey,
+          returnUrl: "/mesa/demo-mesa-8",
+        });
+        session.payment = {
+          id: attempt.attemptId,
+          providerPaymentId: attempt.providerPaymentId,
+          quoteId: quote.id,
+          status: "pending",
+          settlesAt: now() + 650,
+        };
+        state.paymentIdempotency.set(scopedKey, attempt.attemptId);
+      }
       break;
     }
     case "waiter.pay": {
@@ -1474,11 +1541,50 @@ export async function mutateDiner(
     }
     case "loyalty.revoke": {
       if (session.loyaltyProfileId) {
+        storedValueDemoStore.freezeForIdentityDeletion(
+          session.loyaltyProfileId,
+        );
+        session.storedValueProfileId = session.loyaltyProfileId;
         loyaltyDemoStore.anonymize(session.loyaltyProfileId);
       }
       session.loyaltyProfileId = undefined;
       session.loyaltyRecognitionProfileId = undefined;
       state.issuedLoyaltyCredentials.set(session.token, null);
+      break;
+    }
+    case "stored_value.consent": {
+      if (!session.loyaltyProfileId) {
+        throw new DinerError(
+          "Recupera primero tu perfil con teléfono o correo.",
+          409,
+        );
+      }
+      storedValueDemoStore.consent(session.loyaltyProfileId);
+      session.storedValueProfileId = session.loyaltyProfileId;
+      break;
+    }
+    case "stored_value.topup": {
+      if (!session.loyaltyProfileId) {
+        throw new DinerError(
+          "Recupera primero tu perfil con teléfono o correo.",
+          409,
+        );
+      }
+      try {
+        await storedValueDemoStore.topUp({
+          profileId: session.loyaltyProfileId,
+          loadedMoneyClp: mutation.loadedMoneyClp,
+          idempotencyKey: `${session.id}:${mutation.idempotencyKey}`,
+        });
+        session.storedValueProfileId = session.loyaltyProfileId;
+      } catch (caught) {
+        throw new DinerError(
+          caught instanceof Error
+            ? caught.message
+            : "No pudimos confirmar la recarga.",
+          409,
+        );
+      }
       break;
     }
     case "upsell.accept": {
@@ -1628,6 +1734,7 @@ export function resetCheckoutEngagementForTest(): void {
   state.promotionVersion = 1;
   state.closedTableIds.clear();
   state.gateway.reset();
+  storedValueDemoStore.reset();
 }
 
 export function setDemoTableClosedForTest(

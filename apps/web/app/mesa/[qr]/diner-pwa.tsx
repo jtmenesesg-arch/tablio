@@ -169,6 +169,8 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
   const [loyaltyCode, setLoyaltyCode] = useState("");
   const [identityConsent, setIdentityConsent] = useState(false);
   const [contactConsent, setContactConsent] = useState(false);
+  const [storedValueClp, setStoredValueClp] = useState("0");
+  const [topUpClp, setTopUpClp] = useState("20000");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string>();
@@ -322,12 +324,21 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
     const next = await mutate({
       action: "quote.create",
       tipClp,
+      requestedStoredValueClp: Number(storedValueClp) || 0,
       displayName,
       customerEmail: customerEmail || undefined,
       tipRecipientEmployeeId: tipRecipientEmployeeId || undefined,
       idempotencyKey: crypto.randomUUID(),
     });
     if (next?.quote) setScreen("checkout");
+  }
+
+  async function topUpStoredValue() {
+    await mutate({
+      action: "stored_value.topup",
+      loadedMoneyClp: Number(topUpClp),
+      idempotencyKey: crypto.randomUUID(),
+    });
   }
 
   async function startPayment() {
@@ -981,6 +992,49 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 </div>
               </section>
 
+              {data.storedValue.consented ? (
+                <section className="checkoutBlock storedValueTender">
+                  <div className="labelRow">
+                    <div>
+                      <strong>Saldo de este local</strong>
+                      <p>
+                        Disponible: {money(data.storedValue.balanceClp)}. Puedes
+                        usar una parte y pagar el resto con tarjeta.
+                      </p>
+                    </div>
+                  </div>
+                  <label htmlFor="stored-value-amount">
+                    Usar saldo en este pedido
+                  </label>
+                  <input
+                    id="stored-value-amount"
+                    inputMode="numeric"
+                    max={Math.min(
+                      data.storedValue.balanceClp,
+                      subtotal + tipClp,
+                    )}
+                    min="0"
+                    onChange={(event) =>
+                      setStoredValueClp(
+                        String(
+                          Math.min(
+                            Number(event.target.value.replaceAll(/\D/g, "")) ||
+                              0,
+                            data.storedValue.balanceClp,
+                            subtotal + tipClp,
+                          ),
+                        ),
+                      )
+                    }
+                    value={storedValueClp}
+                  />
+                  <small>
+                    Bono primero y luego dinero cargado; dentro de cada uno,
+                    vence primero lo que se usa primero.
+                  </small>
+                </section>
+              ) : null}
+
               <section className="checkoutBlock">
                 <div className="labelRow">
                   <div>
@@ -1096,16 +1150,36 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </small>
                 ) : null}
                 <small>Propina para {data.quote.tipRecipient.label}</small>
+                {data.quote.storedValueAppliedClp > 0 ? (
+                  <>
+                    <small>
+                      Saldo congelado: −
+                      {money(data.quote.storedValueAppliedClp)}
+                    </small>
+                    <span>Resta pagar</span>
+                    <strong>{money(data.quote.externalPaymentDueClp)}</strong>
+                  </>
+                ) : null}
               </div>
 
               <section className="paymentMethods">
                 <p className="sectionKicker">Método de pago</p>
                 <label className="methodSelected">
                   <input defaultChecked name="payment" type="radio" />
-                  <span className="demoCard">DEMO</span>
+                  <span className="demoCard">
+                    {data.quote.externalPaymentDueClp === 0 ? "SALDO" : "DEMO"}
+                  </span>
                   <span>
-                    <strong>Tarjeta simulada</strong>
-                    <small>No se cobrará dinero real</small>
+                    <strong>
+                      {data.quote.externalPaymentDueClp === 0
+                        ? "Saldo del local"
+                        : "Tarjeta simulada"}
+                    </strong>
+                    <small>
+                      {data.quote.externalPaymentDueClp === 0
+                        ? "No se inicia un cobro externo"
+                        : "No se cobrará dinero real"}
+                    </small>
                   </span>
                   <Icon name="check" size={19} />
                 </label>
@@ -1131,8 +1205,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 onClick={() => void startPayment()}
                 type="button"
               >
-                {working ? "Iniciando pago…" : "Pagar en modo demo"}
-                <span>{money(data.quote.totalClp)}</span>
+                {working
+                  ? "Confirmando en servidor…"
+                  : data.quote.externalPaymentDueClp === 0
+                    ? "Pagar con saldo"
+                    : data.quote.storedValueAppliedClp > 0
+                      ? "Pagar diferencia en demo"
+                      : "Pagar en modo demo"}
+                <span>{money(data.quote.externalPaymentDueClp)}</span>
               </button>
             </>
           )}
@@ -1178,6 +1258,13 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 <strong className="confirmedAmount">
                   {money(latestOrder.totalClp)}
                 </strong>
+                {(latestOrder.storedValueAppliedClp ?? 0) > 0 ? (
+                  <p>
+                    {money(latestOrder.storedValueAppliedClp ?? 0)} desde saldo
+                    · {money(latestOrder.externalPaidClp ?? 0)} por tarjeta
+                    simulada
+                  </p>
+                ) : null}
               </div>
 
               {data.engagement.sentInvitations.length > 0 ? (
@@ -1329,7 +1416,10 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
 
               <button
                 className="solidButton"
-                onClick={() => setScreen("menu")}
+                onClick={() => {
+                  setStoredValueClp("0");
+                  setScreen("menu");
+                }}
                 type="button"
               >
                 Pedir otra ronda
@@ -1426,6 +1516,17 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
             </div>
           </div>
 
+          {data.storedValue.recoveryReference ? (
+            <section className="storedValueWallet solidSurface">
+              <p className="sectionKicker">Saldo protegido</p>
+              <h2>{data.storedValue.recoveryReference}</h2>
+              <p>
+                Tu identidad fue eliminada, pero el saldo no desapareció. Guarda
+                esta referencia y preséntala en caja para recuperarlo.
+              </p>
+            </section>
+          ) : null}
+
           {data.loyalty.profile ? (
             <>
               <section className="loyaltyWallet solidSurface">
@@ -1471,13 +1572,115 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </button>
                 ) : null}
               </section>
+              <section className="storedValueWallet solidSurface">
+                <p className="sectionKicker">Saldo de este local</p>
+                {!data.storedValue.consented ? (
+                  <>
+                    <h2>Activa tu saldo recuperable</h2>
+                    <p>
+                      Es independiente por bar. La recarga es una obligación del
+                      local, no dinero de Tablio.
+                    </p>
+                    <button
+                      className="solidButton"
+                      disabled={working}
+                      onClick={() =>
+                        void mutate({ action: "stored_value.consent" })
+                      }
+                    >
+                      Aceptar y activar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h2>{money(data.storedValue.balanceClp)}</h2>
+                    <p>
+                      {money(data.storedValue.loadedMoneyClp)} cargados ·{" "}
+                      {money(data.storedValue.bonusClp)} de bono
+                    </p>
+                    <small>
+                      Máximo acumulado:{" "}
+                      {money(data.storedValue.maxConsumerBalanceClp)}. Las
+                      recargas reales siguen bloqueadas por revisión legal; esta
+                      es una demo.
+                    </small>
+                    {data.storedValue.status === "wind_down" ? (
+                      <div className="platformAlert warning">
+                        Nuevas recargas pausadas. Tu saldo no desaparece y puede
+                        devolverse.
+                      </div>
+                    ) : (
+                      <div className="storedValueTopUp">
+                        <label htmlFor="stored-value-topup">
+                          Cargar dinero en demo
+                        </label>
+                        <select
+                          id="stored-value-topup"
+                          onChange={(event) => setTopUpClp(event.target.value)}
+                          value={topUpClp}
+                        >
+                          <option value="10000">$10.000</option>
+                          <option value="20000">$20.000</option>
+                          <option value="30000">$30.000</option>
+                        </select>
+                        <button
+                          className="solidButton"
+                          disabled={working}
+                          onClick={() => void topUpStoredValue()}
+                        >
+                          Cargar en modo demo
+                        </button>
+                        <small>
+                          Bono demo: {data.storedValue.bonusBps / 100}%.
+                        </small>
+                      </div>
+                    )}
+                    {data.storedValue.expiring.map((item) => (
+                      <div
+                        className="platformAlert warning"
+                        key={item.expiresAt}
+                      >
+                        {money(item.amountClp)} de{" "}
+                        {item.bucket === "bonus" ? "bono" : "dinero cargado"}{" "}
+                        vence el{" "}
+                        {new Date(item.expiresAt).toLocaleDateString("es-CL")}.
+                      </div>
+                    ))}
+                    {data.storedValue.latestReceipt ? (
+                      <p>
+                        Comprobante:{" "}
+                        {money(data.storedValue.latestReceipt.loadedMoneyClp)}{" "}
+                        cargados +{" "}
+                        {money(data.storedValue.latestReceipt.bonusClp)} de
+                        bono.
+                      </p>
+                    ) : null}
+                    {data.storedValue.history.length ? (
+                      <div className="storedValueHistory">
+                        <strong>Últimos movimientos</strong>
+                        {data.storedValue.history.slice(0, 5).map((entry) => (
+                          <p key={entry.id}>
+                            <span>{entry.type.replaceAll("_", " ")}</span>
+                            <b>
+                              {entry.amountClp > 0 ? "+" : ""}
+                              {money(entry.amountClp)}
+                            </b>
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </section>
               <button
                 className="dangerTextButton"
                 disabled={working}
                 onClick={() => {
                   if (
                     window.confirm(
-                      "¿Eliminar tu identidad y revocar la recuperación? El historial financiero quedará anónimo.",
+                      data.storedValue.balanceClp > 0
+                        ? "Tu identidad se eliminará, pero el saldo quedará congelado con una referencia de recuperación: nunca desaparecerá."
+                        : "¿Eliminar tu identidad y revocar la recuperación? El historial financiero quedará anónimo.",
                     )
                   ) {
                     void mutate({ action: "loyalty.revoke" });

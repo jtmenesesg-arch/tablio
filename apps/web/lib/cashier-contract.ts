@@ -214,6 +214,25 @@ export type CashierBootstrap = Readonly<{
       stamps: number;
     }[];
   }>;
+  storedValue: Readonly<{
+    liabilityClp: number;
+    topUpsCashInClp: number;
+    consumedRevenueClp: number;
+    expiredClp: number;
+    maxVenueLiabilityClp?: number;
+    accounts: readonly {
+      id: string;
+      profileId: string;
+      maskedIdentity: string;
+      status: "active" | "frozen_for_recovery" | "wind_down";
+      loadedMoneyClp: number;
+      bonusClp: number;
+      balanceClp: number;
+      lastMovementAt: string;
+      latestTopUpReceiptId?: string;
+      latestTopUpRefundable: boolean;
+    }[];
+  }>;
   tipReport: readonly Readonly<{
     workerName: string;
     workerSessionId?: string;
@@ -263,4 +282,18 @@ export type CashierMutation =
       profileId: string;
       stampDelta: number;
       reason: string;
+    }
+  | {
+      action: "stored_value.adjust";
+      profileId: string;
+      bucket: "loaded_money" | "bonus";
+      deltaClp: number;
+      reason: string;
+      idempotencyKey: string;
+    }
+  | {
+      action: "stored_value.topup_refund";
+      receiptId: string;
+      reason: string;
+      idempotencyKey: string;
     };

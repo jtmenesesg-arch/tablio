@@ -129,6 +129,18 @@ export function SuperadminDashboard() {
             {data.metrics.ordersLast30Days.toLocaleString("es-CL")}
           </strong>
         </article>
+        <article
+          className={
+            data.metrics.tenantsOverStoredValueThreshold ? "metricAlert" : ""
+          }
+        >
+          <span>Pasivo de clientes</span>
+          <strong>{money.format(data.metrics.storedValueLiabilityClp)}</strong>
+          <small>
+            {data.metrics.tenantsOverStoredValueThreshold} local(es) sobre su
+            umbral
+          </small>
+        </article>
       </section>
 
       <section className="superadminGrid">
@@ -162,6 +174,13 @@ export function SuperadminDashboard() {
                       ? "Pasarela conectada"
                       : "Sin pasarela"}
                   </small>
+                  <small
+                    className={tenant.storedValueAlert ? "dangerText" : ""}
+                  >
+                    Saldo clientes:{" "}
+                    {money.format(tenant.storedValueLiabilityClp)}
+                    {tenant.storedValueAlert ? " · ALERTA" : ""}
+                  </small>
                 </span>
               </button>
             ))}
@@ -194,7 +213,49 @@ export function SuperadminDashboard() {
                   <dt>Proveedor DTE</dt>
                   <dd>{selected.dteProvider}</dd>
                 </div>
+                <div>
+                  <dt>Pasivo por saldo</dt>
+                  <dd className={selected.storedValueAlert ? "dangerText" : ""}>
+                    {money.format(selected.storedValueLiabilityClp)}
+                    {selected.storedValueAlert
+                      ? " · supera el umbral de Tablio"
+                      : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Alerta desde</dt>
+                  <dd>{money.format(selected.storedValueAlertThresholdClp)}</dd>
+                </div>
               </dl>
+
+              <div className="adminActionGroup">
+                <strong>Exposición de dinero de clientes</strong>
+                <p>
+                  Este pasivo pertenece al local. Antes de suspenderlo o
+                  cerrarlo, Tablio debe revisar cómo se devolverá o consumirá.
+                </p>
+                <button
+                  className="platformSecondary"
+                  disabled={working}
+                  onClick={() => {
+                    const raw = window.prompt(
+                      "Alertar cuando el pasivo llegue a (CLP):",
+                      String(selected.storedValueAlertThresholdClp),
+                    );
+                    if (raw !== null) {
+                      const thresholdClp = Number(raw.replace(/\D/g, "")) || 0;
+                      void mutate({
+                        action: "tenant.stored_value_threshold.set",
+                        tenantId: selected.id,
+                        thresholdClp,
+                      });
+                    }
+                  }}
+                  type="button"
+                >
+                  Configurar umbral
+                </button>
+              </div>
 
               <div className="adminActionGroup">
                 <strong>Cobranza simulada</strong>

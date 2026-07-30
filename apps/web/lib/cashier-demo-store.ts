@@ -13,6 +13,7 @@ import {
 } from "./table-credit-demo-store";
 import { loyaltyDemoStore } from "./loyalty-demo-store";
 import { checkoutEngagementDemoMetrics } from "./diner-demo-store";
+import { storedValueDemoStore } from "./stored-value-demo-store";
 
 const actor: CashierActor = {
   id: "cashier-valentina",
@@ -39,6 +40,8 @@ export function getCashierBootstrap() {
     liveAccountIds.has(loss.accountId),
   );
   const engagement = checkoutEngagementDemoMetrics();
+  const storedValue = storedValueDemoStore.metrics();
+  const loyaltyProfiles = loyaltyDemoStore.cashierProfiles();
   return {
     ...bootstrap,
     tableCredit: {
@@ -63,7 +66,20 @@ export function getCashierBootstrap() {
       identityLossRatePercent:
         loyaltyDemoStore.metrics().identityLossRatePercent,
       identityRecoveries: loyaltyDemoStore.metrics().identityRecoveries,
-      profiles: loyaltyDemoStore.cashierProfiles(),
+      profiles: loyaltyProfiles,
+    },
+    storedValue: {
+      liabilityClp: storedValue.liabilityClp,
+      topUpsCashInClp: storedValue.topUpsCashInClp,
+      consumedRevenueClp: storedValue.consumedRevenueClp,
+      expiredClp: storedValue.expiredClp,
+      maxVenueLiabilityClp: storedValue.maxVenueLiabilityClp,
+      accounts: storedValueDemoStore.accountsForCashier().map((account) => ({
+        ...account,
+        maskedIdentity:
+          loyaltyProfiles.find((profile) => profile.id === account.profileId)
+            ?.maskedIdentity ?? "Perfil financiero anonimizado",
+      })),
     },
     tipReport: engagement.tipAllocations.map((tip) => ({
       workerName: tip.employeeName,
@@ -79,7 +95,7 @@ export function getCashierBootstrap() {
   };
 }
 
-export function mutateCashier(mutation: CashierMutation) {
+export async function mutateCashier(mutation: CashierMutation) {
   switch (mutation.action) {
     case "refund.request": {
       const result = repository.requestRefund(actor, mutation);
@@ -125,6 +141,34 @@ export function mutateCashier(mutation: CashierMutation) {
       publishCashierEvent({
         type: "exception",
         entityId: mutation.profileId,
+      });
+      return { bootstrap: getCashierBootstrap() };
+    }
+    case "stored_value.adjust": {
+      storedValueDemoStore.manualAdjust({
+        profileId: mutation.profileId,
+        bucket: mutation.bucket,
+        deltaClp: mutation.deltaClp,
+        reason: mutation.reason,
+        actorId: actor.id,
+        idempotencyKey: mutation.idempotencyKey,
+      });
+      publishCashierEvent({
+        type: "exception",
+        entityId: mutation.profileId,
+      });
+      return { bootstrap: getCashierBootstrap() };
+    }
+    case "stored_value.topup_refund": {
+      await storedValueDemoStore.refundTopUp({
+        receiptId: mutation.receiptId,
+        reason: mutation.reason,
+        actorId: actor.id,
+        idempotencyKey: mutation.idempotencyKey,
+      });
+      publishCashierEvent({
+        type: "refund",
+        entityId: mutation.receiptId,
       });
       return { bootstrap: getCashierBootstrap() };
     }

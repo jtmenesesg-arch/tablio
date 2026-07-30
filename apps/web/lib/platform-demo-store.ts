@@ -12,6 +12,7 @@ import {
   type SubscriptionStatus,
 } from "@tablio/application";
 import { SimulatedSaasBillingProvider } from "@tablio/billing-simulated";
+import { storedValueDemoStore } from "./stored-value-demo-store";
 import type {
   OnboardingBootstrap,
   OnboardingMutation,
@@ -79,6 +80,7 @@ type MutableTenant = {
   featureFlags: string[];
   billingAccountId?: string;
   failedChargeId?: string;
+  storedValueAlertThresholdClp: number;
 };
 
 type DemoState = {
@@ -148,6 +150,7 @@ function initialState(): DemoState {
         lastActivityAt: now,
         tableCount: 10,
         featureFlags: ["reconciliation", "menu_import"],
+        storedValueAlertThresholdClp: 30_000,
       },
       {
         id: "tenant-patio-sur",
@@ -161,6 +164,7 @@ function initialState(): DemoState {
         lastActivityAt: new Date(Date.now() - 3_600_000).toISOString(),
         tableCount: 24,
         featureFlags: ["reconciliation"],
+        storedValueAlertThresholdClp: 500_000,
       },
       {
         id: "tenant-club-norte",
@@ -174,6 +178,7 @@ function initialState(): DemoState {
         lastActivityAt: new Date(Date.now() - 86_400_000).toISOString(),
         tableCount: 42,
         featureFlags: [],
+        storedValueAlertThresholdClp: 500_000,
       },
     ],
     notifications: [],
@@ -537,6 +542,7 @@ export async function mutateOnboarding(
           ),
           featureFlags: ["reconciliation", "menu_import"],
           billingAccountId: onboarding.billingAccount?.id,
+          storedValueAlertThresholdClp: 500_000,
         });
       }
       break;
@@ -546,15 +552,22 @@ export async function mutateOnboarding(
 }
 
 function tenantView(tenant: MutableTenant): SuperadminTenant {
+  const liabilityClp =
+    tenant.id === "tenant-demo-pwa"
+      ? storedValueDemoStore.metrics().liabilityClp
+      : 0;
   return {
     ...tenant,
     operationalAccess: operationalAccessFor(tenant.subscriptionStatus),
     featureFlags: [...tenant.featureFlags],
+    storedValueLiabilityClp: liabilityClp,
+    storedValueAlert: liabilityClp >= tenant.storedValueAlertThresholdClp,
   };
 }
 
 export function getSuperadminBootstrap(): SuperadminBootstrap {
   const active = state.tenants.filter((tenant) => tenant.status !== "closed");
+  const tenantViews = state.tenants.map(tenantView);
   return {
     demo: true,
     actor: {
@@ -575,8 +588,15 @@ export function getSuperadminBootstrap(): SuperadminBootstrap {
       ),
       churnPercent: 0,
       ordersLast30Days: 12_480,
+      storedValueLiabilityClp: tenantViews.reduce(
+        (sum, tenant) => sum + tenant.storedValueLiabilityClp,
+        0,
+      ),
+      tenantsOverStoredValueThreshold: tenantViews.filter(
+        (tenant) => tenant.storedValueAlert,
+      ).length,
     },
-    tenants: state.tenants.map(tenantView),
+    tenants: tenantViews,
     notifications: [...state.notifications].reverse(),
     impersonationAudit: [...state.impersonationAudit].reverse(),
     dunningSettings: {
@@ -612,6 +632,7 @@ export async function mutateSuperadmin(
         lastActivityAt: new Date().toISOString(),
         tableCount: 0,
         featureFlags: [],
+        storedValueAlertThresholdClp: 500_000,
       });
       break;
     case "tenant.close": {
@@ -619,8 +640,23 @@ export async function mutateSuperadmin(
         throw new PlatformDemoError("La baja exige un motivo.");
       }
       const tenant = requireTenant(mutation.tenantId);
+      const liability =
+        tenant.id === "tenant-demo-pwa"
+          ? storedValueDemoStore.metrics().liabilityClp
+          : 0;
+      if (liability > 0) {
+        throw new PlatformDemoError(
+          `No se puede eliminar el tenant: mantiene ${liability.toLocaleString(
+            "es-CL",
+          )} CLP de clientes. Pausa recargas y devuelve o consume el saldo antes de cerrar.`,
+          409,
+        );
+      }
       tenant.status = "closed";
       tenant.subscriptionStatus = "cancelled";
+      if (tenant.id === "tenant-demo-pwa") {
+        storedValueDemoStore.setTenantStatus("cancelled");
+      }
       break;
     }
     case "tenant.impersonate": {
@@ -650,6 +686,19 @@ export async function mutateSuperadmin(
       const tenant = requireTenant(mutation.tenantId);
       tenant.gatewayConnected = mutation.gatewayConnected;
       tenant.dteProvider = mutation.dteProvider.trim() || "Pendiente";
+      break;
+    }
+    case "tenant.stored_value_threshold.set": {
+      if (
+        !Number.isSafeInteger(mutation.thresholdClp) ||
+        mutation.thresholdClp < 0
+      ) {
+        throw new PlatformDemoError(
+          "El umbral de pasivo debe ser un entero CLP no negativo.",
+        );
+      }
+      requireTenant(mutation.tenantId).storedValueAlertThresholdClp =
+        mutation.thresholdClp;
       break;
     }
     case "billing.fail": {
@@ -717,6 +766,15 @@ export async function mutateSuperadmin(
           : mutation.status === "active"
             ? "active"
             : "delinquent";
+      if (tenant.id === "tenant-demo-pwa") {
+        storedValueDemoStore.setTenantStatus(
+          mutation.status === "suspended"
+            ? "suspended"
+            : mutation.status === "cancelled"
+              ? "cancelled"
+              : "active",
+        );
+      }
       if (mutation.status === "suspension_scheduled") {
         state.notifications.push({
           id: randomUUID(),

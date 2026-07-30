@@ -158,6 +158,9 @@ export type SuperadminTenant = Readonly<{
   lastActivityAt: string;
   tableCount: number;
   featureFlags: readonly string[];
+  storedValueLiabilityClp: number;
+  storedValueAlertThresholdClp: number;
+  storedValueAlert: boolean;
 }>;
 
 export type SuperadminBootstrap = Readonly<{
@@ -168,6 +171,8 @@ export type SuperadminBootstrap = Readonly<{
     mrrClp: number;
     churnPercent: number;
     ordersLast30Days: number;
+    storedValueLiabilityClp: number;
+    tenantsOverStoredValueThreshold: number;
   };
   tenants: readonly SuperadminTenant[];
   notifications: readonly {
@@ -215,6 +220,11 @@ export type SuperadminMutation =
       tenantId: string;
       gatewayConnected: boolean;
       dteProvider: string;
+    }
+  | {
+      action: "tenant.stored_value_threshold.set";
+      tenantId: string;
+      thresholdClp: number;
     }
   | { action: "billing.fail"; tenantId: string }
   | { action: "billing.retry"; tenantId: string }

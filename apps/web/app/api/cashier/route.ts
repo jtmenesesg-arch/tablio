@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (!mutation || typeof mutation.action !== "string") {
       throw new CashierConflictError("La solicitud no es válida.", 400);
     }
-    return NextResponse.json(mutateCashier(mutation), {
+    return NextResponse.json(await mutateCashier(mutation), {
       headers: { "cache-control": "no-store" },
     });
   } catch (error) {

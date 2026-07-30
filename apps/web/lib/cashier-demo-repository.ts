@@ -626,6 +626,13 @@ export class CashierDemoRepository {
         identityRecoveries: 0,
         profiles: [],
       },
+      storedValue: {
+        liabilityClp: 0,
+        topUpsCashInClp: 0,
+        consumedRevenueClp: 0,
+        expiredClp: 0,
+        accounts: [],
+      },
       tipReport: [],
       actor,
       venue: { id: CASHIER_DEMO_VENUE_ID, name: "Bar La Esquina" },
