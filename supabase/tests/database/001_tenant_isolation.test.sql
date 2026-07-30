@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(19);
+select plan(21);
 
 select has_table('public', 'tenants', 'tenants exists');
 select has_table('public', 'zones', 'zones exists');
@@ -155,6 +155,11 @@ values
     'active'
   );
 
+insert into public.tenant_stored_value_settings (tenant_id)
+values
+  ('10000000-0000-4000-8000-000000000001'),
+  ('10000000-0000-4000-8000-000000000002');
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -182,6 +187,12 @@ select is(
   (select count(*) from public.stations),
   1::bigint,
   'tenant A sees exactly its own station'
+);
+
+select is(
+  (select count(*) from public.tenant_stored_value_settings),
+  1::bigint,
+  'el saldo de Tenant A no existe para Tenant B'
 );
 
 select results_eq(
@@ -265,6 +276,12 @@ select is(
   (select count(*) from public.zones),
   0::bigint,
   'missing tenant claim fails closed'
+);
+
+select is(
+  (select count(*) from public.tenant_stored_value_settings),
+  0::bigint,
+  'saldo falla cerrado cuando el JWT no trae tenant'
 );
 
 select throws_ok(
