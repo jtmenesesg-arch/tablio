@@ -2,6 +2,66 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-07-31 — Reproducibilidad de esquema y saneo previo a OI-027
+
+### Qué cambió
+
+Se encontraron cuatro commits ya escritos en el repositorio local (2026-07-31, 23:08–23:23) que
+nunca se documentaron en esta bitácora ni se subieron a `origin/main`. Corresponden a trabajo
+preparatorio para cerrar OI-027 (el historial de migraciones remoto no coincide exactamente con
+los archivos locales de Sprints 11–13):
+
+- `ci(database): verify schema rebuilds from zero` agrega
+  `.github/workflows/schema-reproducibility.yml` y `scripts/schema-manifest.sql`. La acción de
+  CI levanta un stack Supabase aislado en el runner, aplica exclusivamente las migraciones del
+  repositorio con `supabase db reset`, y exporta un manifiesto determinista (tablas, columnas,
+  constraints, índices, vistas y funciones de los esquemas `public`/`private`) con su hash
+  SHA-256 como evidencia descargable. Se dispara ante cualquier cambio a migraciones o al propio
+  workflow.
+- `fix(database): make clean rebuild tolerate platform helper` corrige
+  `20260728035137_harden_auth_and_advisor_findings.sql`: revocar permisos de
+  `public.rls_auto_enable()` fallaba en un stack limpio porque esa función sólo existe en
+  proyectos ya hospedados por Supabase, no en una base nueva. Ahora la revocación se ejecuta
+  sólo si la función existe.
+- `fix(database): make credit migration rebuildable` mueve la corrección de ambigüedad de
+  variable de `create_table_credit_order` (`#variable_conflict use_variable`) directamente a la
+  migración canónica de Sprint 9
+  (`20260729172848_sprint_09_table_credit_owner.sql`), en vez de dejar que dependiera de un
+  parche posterior. También endureció ese parche histórico
+  (`20260729173752_sprint_09_credit_order_variable_fix.sql`) para que detecte si el arreglo ya
+  está presente antes de reintentarlo.
+- `fix(database): make historical credit repair idempotent` convierte ese mismo parche histórico
+  en un no-op explícito: como la corrección ya vive en la migración canónica, el parche ya no
+  necesita tocar la función en tiempo de despliegue. El comentario deja constancia de que
+  producción ya recibió el arreglo equivalente por otra vía y que ese archivo no debe reescribir
+  producción de nuevo.
+
+### Por qué
+
+Estos cuatro cambios sólo tocan **archivos de migración en el repositorio**, nunca la base de
+datos remota. El objetivo es que si alguien aplica las migraciones del repositorio desde cero
+(un ambiente nuevo, un runner de CI, un fork), el resultado compile sin error y termine en el
+mismo esquema que ya existe en producción — sin necesidad de tocar el proyecto Supabase actual.
+
+### Verificación
+
+- Revisión manual de las cuatro diffs, confirmando que ninguna ejecuta una migración nueva
+  contra el proyecto remoto; sólo reescriben el contenido de migraciones que, o bien no se han
+  aplicado nunca fuera de este repositorio (el workflow de CI), o cuyo efecto equivalente ya
+  está presente en producción por la vía histórica descrita en el propio commit.
+- `supabase migration list --linked` contra el proyecto `tablio` (`xmwewmukoxdeuilmkahr`)
+  muestra el historial local y remoto sincronizado para las migraciones existentes hasta este
+  punto.
+- **No se pudo ejecutar `supabase db reset` en este equipo** porque no hay Docker instalado ni
+  corriendo; por lo tanto, la promesa central de estos commits (que el esquema se reconstruye
+  desde cero sin errores) no se verificó localmente. Queda verificada por el workflow de CI
+  recién agregado, que sí corre con Docker disponible en el runner de GitHub Actions, apenas se
+  suban estos commits.
+- No se ha cerrado OI-027 con este trabajo: sólo cubre que los archivos locales reconstruyen un
+  esquema equivalente desde cero. La reconciliación del historial de migraciones ya aplicado en
+  el proyecto remoto (`supabase_migrations.schema_migrations`) sigue pendiente y se aborda por
+  separado.
+
 ## 2026-07-30 — Sprint 14 · sistema visual y panel Dueño piloto
 
 ### Qué cambió
