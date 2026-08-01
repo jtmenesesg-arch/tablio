@@ -1,7 +1,7 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja**. Las demás pantallas conservan
-temporalmente sus estilos anteriores hasta que se migren una por una.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja y KDS**. Las demás pantallas
+conservan temporalmente sus estilos anteriores hasta que se migren una por una.
 
 ## Fuentes de verdad
 
@@ -143,10 +143,46 @@ Cierre) migrada al sistema. Patrones nuevos que quedan como precedente para el r
   cambia la modalidad de foco del navegador a "mouse" y el chequeo de foco reporta fallos falsos
   en cada elemento interactivo de la vista.
 
+## KDS (2026-08-01) — la excepción deliberada del sistema
+
+`/kds` es la única pantalla que **no** usa `AppShell` ni el fondo claro. Es una pantalla completa
+montada en la barra, para leer a dos metros con las manos ocupadas o mojadas, así que sigue reglas
+propias documentadas aquí para no perderlas en la próxima migración:
+
+- Sin sidebar, sin navegación compartida, sin superficies traslúcidas ni `backdrop-filter`. Fondo
+  siempre sólido.
+- Los colores de acento (naranja de marca, verde de éxito, ámbar de aviso, rojo crítico) son los
+  **mismos tokens de marca** que usa el resto del producto (`bg-brand`, `bg-success`,
+  `bg-warning`, `bg-destructive`) — no son inventados. Lo único bespoke son las superficies
+  estructurales oscuras (fondo de página, barra superior, tarjetas de resumen), como valores
+  Tailwind arbitrarios (`bg-[#111110]`, etc.), porque OI-026 todavía no aprueba una matriz
+  semántica oscura completa; inventar una aquí habría sido decidir esa matriz por la puerta de
+  atrás.
+- La comanda (`TicketCard`) es la excepción dentro de la excepción: es un "papel" claro que reusa
+  `bg-background`/`text-foreground`/`Badge` como el resto del producto, porque una comanda impresa
+  siempre se lee como papel claro sobre un mostrador oscuro, incluso en una pantalla de cocina.
+- Objetivos táctiles explícitamente más grandes que el mínimo de 56 px (64–72 px) para manos
+  ocupadas; motion respeta `prefers-reduced-motion` igual que el resto del sistema.
+- El indicador de conexión y "Actualizado hace…" son permanentes en la barra superior; una barra
+  de alerta roja separada aparece si la última sincronización supera el umbral configurado, para
+  que nunca se confunda "no hay pedidos" con "la pantalla se colgó".
+- **Lección para las próximas pantallas:** una clase base con un color de texto (`kdsButton` con
+  `text-[#fefefe]`) combinada con una clase condicional que agrega OTRO color de texto
+  (`text-[#111110]`) es frágil sin `tailwind-merge` — `cn()` en este proyecto es sólo `clsx`, así
+  que ambas clases coexisten y el orden de generación de Tailwind (no el orden en el JSX) decide
+  cuál gana. Se encontró así el tab de estación activo renderizando texto invisible. La regla:
+  cuando una variante cambia un color que la base ya fija, usar un ternario que reemplace la
+  cadena completa (como hace `cva` en los componentes compartidos), nunca una base fija más un
+  añadido condicional del mismo tipo de utilidad.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde en vacío y con comandas activas,
+  escritorio y móvil (`docs/evidence/SPRINT-14-KDS-A11Y.json` y
+  `docs/evidence/SPRINT-14-KDS-tickets-A11Y.json`). El script de contraste funciona igual sobre
+  fondo oscuro: calcula la razón real, no asume tema claro.
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas` y `/caja` usan el nuevo shell y la biblioteca interna. Las tarjetas de
-impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del
-CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin validación. El
-siguiente incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una
-tercera familia.
+`/dueno`, `/dueno/mesas`, `/caja` y `/kds` ya están en el sistema de diseño (KDS con su
+tratamiento propio documentado arriba). Las tarjetas de impresión son un asset de la pantalla de
+Mesas, no otro panel migrado. Los colores literales del CSS histórico siguen presentes en el
+resto de las pantallas para no alterarlas sin validación. El siguiente incremento debe migrarlas
+una por una y eliminar sus reglas antiguas, no superponer una tercera familia.

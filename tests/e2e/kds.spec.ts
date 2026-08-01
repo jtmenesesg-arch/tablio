@@ -71,16 +71,16 @@ test("un pedido pagado llega a cada estación y avanza por separado", async ({
       page.getByRole("heading", { name: "Tu pedido ya está en la barra" }),
     ).toBeVisible({ timeout: 8_000 });
     await expect(
-      bar.locator(".kdsTicket").getByText(/Lager de la casa/),
+      bar.getByTestId("kds-ticket").getByText(/Lager de la casa/),
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      bar.locator(".kdsTicket").getByText(/Hamburguesa clásica/),
+      bar.getByTestId("kds-ticket").getByText(/Hamburguesa clásica/),
     ).toHaveCount(0);
     await expect(
-      kitchen.locator(".kdsTicket").getByText(/Hamburguesa clásica/),
+      kitchen.getByTestId("kds-ticket").getByText(/Hamburguesa clásica/),
     ).toBeVisible();
     await expect(
-      kitchen.locator(".kdsTicket").getByText(/Lager de la casa/),
+      kitchen.getByTestId("kds-ticket").getByText(/Lager de la casa/),
     ).toHaveCount(0);
     await expect(bar.getByText("✓ Pagado")).toBeVisible();
 

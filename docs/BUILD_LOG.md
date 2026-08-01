@@ -2,6 +2,56 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de KDS
+
+### Qué cambió
+
+- `/kds` (`apps/web/app/kds/kds-screen.tsx`) se reescribió sobre tokens del sistema de diseño,
+  pero **no** usa `AppShell`: es la excepción documentada en `DESIGN_SYSTEM.md` — pantalla
+  completa sin sidebar, fondo sólido oscuro, cero superficies traslúcidas, tipografía grande y
+  botones de 64–72 px para manos ocupadas o mojadas.
+- Los colores de acento (naranja, verde, ámbar, rojo) pasaron a los tokens de marca compartidos
+  (`bg-brand`, `bg-success`, `bg-warning`, `bg-destructive`); las superficies oscuras
+  estructurales quedan con valores Tailwind arbitrarios porque OI-026 todavía no aprueba una
+  matriz semántica oscura completa.
+- La comanda (`TicketCard`) reusa `bg-background`/`text-foreground`/`Badge`, igual que el resto
+  del producto: es un "papel" claro sobre el mostrador oscuro.
+- El indicador de conexión y "Actualizado hace…" quedan siempre visibles en la barra superior; la
+  alerta de pantalla desactualizada y la de Realtime desconectado (con recuperación por consulta)
+  se mantuvieron con su lógica original, sólo restilizadas.
+- Se centralizó `Actualizado {…}` con `formatRelativeTime` de `lib/format.ts` en vez del helper
+  `agoLabel` duplicado.
+
+### Bug encontrado durante la migración (no en producción, en el propio incremento)
+
+Al restilizar el tab de estación activa, el texto quedó invisible: la clase base `kdsButton`
+fijaba `text-[#fefefe]` y la variante activa agregaba `text-[#111110]` **sin reemplazarla**. Como
+`cn()` en este proyecto es sólo `clsx` (sin `tailwind-merge`), ambas clases de texto coexistieron
+y el orden de generación de Tailwind — no el orden del JSX — decidió cuál ganaba, dejando texto
+blanco sobre fondo blanco. Se corrigió separando el color de texto de la base y usando un
+ternario que reemplaza la cadena completa, como ya hacen los componentes compartidos con `cva`.
+Encontrado en captura de pantalla antes de reportar, no por un usuario. Se documentó como
+lección en `DESIGN_SYSTEM.md` para no repetirlo en Garzón/Superadmin/Onboarding/Crédito/PWA.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- Playwright `tests/e2e/kds.spec.ts`: 5/5, incluida la medición de latencia
+  (`KDS_LATENCY {"connectedSampleCount":12,"noKdsConnectedCount":1,"p50Ms":80,"p95Ms":133,"p99Ms":151}`,
+  dentro del objetivo p95 ≤ 2 s). Se actualizó el selector `.kdsTicket` → `getByTestId("kds-ticket")`
+  en el test, porque apuntaba a una clase CSS que dejó de existir.
+- Auditoría de contraste/táctil/foco/gradientes/desborde en escritorio y móvil, vacío y con
+  comandas activas de ambas estaciones: **0 fallos** en las 4 combinaciones
+  (`docs/evidence/SPRINT-14-KDS-A11Y.json`, `docs/evidence/SPRINT-14-KDS-tickets-A11Y.json`). El
+  cálculo de contraste funciona igual sobre fondo oscuro.
+- Suite completa de Playwright (todas las pantallas) corrida después del incremento para
+  descartar regresiones cruzadas.
+
+### Límite deliberado
+
+Sólo se migraron Caja y KDS hasta ahora. Garzón, Superadmin, Onboarding, Crédito y la PWA del
+comensal siguen con sus estilos anteriores; continúan en ese orden.
+
 ## 2026-08-01 — Sprint 14 · migración visual de Caja
 
 ### Qué cambió
