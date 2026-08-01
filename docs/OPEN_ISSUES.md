@@ -404,6 +404,19 @@ hardware hasta probarla con el piloto.
   recién entonces alinear el historial canónico con una reparación revisada.
 - **Riesgo:** ignorarlo podría duplicar DDL, fallar un despliegue o registrar como aplicada una
   migración cuyo contenido no corresponde.
+- **Evidencia nueva (2026-07-31):** se agregó un workflow de CI
+  (`.github/workflows/schema-reproducibility.yml`) que reconstruye el esquema desde cero sólo
+  con los archivos del repositorio. Corrió 4 veces y falló las 4, la última en
+  `20260729174339_sprint_09_credit_open_limit.sql`
+  (`https://github.com/jtmenesesg-arch/tablio/actions/runs/30681883530`,
+  `ERROR: open_table_credit definition was not recognized`). Esa migración busca un fragmento
+  literal `E'...\\n'` dentro de `pg_get_functiondef()`; ese patrón decodifica a los caracteres
+  `\` y `n`, no a un salto de línea real, así que aparentemente **nunca pudo calzar tal como está
+  escrito hoy**. Hipótesis sin verificar: el efecto real en producción se aplicó por otra vía
+  (SQL directo) y el archivo de migración no quedó fiel a lo que realmente se ejecutó — el mismo
+  patrón que motivó este asunto. Falta revisar del mismo modo
+  `20260729230000_sprint_13_stored_value.sql`, que también usa `pg_get_functiondef()` y todavía
+  no fue alcanzada por el rebuild porque este se detiene en el primer error.
 
 ## Clasificación final de asuntos
 

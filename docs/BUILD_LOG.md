@@ -54,13 +54,48 @@ mismo esquema que ya existe en producción — sin necesidad de tocar el proyect
   punto.
 - **No se pudo ejecutar `supabase db reset` en este equipo** porque no hay Docker instalado ni
   corriendo; por lo tanto, la promesa central de estos commits (que el esquema se reconstruye
-  desde cero sin errores) no se verificó localmente. Queda verificada por el workflow de CI
-  recién agregado, que sí corre con Docker disponible en el runner de GitHub Actions, apenas se
-  suban estos commits.
+  desde cero sin errores) no se verificó localmente antes de este incremento.
 - No se ha cerrado OI-027 con este trabajo: sólo cubre que los archivos locales reconstruyen un
   esquema equivalente desde cero. La reconciliación del historial de migraciones ya aplicado en
   el proyecto remoto (`supabase_migrations.schema_migrations`) sigue pendiente y se aborda por
   separado.
+
+### Corrección — el workflow de CI ya se había ejecutado y falló 4/4 veces
+
+Al revisar el historial de Actions con `gh run list` se descubrió que estos cuatro commits **ya
+habían sido subidos y probados individualmente antes de esta sesión** (`gh api
+repos/.../events` muestra los cuatro `PushEvent` a `refs/heads/main` entre 2026-07-31 23:11 y
+23:23, cada uno seguido de una corrida del workflow "Schema reproducibility"). Las cuatro
+corridas terminaron en `failure`, incluida la del último commit
+(`fix(database): make historical credit repair idempotent`). En algún momento posterior
+`origin/main` fue retrocedido para quitar esos commits, sin dejar registro — así fue como esta
+sesión los encontró de nuevo como "4 commits locales sin subir".
+
+Esto corrige la afirmación anterior: **la reconstrucción desde cero seguía fallando** cuando se
+escribió este párrafo por primera vez; no estaba pendiente de una primera verificación, sino que
+ya tenía evidencia roja no leída. El log de la corrida más reciente
+(`https://github.com/jtmenesesg-arch/tablio/actions/runs/30681883530`) muestra el error real:
+
+```
+ERROR: open_table_credit definition was not recognized (SQLSTATE P0001)
+```
+
+en la migración `20260729174339_sprint_09_credit_open_limit.sql`, que parchea el cuerpo de
+`open_table_credit` buscando un fragmento de texto literal dentro de la salida de
+`pg_get_functiondef()`. **Hipótesis de causa, sin verificar todavía contra producción:** el texto
+buscado usa `E'...\\n'` (barra invertida escapada seguida de "n"), que en sintaxis de cadena de
+escape de PostgreSQL representa los dos caracteres literales `\` y `n` — **no** un salto de
+línea real. `pg_get_functiondef()` devuelve saltos de línea reales, así que ese patrón no
+debería poder calzar nunca, en ningún entorno. Si esa lectura es correcta, esta migración nunca
+ejecutó su reemplazo tal como está escrita hoy en el repositorio, y lo que corre en producción
+llegó a su forma actual por otra vía (coherente con el diagnóstico general de OI-027: hotfixes
+aplicados directo contra el proyecto remoto que no quedaron reflejados fielmente en los archivos
+locales). Se encontraron sólo otros dos usos de `pg_get_functiondef` en el repositorio
+(`20260729024401_sprint_05_runtime_fixes.sql`, que sí pasa la reconstrucción desde cero, y
+`20260729230000_sprint_13_stored_value.sql`, todavía no alcanzada por el rebuild porque éste se
+detiene en el primer error). No se tocó ninguna de las tres porque diagnosticar y corregir el
+historial de migraciones es exactamente el alcance de OI-027, que se aborda por separado con
+acceso de solo lectura al proyecto remoto para no reconciliar a ciegas.
 
 ## 2026-07-30 — Sprint 14 · sistema visual y panel Dueño piloto
 
