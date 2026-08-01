@@ -93,6 +93,13 @@ with schema_objects as (
   from pg_proc proc
   join pg_namespace ns on ns.oid = proc.pronamespace
   where ns.nspname in ('public', 'private')
+    -- Hosted Supabase projects install this event-trigger helper themselves;
+    -- it is not created by any Tablio migration and does not exist on a
+    -- clean local/CI stack (see 20260728035137_harden_auth_and_advisor_findings.sql,
+    -- which already guards its own REVOKE with `to_regprocedure(...) is not
+    -- null`). Comparing it would flag a permanent, expected difference on
+    -- every run instead of a real one.
+    and not (ns.nspname = 'public' and proc.proname = 'rls_auto_enable')
 
   union all
 

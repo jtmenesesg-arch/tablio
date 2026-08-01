@@ -1957,7 +1957,7 @@ begin
   if p_normalized_status = 'pending' then
     perform private.advance_payment_intent(
       p_tenant_id, intent_record.id, 'processing', p_provider_event_id,
-      p_occurred_at, clock_timestamp(),
+      p_occurred_at, p_received_at,
       jsonb_build_object('provider_event_id', inserted_provider_event_id)
     );
     return jsonb_build_object(
@@ -1980,7 +1980,7 @@ begin
 
     perform private.advance_payment_intent(
       p_tenant_id, intent_record.id, p_normalized_status,
-      p_provider_event_id, p_occurred_at, clock_timestamp(),
+      p_provider_event_id, p_occurred_at, p_received_at,
       jsonb_build_object('provider_event_id', inserted_provider_event_id)
     );
     perform private.release_checkout(
@@ -2003,7 +2003,7 @@ begin
   -- Provider truth is recorded even if commercial validation rejects production.
   perform private.advance_payment_intent(
     p_tenant_id, intent_record.id, 'approved', p_provider_event_id,
-    p_occurred_at, clock_timestamp(),
+    p_occurred_at, p_received_at,
     jsonb_build_object('provider_event_id', inserted_provider_event_id)
   );
 
