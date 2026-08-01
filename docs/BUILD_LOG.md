@@ -57,9 +57,11 @@ ni al contraste AA; se resolvió envolviéndolo en `Button asChild size="small" 
   1. `caja y garzón separan prepago y crédito en la misma mesa`: el login del garzón
      (`/garzon`, botón "Empezar turno") queda deshabilitado y el test expira. Es intermitente:
      falló al correr junto a otras suites y pasó al correrlo solo, en ambas versiones del código.
+     Registrado como OI-029.
   2. `una fuga alimenta el costo mensual y su tendencia para el dueño`: espera `$54.500` en
      `owner-leakage` y encuentra `$18.500`. Falla de forma determinística y aislada, también en
-     ambas versiones del código.
+     ambas versiones del código. No es cosmético: es un cálculo de plata mal hecho en el panel
+     del dueño. Registrado como OI-028, bloqueante antes del piloto.
   Ninguno de los dos toca código de Caja; ambos quedan fuera del alcance de este incremento por
   la regla de las dos vueltas de `AGENTS.md` §5.3. No se investigaron más a fondo porque no son
   parte de la migración visual encargada; quedan para revisión aparte.

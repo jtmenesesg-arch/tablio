@@ -418,6 +418,51 @@ hardware hasta probarla con el piloto.
   `20260729230000_sprint_13_stored_value.sql`, que también usa `pg_get_functiondef()` y todavía
   no fue alcanzada por el rebuild porque este se detiene en el primer error.
 
+## OI-028 — El costo mensual de crédito de mesa en `/dueno` no calza con el cierre
+
+- **Estado:** bloqueante antes del piloto. No es cosmético: es una cifra de plata que el dueño
+  usa para decidir si mantiene o apaga el crédito de mesa.
+- **Encontrado:** al migrar Caja visualmente (2026-08-01), corriendo
+  `tests/e2e/credit-owner.spec.ts` de forma aislada (`-g "una fuga alimenta"`), tanto contra el
+  código recién migrado como contra el original sin tocar (`git stash`, mismo resultado en
+  ambos). No es un problema introducido por la migración visual; ya existía.
+- **Evidencia exacta:** el test cierra un turno con una fuga de crédito de $18.500 en `/caja`,
+  confirma esa cifra en el cierre, y luego en `/dueno` espera que
+  `getByTestId("owner-leakage")` contenga `$54.500` (mes anterior $36.000 + este mes $18.500) y
+  "14% más". El panel muestra en cambio sólo `$18.500`, sin sumar el mes anterior ni mostrar la
+  tendencia esperada.
+- **Pendiente:** diagnosticar primero contra datos reales (o el store demo) qué agrega
+  exactamente `owner_monthly_credit_loss`/la vista que alimenta `/api/owner`, antes de tocar
+  nada — mismo criterio que OI-027: entender qué pasa antes de "arreglarlo".
+- **Riesgo:** un dueño que decide desactivar (o mantener) el crédito de mesa basado en un costo
+  mensual mal calculado toma una decisión de negocio con un dato incorrecto.
+- **No bloquea:** el checkpoint visual de Sprint 14 (Caja, KDS y las pantallas siguientes). Se
+  aborda aparte, después de terminar la migración visual, con diagnóstico antes que corrección.
+
+## OI-029 — Login del garzón intermitente en pruebas E2E
+
+- **Estado:** por descartar antes del piloto. Un test intermitente puede ser sólo fragilidad del
+  test, pero también puede esconder una condición de carrera real — y el panel del garzón es
+  exactamente la pantalla que se usa en un bar lleno bajo presión.
+- **Encontrado:** al migrar Caja visualmente (2026-08-01).
+  `tests/e2e/credit-owner.spec.ts › caja y garzón separan prepago y crédito en la misma mesa`
+  falla esperando que el botón "Empezar turno" de `/garzon` quede habilitado
+  (`page.getByRole("button", { name: "Empezar turno" }).click()` expira a los 30 s con el botón
+  deshabilitado). Falló corriendo la suite completa y corriendo sólo ese archivo; **pasó** al
+  correr ese mismo test en aislamiento total (`-g "caja y garzón"`). Reproducido igual contra el
+  código recién migrado y contra el original sin tocar (`git stash`): no lo causó la migración
+  visual.
+- **Hipótesis sin verificar:** el botón depende de que el turno termine de abrirse server-side
+  (selección de zona + `waiter.shift.open` o equivalente) antes de habilitarse; en ejecución
+  concurrente con otras suites contra el mismo servidor demo, esa respuesta podría demorar más
+  que el resto del flujo, o el estado del store demo compartido entre archivos de test podría
+  dejar al garzón en un estado que nunca satisface la condición de habilitado.
+- **Pendiente:** reproducir con logging/trace para ver si el request de apertura de turno
+  responde tarde, con error silencioso, o si el cliente nunca lo dispara. Recién ahí decidir si
+  es fragilidad de test (ajustar espera) o una condición de carrera real en
+  `/garzon` que también podría ocurrir en producción bajo carga.
+- **No bloquea:** el checkpoint visual de Sprint 14. Se aborda aparte, junto con OI-028.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -448,3 +493,5 @@ hardware hasta probarla con el piloto.
 | OI-025 | Bloqueante legal y tributario antes de usar saldo con dinero real    |
 | OI-026 | No bloquea negocio; bloquea migración visual de superficies oscuras  |
 | OI-027 | Bloquea la próxima migración de esquema; no este checkpoint visual   |
+| OI-028 | Bloqueante antes del piloto; no bloquea el checkpoint visual         |
+| OI-029 | Por descartar antes del piloto; no bloquea el checkpoint visual      |
