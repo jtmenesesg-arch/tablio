@@ -9,7 +9,21 @@ with schema_objects as (
     jsonb_build_object(
       'rls', cls.relrowsecurity,
       'force_rls', cls.relforcerowsecurity,
-      'acl', coalesce(cls.relacl::text, '')
+      -- `postgres` owns every table in both production and a clean local/CI
+      -- stack, so it always has full rights whether or not relacl lists them
+      -- explicitly. Whether that entry is explicit or implicit is Postgres's
+      -- own bookkeeping (it materializes once anything else is granted or
+      -- revoked on the table) — not a real difference in who can access
+      -- what. Comparing it produces a false positive unrelated to any
+      -- migration. Grants to every other role still count.
+      'acl', coalesce(
+        (
+          select array_to_string(array_agg(entry::text order by entry::text), ',')
+          from unnest(cls.relacl) as entry
+          where entry::text !~ '^postgres='
+        ),
+        ''
+      )
     )::text as definition
   from pg_class cls
   join pg_namespace ns on ns.oid = cls.relnamespace
