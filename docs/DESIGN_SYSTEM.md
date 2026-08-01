@@ -93,6 +93,58 @@ disfrazan como espaciado.
 Todo componente nuevo debe usar tokens semánticos. Si falta un color, se agrega un token
 derivado del brand book; no se escribe un literal dentro del componente.
 
+## `cn()` fusiona clases en conflicto — causa raíz cerrada (2026-08-01)
+
+Durante Sprint 14 aparecieron tres bugs reales de la misma causa: `cn()` (`apps/web/lib/cn.ts`)
+era sólo `clsx` — concatenaba texto, no resolvía nada. Cuando una clase base de un componente y
+una clase de quien lo usa caían en la misma propiedad CSS (`border-transparent` de la base de
+`Button` contra `border-border` de su variant `outline`; `text-card-foreground` de la base de
+`Card` contra `text-background` que le pasaba Crédito para invertir el tema; `text-[#fefefe]`
+fijo de `kdsButton` contra el `text-[#111110]` condicional del tab activo en KDS), ganaba la
+regla que Tailwind generó después en el CSS — no la que aparecía después en el JSX. Los tres
+casos produjeron texto o bordes invisibles, y ninguno lo detectaron los tests: sólo aparecieron
+mirando capturas de pantalla.
+
+**Arreglado en la raíz, no en cada sitio donde apareció:** `cn()` ahora pasa el resultado de
+`clsx` por `tailwind-merge` (`twMerge`), que sí entiende qué clases pertenecen al mismo grupo
+(color de fondo, color de texto, color de borde, radio, tamaño de fuente, espaciado…) y se queda
+sólo con la última — así que la composición siempre se comporta como se lee en el JSX, sin
+depender del orden en que Tailwind generó el CSS.
+
+Como el sistema de tokens de Tablio vive fuera de la paleta por defecto de Tailwind (son
+variables `--color-*`/`--text-*`/`--radius-*`/`--spacing-*` definidas en `@theme inline` dentro
+de `globals.css`), `tailwind-merge` no puede adivinar solo qué nombres personalizados comparten
+propiedad — hay que decírselo. `lib/cn.ts` registra cada lista de tokens vía
+`extendTailwindMerge({ extend: { theme: { color, text, radius, spacing } } })`, calcada de esas
+mismas variables. **Si se agrega o renombra un token semántico en `globals.css`, hay que
+reflejarlo en `lib/cn.ts` o `tailwind-merge` dejará de reconocer los conflictos de ese token
+(vuelve al comportamiento silencioso de antes, no falla ruidosamente).**
+
+Verificado que las tres composiciones que ya habían fallado ahora se resuelven solas (sin
+depender de que cada componente evite el conflicto a mano):
+
+```
+cn("border border-transparent", "border-border")                          → "border border-border"
+cn("text-card-foreground", "text-background")                              → "text-background"
+cn("text-h2", "text-background")                                           → "text-h2 text-background"   (sin conflicto: tamaño vs color)
+cn("text-h1 tracking-tight text-foreground lg:text-h1-lg")                 → intacto (breakpoints distintos no conflictúan)
+```
+
+Los arreglos puntuales que ya se habían hecho a mano en `button.tsx` (cada variant con su propio
+color de borde) y `credit-demo.tsx` (`text-background` explícito en cada elemento) se dejaron
+como están — son redundantes con lo que `twMerge` ya resolvería solo, pero siguen siendo
+correctos y más explícitos, así que no hacía falta deshacerlos. Lo que sí cambia hacia adelante:
+un componente nuevo con este mismo patrón (base + variant en la misma propiedad) ya no puede
+producir este bug, sin que nadie tenga que acordarse de la regla caso por caso.
+
+Regresión ejecutada tras el cambio (afecta a `cn()` global, la usa cada componente del
+sistema): `typecheck`/`lint`/`build` verdes, Vitest 144/144, Playwright 44/46 (mismo patrón
+preexistente de siempre, sin regresiones nuevas), auditoría de contraste/táctil/foco re-corrida
+en las 8 pantallas migradas (Dueño, Mesas, Caja, KDS, Garzón, Superadmin, Onboarding, Crédito) —
+las 8 en cero fallos, y revisión visual dirigida a los tres puntos que ya habían fallado antes
+(bordes en Mesas, texto de la tarjeta oscura en Crédito) confirma que se ven igual de bien que
+antes del cambio.
+
 ## Modo oscuro: decisión pendiente, no inventada
 
 No se agregó un tema oscuro global en este incremento. El brand book autoriza fondo claro o
@@ -167,14 +219,16 @@ propias documentadas aquí para no perderlas en la próxima migración:
 - El indicador de conexión y "Actualizado hace…" son permanentes en la barra superior; una barra
   de alerta roja separada aparece si la última sincronización supera el umbral configurado, para
   que nunca se confunda "no hay pedidos" con "la pantalla se colgó".
-- **Lección para las próximas pantallas:** una clase base con un color de texto (`kdsButton` con
-  `text-[#fefefe]`) combinada con una clase condicional que agrega OTRO color de texto
-  (`text-[#111110]`) es frágil sin `tailwind-merge` — `cn()` en este proyecto es sólo `clsx`, así
-  que ambas clases coexisten y el orden de generación de Tailwind (no el orden en el JSX) decide
-  cuál gana. Se encontró así el tab de estación activo renderizando texto invisible. La regla:
-  cuando una variante cambia un color que la base ya fija, usar un ternario que reemplace la
-  cadena completa (como hace `cva` en los componentes compartidos), nunca una base fija más un
-  añadido condicional del mismo tipo de utilidad.
+- **Lección para las próximas pantallas (causa raíz ya cerrada):** una clase base con un color
+  de texto (`kdsButton` con `text-[#fefefe]`) combinada con una clase condicional que agrega OTRO
+  color de texto (`text-[#111110]`) era frágil porque `cn()` era sólo `clsx`, sin fusión — ambas
+  clases coexistían y el orden de generación de Tailwind (no el orden en el JSX) decidía cuál
+  ganaba. Se encontró así el tab de estación activo renderizando texto invisible; el mismo patrón
+  reapareció después en `Button` y en `Card`/Crédito. **`cn()` ahora fusiona clases en conflicto
+  con `tailwind-merge`** — ver "`cn()` fusiona clases en conflicto" más arriba para el arreglo de
+  fondo y por qué ya no puede volver a pasar sola. El ternario completo que sigue usando este
+  archivo (en vez de base fija + añadido condicional) sigue siendo la forma más clara de escribir
+  la intención, pero ya no es la única red de seguridad.
 - Auditoría de contraste/táctil/foco/gradientes/desborde: verde en vacío y con comandas activas,
   escritorio y móvil (`docs/evidence/SPRINT-14-KDS-A11Y.json` y
   `docs/evidence/SPRINT-14-KDS-tickets-A11Y.json`). El script de contraste funciona igual sobre
@@ -277,9 +331,10 @@ Tres columnas: operación de caja, "pantalla del cliente" (tarjeta oscura invert
 el producto — ver abajo) y validación del garzón.
 
 - **La misma lección de KDS (arriba), pero esta vez en un componente compartido, no en una
-  pantalla aislada.** Revisando las capturas aparecieron dos bugs reales del mismo origen —
-  `cn()` es `clsx` sin fusión, una base que fija un color de texto/borde gana sobre la clase que
-  el que lo usa le pasa para pisarlo:
+  pantalla aislada — la tercera vez que aparecía fue la que hizo cerrar la causa raíz.**
+  Revisando las capturas aparecieron dos bugs reales del mismo origen — `cn()` era `clsx` sin
+  fusión, una base que fija un color de texto/borde ganaba sobre la clase que quien lo usa le
+  pasa para pisarlo:
   - `components/ui/button.tsx`: la base de `cva` fijaba `border-transparent`; el variant
     `outline` nunca lograba mostrar su `border-border`. Afectaba a **todas** las pantallas ya
     migradas que usan `variant="outline"` (confirmado también en Mesas, no es nuevo de Crédito).
@@ -291,10 +346,9 @@ el producto — ver abajo) y validación del garzón.
     cliente lee en voz alta al garzón** se renderizaban negro sobre negro, invisibles. Corregido
     dándole `text-background` explícito a cada elemento de texto directamente, no al contenedor.
     Detalle completo y verificación en `BUILD_LOG.md`.
-  - La regla sigue siendo la misma: cuando algo necesita pisar un color que un componente base ya
-    fija, el color explícito va en el elemento que lo necesita (o el componente base se
-    rediseña con variants completos, como ya hace `Button`), nunca como una clase suelta que
-    confía en ganarle a la base por orden de JSX.
+  - Estos dos bugs fueron la evidencia que llevó a arreglar la causa raíz el mismo día: `cn()`
+    ahora fusiona clases en conflicto con `tailwind-merge` (ver la sección dedicada más arriba),
+    así que esta clase de bug ya no depende de que cada componente nuevo recuerde la regla.
 - El script de auditoría (`tests/visual/sprint-14-owner-a11y.ts`) tenía un falso positivo propio:
   no sabía leer colores `oklab()` (los que produce Chromium para textos con modificador de
   opacidad, ej. `text-background/70`, porque el `color-mix()` detrás no siempre vuelve a sRGB sin

@@ -2,6 +2,66 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · causa raíz: `cn()` fusiona clases + auditoría detecta texto invisible
+
+Pedido explícito del fundador tras el incremento anterior: van tres bugs del mismo origen
+(Button, Card/Crédito, KDS), los tres invisibles para los tests, los tres encontrados sólo
+mirando capturas. "Esta clase de bug no puede seguir apareciendo pantalla por pantalla." Dos
+cambios de fondo, no más parches puntuales.
+
+### 1. `cn()` ahora fusiona clases en conflicto (`tailwind-merge`)
+
+- Se reescribió `apps/web/lib/cn.ts`: `cn()` pasaba antes por `clsx` solo (concatenaba, nunca
+  resolvía). Ahora hace `twMerge(clsx(inputs))`. Dato curioso al revisar: `tailwind-merge`
+  (v3.6.0) ya estaba en `apps/web/package.json` desde el primer commit del sistema de diseño —
+  nunca se usó, `lib/cn.ts` se escribió con `clsx` solo desde el principio. No hubo que agregar
+  una dependencia nueva, sólo conectar la que ya estaba.
+- Como los tokens semánticos de Tablio no son la paleta por defecto de Tailwind (viven en
+  `--color-*`/`--text-*`/`--radius-*`/`--spacing-*` dentro de `@theme inline` en `globals.css`),
+  `tailwind-merge` no puede inferirlos solo. `lib/cn.ts` los registra explícitamente vía
+  `extendTailwindMerge({ extend: { theme: { color, text, radius, spacing } } })`, calcada de esas
+  mismas variables — **si se agrega o renombra un token en `globals.css` hay que reflejarlo
+  aquí**, o vuelve el comportamiento silencioso de antes para ese token.
+- Verificado con casos aislados (no sólo confiando en la suite) que las tres composiciones que ya
+  habían fallado ahora se resuelven solas: `border border-transparent` + `border-border` →
+  `border-border` gana; `text-card-foreground` + `text-background` → `text-background` gana;
+  `text-h2` + `text-background` coexisten sin falso conflicto (tamaño vs color son grupos
+  distintos); `text-h1` + `lg:text-h1-lg` (patrón responsive usado en casi todos los headers) no
+  se pisan entre sí porque tienen breakpoints distintos.
+- Detalle completo y ejemplos en `docs/DESIGN_SYSTEM.md` → "`cn()` fusiona clases en conflicto —
+  causa raíz cerrada".
+
+### 2. La auditoría ahora rompe el build ante texto prácticamente invisible
+
+- `tests/visual/sprint-14-owner-a11y.ts`: antes sólo existía una lista `textFailures` con el
+  incumplimiento de AA (ratio bajo el mínimo 3:1/4.5:1 según tamaño). Un texto negro sobre negro
+  (ratio 1) SÍ caía en esa lista, pero mezclado con cualquier incumplimiento menor de AA — nada
+  lo marcaba como lo que realmente era: invisible, no "un poco bajo de contraste".
+- Se agregó una categoría separada, `invisibleTextFailures`, con un umbral propio y mucho más
+  estricto (ratio < 1.5, casi el mismo color) que ya no depende del tamaño de fuente ni de si el
+  texto es "grande". Si aparece algo ahí, el script imprime una advertencia explícita por stderr
+  además de romper `passed`/el exit code.
+- De paso se separó `unparseableTextColors`: un color que el script no supo interpretar (formato
+  CSS que `parseRgb` no cubre) ya no cuenta silenciosamente como 0 fallos — aparece marcado aparte
+  para que alguien lo revise, en vez de esconderse como un pase falso.
+- Verificado con una página mínima aislada (no la app real) que un texto negro sobre fondo negro
+  cae en `invisibleTextFailures` con exit code 1 y el warning correcto, y que un texto blanco
+  sobre negro en la misma página no dispara nada.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- `pnpm test` (Vitest): 144/144.
+- Playwright completo: 44 pasan, 1 falla en el patrón preexistente ya documentado (OI-028), 1 se
+  salta en cascada — mismo patrón de siempre, sin regresiones. Este cambio toca `cn()`, que usa
+  cada componente del sistema, así que era el que más riesgo de regresión tenía de todo el
+  sprint.
+- Auditoría de contraste/táctil/foco/gradientes/desborde + el nuevo chequeo de texto invisible,
+  re-corrida en las 8 pantallas migradas (Dueño, Mesas, Caja, KDS, Garzón, Superadmin, Onboarding,
+  Crédito): las 8 en cero fallos, incluidas las tres ubicaciones que ya habían fallado antes
+  (verificado además visualmente con estilos computados: bordes en Mesas, texto de la tarjeta
+  oscura en Crédito — sin cambios respecto a como se veían ya corregidas).
+
 ## 2026-08-01 — Sprint 14 · migración visual de Crédito + dos bugs reales encontrados al revisar
 
 ### Qué cambió

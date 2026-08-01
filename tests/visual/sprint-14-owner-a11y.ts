@@ -125,7 +125,15 @@ try {
         return (lighter + 0.05) / (darker + 0.05);
       }
 
-      const textFailures = Array.from(document.body.querySelectorAll("*"))
+      // A contrast ratio this low means the text and its real computed
+      // background are, for practical purposes, the same color — not "hard
+      // to read", but invisible. This happened for real (black text on a
+      // black card) and slipped past manual review; it must be impossible
+      // to miss in the audit output, so it gets its own category instead of
+      // being just another row in the general AA list below.
+      const INVISIBLE_RATIO_THRESHOLD = 1.5;
+
+      const textAudit = Array.from(document.body.querySelectorAll("*"))
         .filter((element) => {
           const html = element as HTMLElement;
           const text = html.innerText?.trim();
@@ -148,14 +156,33 @@ try {
             fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700)
               ? 3
               : 4.5;
-          const ratio = foreground ? contrast(foreground, backdrop) : 0;
+          const ratio = foreground
+            ? Math.round(contrast(foreground, backdrop) * 100) / 100
+            : undefined;
           return {
             text: (element.textContent ?? "").trim().slice(0, 80),
-            ratio: Math.round(ratio * 100) / 100,
+            ratio,
             required,
           };
-        })
-        .filter((item) => item.ratio < item.required);
+        });
+
+      const textFailures = textAudit
+        .filter((item) => item.ratio !== undefined)
+        .filter((item) => (item.ratio as number) < item.required)
+        .map(({ text, ratio, required }) => ({ text, ratio, required }));
+
+      const invisibleTextFailures = textAudit
+        .filter((item) => item.ratio !== undefined)
+        .filter((item) => (item.ratio as number) < INVISIBLE_RATIO_THRESHOLD)
+        .map(({ text, ratio }) => ({ text, ratio }));
+
+      // A color the script couldn't parse (color(), lab(), etc. beyond the
+      // rgb()/oklab() cases already handled above) is a gap in the audit
+      // itself, not a contrast verdict — surfaced separately so it can't be
+      // mistaken for either a pass or an invisible-text failure.
+      const unparseableTextColors = textAudit
+        .filter((item) => item.ratio === undefined)
+        .map(({ text }) => text);
 
       const touchFailures = Array.from(
         document.querySelectorAll<HTMLElement>(
@@ -221,6 +248,8 @@ try {
           document.body.querySelectorAll("*"),
         ).filter((element) => element.children.length === 0).length,
         textFailures,
+        invisibleTextFailures,
+        unparseableTextColors,
         touchFailures,
         focusFailures,
         gradients,
@@ -242,6 +271,8 @@ const report = {
   route,
   rules: {
     textContrast: "WCAG AA: 4.5:1 normal, 3:1 texto grande",
+    invisibleText:
+      "ratio < 1.5 entre texto y su fondo real computado — prácticamente el mismo color, no un incumplimiento de AA sino texto invisible; rompe el build aparte de la regla de AA",
     touchTarget: "56 × 56 px mínimo",
     focus: "indicador visible por outline o ring",
     gradients: "cero en producto",
@@ -251,12 +282,26 @@ const report = {
   passed: results.every(
     (result) =>
       result.textFailures.length === 0 &&
+      result.invisibleTextFailures.length === 0 &&
       result.touchFailures.length === 0 &&
       result.focusFailures.length === 0 &&
       result.gradients.length === 0 &&
       !result.horizontalOverflow,
   ),
 };
+
+if (
+  results.some((result) => result.invisibleTextFailures.length > 0)
+) {
+  process.stderr.write(
+    "\n⚠ TEXTO INVISIBLE: hay texto con contraste prácticamente nulo contra su fondo real. Ver 'invisibleTextFailures' en el reporte.\n\n",
+  );
+}
+if (results.some((result) => result.unparseableTextColors.length > 0)) {
+  process.stderr.write(
+    "\n⚠ El script no pudo interpretar el color de algún texto (formato CSS no soportado por parseRgb) — revisar manualmente, no cuenta como pase ni como falla. Ver 'unparseableTextColors'.\n\n",
+  );
+}
 
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
