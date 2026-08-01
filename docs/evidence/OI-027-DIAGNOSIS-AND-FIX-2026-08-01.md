@@ -121,6 +121,47 @@ history table").
   esas 13 filas quedó en `null` (antes tenía el email del autor original) — es metadato de
   auditoría del propio historial de migraciones, no afecta ninguna tabla de negocio.
 
+## Verificación de equivalencia (después del CI en verde)
+
+El CI en verde prueba que las migraciones del repositorio pueden reconstruirse sin errores desde
+cero — no prueba que el resultado sea igual a producción. Para confirmar eso se corrió
+`scripts/schema-manifest.sql` (el mismo script que usa el CI) contra la base real por conexión
+directa de solo lectura, se descargó el artefacto `clean-room-schema-manifest` del run de CI
+(`https://github.com/jtmenesesg-arch/tablio/actions/runs/30694845820`) y se compararon fila por
+fila (parseando CSV correctamente, respetando campos con saltos de línea internos).
+
+- **Producción:** 4277 filas. **CI (reconstrucción limpia):** 4276 filas.
+- **1 fila sólo en producción**, cero sólo en CI: `function::public.rls_auto_enable()`. Explicada
+  y sin riesgo: es una función que el propio Supabase instala en proyectos reales alojados, no
+  algo que nuestras migraciones crean. `20260728035137_harden_auth_and_advisor_findings.sql` ya
+  lo sabe y la trata condicionalmente (`if to_regprocedure('public.rls_auto_enable()') is not
+  null then ...`), precisamente para no fallar en un stack local donde esa función no existe. No
+  requiere ningún cambio.
+- **3 filas con el mismo nombre pero contenido distinto — divergencia real, NO corregida
+  todavía, registrada aparte como OI-030:**
+  1. `private.configure_table_credit(...)` y `private.create_table_credit_order(...)`: el
+     archivo local `20260729172848_sprint_09_table_credit_owner.sql` tiene hoy la línea
+     `#variable_conflict use_variable` que **el SQL realmente aplicado en producción para esa
+     misma versión no tiene** (confirmado con `diff` contra `statements` de
+     `supabase_migrations.schema_migrations`). El propio archivo trae un comentario de otra
+     migración (`sprint_09_credit_order_variable_fix.sql`, ahora un no-op intencional) que dice
+     "production already received the equivalent repair" — pero la verificación directa contra
+     la base real no confirma eso para esta línea puntual.
+  2. `private.confirm_provider_payment_event(...)`: el archivo local
+     `20260728064954_sprint_02_financial_core.sql` (el núcleo financiero de Sprint 2) tiene
+     diferencias de lógica real contra lo aplicado en producción — no sólo esta función. Se
+     verificó `diff` completo del archivo: variable local nueva `database_recorded_at :=
+     clock_timestamp()` reemplazando el parámetro `p_recorded_at` en varios lugares,
+     `clock_timestamp()` reemplazando el parámetro `p_received_at` en la confirmación de eventos
+     de pago, una función nueva `private.outbox_retry_ceiling_seconds(p_attempt)` que no existe
+     en producción, y una fórmula de backoff de reintentos del outbox distinta.
+
+Este último punto es más serio que los dos arreglos que motivaron este documento: toca la lógica
+de confirmación de pagos y reintentos del outbox, no sólo nombres o formato. **No se tocó nada
+para corregirlo** — queda fuera del alcance que se aprobó para esta sesión (los dos arreglos de
+arriba) y registrado como `OI-030` en `OPEN_ISSUES.md`, con el mismo criterio de "diagnóstico
+antes que corrección" usado en toda esta reconciliación.
+
 ## Arreglo aplicado — paso 2: archivo de migración
 
 Ver sección 2 arriba ("Arreglo aplicado", dentro del diagnóstico) — se reescribió

@@ -403,32 +403,44 @@ hardware hasta probarla con el piloto.
 
 ## OI-027 — Historial local y remoto de migraciones no coincide
 
-- **Estado:** bloqueante técnico antes de la próxima migración de esquema; no bloquea este
-  checkpoint visual ni cambia el esquema efectivo aplicado.
-- **Evidencia:** al preparar Sprint 14, `supabase db push` desde el repositorio canónico quiso
-  volver a aplicar migraciones de Sprints 11–13. La base sí las contiene, pero fueron
-  publicadas con timestamps distintos y algunos hotfixes remotos no son idénticos a los
-  archivos locales.
-- **Mitigación usada:** se descargó el historial remoto a un directorio temporal, se comparó y
-  se aplicaron exclusivamente `20260731213000`, `20260731213200` y `20260731213300`. No se usó
-  `migration repair` a ciegas ni se alteró la historia remota.
-- **Pendiente:** reconciliar archivo por archivo Sprints 11–13, conservar el estado efectivo y
-  recién entonces alinear el historial canónico con una reparación revisada.
-- **Riesgo:** ignorarlo podría duplicar DDL, fallar un despliegue o registrar como aplicada una
-  migración cuyo contenido no corresponde.
-- **Evidencia nueva (2026-07-31):** se agregó un workflow de CI
-  (`.github/workflows/schema-reproducibility.yml`) que reconstruye el esquema desde cero sólo
-  con los archivos del repositorio. Corrió 4 veces y falló las 4, la última en
-  `20260729174339_sprint_09_credit_open_limit.sql`
-  (`https://github.com/jtmenesesg-arch/tablio/actions/runs/30681883530`,
-  `ERROR: open_table_credit definition was not recognized`). Esa migración busca un fragmento
-  literal `E'...\\n'` dentro de `pg_get_functiondef()`; ese patrón decodifica a los caracteres
-  `\` y `n`, no a un salto de línea real, así que aparentemente **nunca pudo calzar tal como está
-  escrito hoy**. Hipótesis sin verificar: el efecto real en producción se aplicó por otra vía
-  (SQL directo) y el archivo de migración no quedó fiel a lo que realmente se ejecutó — el mismo
-  patrón que motivó este asunto. Falta revisar del mismo modo
-  `20260729230000_sprint_13_stored_value.sql`, que también usa `pg_get_functiondef()` y todavía
-  no fue alcanzada por el rebuild porque este se detiene en el primer error.
+- **Estado:** **cerrado 2026-08-01.** Diagnóstico completo, arreglo aplicado y verificado con
+  acceso directo de sólo lectura a la base real; CI de reproducibilidad en verde.
+- **Causa confirmada (dos partes independientes, ambas de la misma raíz — editar una migración
+  ya aplicada sin resincronizar la base):**
+  1. 13 archivos de Sprints 11-13 fueron renombrados a otros timestamps localmente sin correr
+     `supabase migration repair`, así que la tabla de control de la base real
+     (`supabase_migrations.schema_migrations`) quedó con los timestamps viejos. Verificado
+     contenido byte a byte en 4 de los 13 pares: contenido idéntico o reconciliado por una
+     migración posterior en la misma secuencia — nunca hubo divergencia de esquema, sólo de
+     etiqueta.
+  2. `20260729174339_sprint_09_credit_open_limit.sql` fue editado después de aplicado: sus
+     literales `E'...\n'` (barra invertida simple) quedaron como `E'...\\n'` (barra doble), que
+     Postgres nunca interpreta como salto de línea, así que el `replace()` interno nunca
+     encuentra coincidencia y la migración levanta `'open_table_credit definition was not
+     recognized'` en cualquier reconstrucción limpia — exactamente el error que mostraba el CI
+     desde el 2026-07-31.
+  3. Confirmado con estilos computados en vivo (antes de tocar nada) que el efecto de negocio de
+     ambas — sellos/loyalty, checkout con propina, saldo prepagado, y el tope de exposición de
+     crédito de local — **ya estaba correctamente activo en producción**; el problema era
+     puramente de reconstrucción desde cero, no de esquema en producción.
+- **Arreglo aplicado:** `supabase migration repair` para las 13 versiones (verificado que sólo
+  toca la tabla de control, cero tablas/funciones tocadas) + reversión de
+  `sprint_09_credit_open_limit.sql` al contenido exacto que ya corría con éxito en producción
+  (verificado byte a byte contra `supabase_migrations.schema_migrations`, no una edición nueva).
+- **CI verde:** `https://github.com/jtmenesesg-arch/tablio/actions/runs/30694845820` — primera
+  vez que `schema-reproducibility` pasa desde que existe.
+- **Verificación de equivalencia adicional (no sólo CI verde):** se comparó el manifiesto
+  determinista de esquema (`scripts/schema-manifest.sql`) corrido contra producción vs. el
+  artefacto que generó el CI. 4277 filas en producción, 4276 en la reconstrucción limpia. La
+  única fila exclusiva de producción es benigna y explicada (`public.rls_auto_enable()`, función
+  que el propio Supabase instala en proyectos alojados, no algo de nuestras migraciones). Se
+  encontraron además **3 diferencias de contenido real, no relacionadas con este asunto**,
+  registradas aparte en `OI-030` — no se tocaron.
+- **Evidencia completa:** `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md` y respaldo previo
+  al arreglo en `docs/evidence/OI-027-SCHEMA-MIGRATIONS-BACKUP-2026-08-01.json`.
+- **Prevención:** regla nueva en `AGENTS.md` §5.2 — ninguna migración ya aplicada a un ambiente
+  real se renombra, reordena o edita sin sincronizar `supabase migration repair` en el mismo
+  momento. Registrado también en `docs/DECISION_RECORD.md` (2026-08-01).
 
 ## OI-028 — El costo mensual de crédito de mesa en `/dueno` no calza con el cierre
 
@@ -475,6 +487,46 @@ hardware hasta probarla con el piloto.
   `/garzon` que también podría ocurrir en producción bajo carga.
 - **No bloquea:** el checkpoint visual de Sprint 14. Se aborda aparte, junto con OI-028.
 
+## OI-030 — El núcleo financiero de Sprint 2 en producción no coincide con el repositorio
+
+- **Estado:** bloqueante antes del piloto. Toca confirmación de eventos de pago y reintentos del
+  outbox — la ruta de plata más sensible del producto. **No se tocó nada; sólo se diagnosticó.**
+- **Encontrado:** 2026-08-01, al verificar (más allá de que el CI quedara en verde) que el
+  esquema reconstruido desde cero de OI-027 fuera realmente equivalente al de producción, no
+  sólo "sin errores". Comparando `scripts/schema-manifest.sql` corrido contra la base real
+  contra el artefacto que generó el CI.
+- **Evidencia exacta (verificada con `diff` contra el SQL que realmente corrió en producción,
+  guardado en `supabase_migrations.schema_migrations`, no contra hipótesis):**
+  1. `20260728064954_sprint_02_financial_core.sql` (núcleo financiero de Sprint 2) tiene hoy una
+     variable local `database_recorded_at timestamptz := clock_timestamp();` que reemplaza al
+     parámetro `p_recorded_at` en varios lugares, y `clock_timestamp()` reemplazando al
+     parámetro `p_received_at` dentro de `confirm_provider_payment_event` — un cambio real en de
+     dónde sale el instante que se registra como "cuándo se recibió" un evento de pago, no un
+     cambio cosmético.
+  2. El mismo archivo local tiene una función nueva,
+     `private.outbox_retry_ceiling_seconds(p_attempt integer)`, y una fórmula de backoff de
+     reintentos del outbox distinta a la que realmente corre en producción.
+  3. `20260729172848_sprint_09_table_credit_owner.sql` tiene hoy la línea
+     `#variable_conflict use_variable` en `configure_table_credit`/`create_table_credit_order`
+     que el SQL aplicado en producción para esa misma versión no tiene. Existe una migración
+     posterior (`sprint_09_credit_order_variable_fix.sql`) que dice en un comentario que
+     "production already received the equivalent repair" — la verificación directa contra la
+     base real no lo confirma para esta línea puntual.
+- **Pregunta sin responder todavía:** ¿cuál de las dos versiones (la que corre hoy en producción,
+  o la que describe el repositorio) es la que realmente se quiere? Ninguna de las dos se asumió
+  como correcta — a diferencia de OI-027, aquí no hay evidencia de que el repositorio simplemente
+  quedó mal etiquetado; parece una evolución real de la lógica que nunca se desplegó, o un
+  experimento que se llevó al archivo sin desplegarse. Necesita mirar el código de aplicación que
+  llama a estas funciones para saber cuál semántica espera hoy.
+- **Riesgo:** si el código de aplicación fue escrito asumiendo el comportamiento nuevo (por
+  ejemplo, `clock_timestamp()` para "recibido") pero producción todavía ejecuta el
+  comportamiento viejo (`p_received_at`), hay una divergencia silenciosa entre lo que el sistema
+  cree que está pasando con la conciliación de pagos y lo que realmente pasa.
+- **Evidencia completa:** sección "Verificación de equivalencia" en
+  `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
+- **No bloquea:** el checkpoint visual de Sprint 14 ni el cierre de OI-027 (asuntos
+  independientes). Sí debe resolverse antes de cualquier piloto con pagos reales.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -504,6 +556,7 @@ hardware hasta probarla con el piloto.
 | OI-024 | Bloqueante tributario antes del piloto                               |
 | OI-025 | Bloqueante legal y tributario antes de usar saldo con dinero real    |
 | OI-026 | No bloquea negocio; bloquea migración visual de superficies oscuras  |
-| OI-027 | Bloquea la próxima migración de esquema; no este checkpoint visual   |
+| OI-027 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
 | OI-028 | Bloqueante antes del piloto; no bloquea el checkpoint visual         |
 | OI-029 | Por descartar antes del piloto; no bloquea el checkpoint visual      |
+| OI-030 | Bloqueante antes de piloto con pagos reales; no bloquea el checkpoint visual |

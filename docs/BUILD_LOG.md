@@ -2,6 +2,42 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — OI-027 cerrado: reconciliación del historial de migraciones + OI-030 nuevo
+
+### Qué cambió
+
+- Con acceso directo de solo lectura a la base real (pooler de Postgres, no el MCP — quedó mal
+  configurado toda la sesión), se diagnosticó OI-027 comparando el SQL realmente aplicado
+  (`supabase_migrations.schema_migrations.statements`) contra los archivos de
+  `supabase/migrations/`. Detalle completo, con los comandos exactos usados, en
+  `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
+- Aplicado `supabase migration repair` para 13 versiones de Sprint 11-13 (solo metadatos,
+  verificado que no toca tablas ni funciones) y revertido
+  `supabase/migrations/20260729174339_sprint_09_credit_open_limit.sql` al contenido exacto que ya
+  corría en producción (una barra invertida de más rompía el patrón de reemplazo).
+- Respaldo completo de la tabla de control, tomado antes de tocar nada, en
+  `docs/evidence/OI-027-SCHEMA-MIGRATIONS-BACKUP-2026-08-01.json`.
+- Nueva regla en `AGENTS.md` §5.2 y entrada en `docs/DECISION_RECORD.md`: ninguna migración ya
+  aplicada a un ambiente real se renombra/reordena/edita sin sincronizar
+  `supabase migration repair` en el mismo momento.
+
+### Verificación
+
+- `supabase migration list`: local y remoto coinciden en las 58 versiones, sin excepciones.
+- CI `schema-reproducibility` en verde por primera vez:
+  `https://github.com/jtmenesesg-arch/tablio/actions/runs/30694845820`.
+- Verificación adicional (no sólo CI verde): se corrió el mismo script de manifiesto de esquema
+  del CI (`scripts/schema-manifest.sql`) contra producción y se comparó fila por fila contra el
+  artefacto del CI. Encontró 3 diferencias de contenido real no relacionadas con este arreglo —
+  registradas aparte como **OI-030** (núcleo financiero de Sprint 2 y dos funciones de crédito de
+  mesa con lógica distinta entre repositorio y producción). No se tocaron; quedan para diagnóstico
+  y decisión del fundador antes de cualquier piloto con pagos reales.
+
+### Límite deliberado
+
+Este incremento sólo cerró OI-027. OI-030 es nuevo, más serio (toca confirmación de pagos y
+reintentos del outbox) y explícitamente no se intentó resolver en la misma sesión.
+
 ## 2026-08-01 — Sprint 14 · causa raíz: `cn()` fusiona clases + auditoría detecta texto invisible
 
 Pedido explícito del fundador tras el incremento anterior: van tres bugs del mismo origen

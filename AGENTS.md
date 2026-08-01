@@ -146,6 +146,15 @@ Nunca escribas "debería funcionar". O lo verificaste, o no está listo.
 falla, se reporta explícitamente como fallo, nunca se omite ni se revierte el push sin dejar
 registro. Retroceder `origin/main` requiere quedar documentado en `BUILD_LOG.md` con la razón.
 
+**Una migración ya aplicada a un ambiente real (staging o producción) no se renombra, no se
+reordena y no se edita en el archivo local sin sincronizar en el mismo momento la tabla de
+control de la base (`supabase migration repair`, seguido de `supabase migration list` para
+confirmar que local y remoto vuelven a coincidir).** El repositorio y la base real describen la
+misma historia; si se editan por separado, divergen en silencio — nada lo detecta hasta que algo
+como el CI de reproducibilidad de esquema falla, y para entonces ya no queda claro qué fue lo que
+realmente se ejecutó. Motivo: OI-027, ver `docs/DECISION_RECORD.md` (2026-08-01) y
+`docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
+
 ### 5.3 Regla de las dos vueltas
 
 Si un mismo error persiste después de **dos intentos de arreglo**, detente. No sigas
