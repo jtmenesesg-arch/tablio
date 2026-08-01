@@ -9,6 +9,16 @@ const dateTimeFormatter = new Intl.DateTimeFormat("es-CL", {
   timeStyle: "short",
 });
 
+const timeFormatter = new Intl.DateTimeFormat("es-CL", {
+  timeStyle: "short",
+});
+
+export function formatTime(value: string | Date): string {
+  return timeFormatter.format(
+    typeof value === "string" ? new Date(value) : value,
+  );
+}
+
 export function formatClp(value: number): string {
   return clpFormatter.format(Math.trunc(value));
 }

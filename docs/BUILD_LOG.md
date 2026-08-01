@@ -2,6 +2,73 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de Caja
+
+### Qué cambió
+
+- `/caja` (`apps/web/app/caja/cashier-dashboard.tsx`) se reescribió completo sobre el sistema de
+  diseño: `AppShell` compartido con Dueño/Mesas, tokens semánticos, componentes `Card`/`Badge`/
+  `Alert`/`Button`/`Dialog` en vez del CSS manual anterior (`cashierShell`, `cashierTableCard`,
+  etc., que quedan sin uso en `globals.css` hasta la limpieza final del sprint).
+- Se agregaron los diccionarios de estado que faltaban en `lib/ui-statuses.ts` (mesa en vivo de
+  caja, prioridad/estado de excepción, conciliación, documento tributario, salud del proveedor
+  DTE, cuenta de crédito, cuenta de saldo prepagado) para que ningún estado crudo tipo
+  `frozen_for_recovery` llegue a pantalla.
+- `lib/format.ts` ganó `formatTime`. Los montos, duraciones y horas de Caja usan las utilidades
+  centralizadas en vez de `Intl.NumberFormat`/`toLocaleString` repetidos en el componente.
+- La navegación compartida (`components/operational/owner-navigation.ts`) ahora acepta `"cashier"`
+  como sección activa.
+- Se corrigió un error de ortografía heredado: el plural de "excepción" se armaba como
+  "excepciónes" (mantenía la tilde). Ahora dice "excepciones".
+- Se preservaron **sin cambios** todas las interacciones que ya usaban `window.prompt()`
+  (reembolso, escalar excepción, reintentar boleta, cerrar turno, ajustar saldo, restituir
+  sello): las pruebas E2E de Caja escuchan el diálogo nativo del navegador, así que cambiarlas a
+  un `Dialog` propio habría sido un cambio de interacción disfrazado de reestilo.
+
+### Auditoría de accesibilidad ampliada
+
+`/dueno` y `/dueno/mesas` no tienen pestañas, así que la auditoría existente
+(`tests/visual/sprint-14-owner-a11y.ts`) sólo auditaba la carga inicial. Caja sí tiene seis vistas
+por pestaña, así que el script ganó `TABLIO_A11Y_CLICK_ROLE_NAME` para hacer clic antes de auditar.
+Un primer intento reportó ~15-23 fallos de foco por pestaña que resultaron ser un falso positivo
+del propio script: el clic previo cambia la modalidad de foco del navegador a "mouse" y
+`element.focus()` programático deja de calzar con `:focus-visible`. Se corrigió agregando
+`Tab`/`Shift+Tab` después del clic, antes de auditar. Con esa corrección, el único hallazgo real
+fue un enlace "Ver documento" suelto (`<a>` con solo `underline`) que no llegaba a 56 px de alto
+ni al contraste AA; se resolvió envolviéndolo en `Button asChild size="small" variant="ghost"`.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- `pnpm test` (Vitest): 144/144.
+- Auditoría de contraste/táctil/foco/gradientes/desborde en las 6 pestañas × 2 viewports
+  (escritorio 1440×900, móvil 390×844): **0 fallos** en las 12 combinaciones.
+  `docs/evidence/SPRINT-14-CASHIER-A11Y.json` (vista Mesas) y
+  `docs/evidence/SPRINT-14-CASHIER-{exceptions,reconciliation,loyalty,stored_value,close}-A11Y.json`.
+- Capturas de pantalla en `docs/evidence/sprint-14/after-cashier-{desktop,mobile}[-viewport].png`.
+- Playwright: `tests/e2e/cashier.spec.ts` (6/6), `tests/e2e/checkout-engagement.spec.ts` (5/5),
+  y `tests/e2e/table-management.spec.ts`/`owner-dashboard.spec.ts` (sin regresión, confirman que
+  extender `owner-navigation.ts` no rompió las pantallas ya migradas). De
+  `tests/e2e/credit-owner.spec.ts` se actualizó un selector (`.cashierCloseWarning` →
+  `getByTestId("cashier-shift-credit-loss")`) porque apuntaba a una clase CSS que dejó de existir.
+- **Dos fallos preexistentes encontrados en `tests/e2e/credit-owner.spec.ts`, no causados por este
+  incremento** — se reprodujeron de forma idéntica contra el código sin tocar (`git stash`) antes
+  de tocar nada:
+  1. `caja y garzón separan prepago y crédito en la misma mesa`: el login del garzón
+     (`/garzon`, botón "Empezar turno") queda deshabilitado y el test expira. Es intermitente:
+     falló al correr junto a otras suites y pasó al correrlo solo, en ambas versiones del código.
+  2. `una fuga alimenta el costo mensual y su tendencia para el dueño`: espera `$54.500` en
+     `owner-leakage` y encuentra `$18.500`. Falla de forma determinística y aislada, también en
+     ambas versiones del código.
+  Ninguno de los dos toca código de Caja; ambos quedan fuera del alcance de este incremento por
+  la regla de las dos vueltas de `AGENTS.md` §5.3. No se investigaron más a fondo porque no son
+  parte de la migración visual encargada; quedan para revisión aparte.
+
+### Límite deliberado
+
+Sólo se migró Caja. KDS, Garzón, Superadmin, Onboarding, Crédito y la PWA del comensal siguen con
+sus estilos anteriores; continúan en ese orden en los siguientes incrementos del sprint.
+
 ## 2026-07-31 — Reproducibilidad de esquema y saneo previo a OI-027
 
 ### Qué cambió

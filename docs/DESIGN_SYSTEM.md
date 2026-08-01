@@ -1,7 +1,7 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y extendido a Mesas para revisión**. Las demás pantallas
-conservan temporalmente sus estilos anteriores hasta que el fundador apruebe esta dirección.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja**. Las demás pantallas conservan
+temporalmente sus estilos anteriores hasta que se migren una por una.
 
 ## Fuentes de verdad
 
@@ -114,9 +114,39 @@ migración. Antes de migrar KDS o garzón se debe aprobar esa matriz; no se dedu
 El badge de aviso conserva el fondo ámbar oficial, pero usa texto negro: ámbar sobre el fondo
 suave medía 3,13:1 y fallaba AA. No se inventó un nuevo amarillo.
 
+## Caja (2026-08-01)
+
+`/caja` es la primera pantalla con pestañas (Mesas, Excepciones, Conciliación, Sellos, Saldo,
+Cierre) migrada al sistema. Patrones nuevos que quedan como precedente para el resto:
+
+- Las pestañas son `Button` en fila horizontal con scroll propio en móvil (`variant="primary"`
+  activa, `variant="outline"` inactiva). No existe todavía un componente `Tabs` dedicado; si una
+  tercera pantalla necesita pestañas, ese es el momento de extraerlo.
+- Los diccionarios de estado específicos de Caja (mesa en vivo, prioridad y estado de excepción,
+  conciliación, documento tributario, salud del proveedor DTE, cuenta de crédito, cuenta de
+  saldo) viven en `lib/ui-statuses.ts` junto a los de Mesas.
+- `lib/format.ts` ganó `formatTime` (hora corta) para reutilizar en cualquier pantalla operativa
+  que necesite mostrar una hora sin fecha.
+- Los enlaces de acción dentro de una tabla densa (`Ver documento`, `Reintentar`) usan
+  `Button asChild size="small" variant="ghost"` en vez de un `<a>`/`<button>` suelto: así heredan
+  automáticamente el contraste y el mínimo táctil de 56 px sin declarar estilos nuevos. Un `<a>`
+  suelto con solo `underline` falló ambos controles en la auditoría.
+- Las interacciones que ya usaban `window.prompt()` para pedir monto/motivo (reembolso, escalar,
+  reintentar boleta, cerrar turno) **se mantuvieron intactas**. Las pruebas E2E de Caja escuchan
+  el diálogo nativo del navegador (`page.on("dialog")`); reemplazarlas por un `Dialog` propio es
+  un cambio de interacción, no una migración visual, y debe hacerse aparte con sus pruebas
+  actualizadas a propósito.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde en las 6 pestañas, escritorio y
+  móvil (`docs/evidence/SPRINT-14-CASHIER*-A11Y.json`). El script de auditoría
+  (`tests/visual/sprint-14-owner-a11y.ts`) ganó `TABLIO_A11Y_CLICK_ROLE_NAME` para poder auditar
+  pantallas con pestañas, más un `Tab`/`Shift+Tab` después del clic: sin ese paso, el clic previo
+  cambia la modalidad de foco del navegador a "mouse" y el chequeo de foco reporta fallos falsos
+  en cada elemento interactivo de la vista.
+
 ## Límite de la migración
 
-Sólo `/dueno` y `/dueno/mesas` usan el nuevo shell y la biblioteca interna. Las tarjetas de
-impresión son un asset de esa pantalla, no otro panel migrado. Los colores literales del CSS
-histórico siguen presentes para no alterar el resto sin validación. El siguiente incremento
-debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera familia.
+`/dueno`, `/dueno/mesas` y `/caja` usan el nuevo shell y la biblioteca interna. Las tarjetas de
+impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del
+CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin validación. El
+siguiente incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una
+tercera familia.

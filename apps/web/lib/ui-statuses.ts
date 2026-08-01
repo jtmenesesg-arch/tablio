@@ -15,6 +15,65 @@ export const qrStatusDictionary = {
   revoked: { label: "Revocado", tone: "danger" },
 } as const satisfies Record<string, StatusPresentation>;
 
+export const cashierTableStatusDictionary = {
+  free: { label: "Libre", tone: "neutral" },
+  active: { label: "Activa", tone: "success" },
+  new_orders: { label: "Pedidos nuevos", tone: "success" },
+  preparing: { label: "Preparando", tone: "warning" },
+  requires_delivery: { label: "Requiere entrega", tone: "warning" },
+  requires_attention: { label: "Requiere atención", tone: "danger" },
+  inactive: { label: "Inactiva", tone: "neutral" },
+  closed: { label: "Cerrada", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const exceptionPriorityDictionary = {
+  normal: { label: "Normal", tone: "neutral" },
+  high: { label: "Alta", tone: "warning" },
+  critical: { label: "Crítica", tone: "danger" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const exceptionStatusDictionary = {
+  open: { label: "Abierta", tone: "danger" },
+  in_review: { label: "En revisión", tone: "warning" },
+  resolved: { label: "Resuelta", tone: "success" },
+  escalated: { label: "Escalada", tone: "warning" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const reconciliationStatusDictionary = {
+  matched: { label: "Cuadra", tone: "success" },
+  difference: { label: "Diferencia", tone: "danger" },
+  pending: { label: "Pendiente", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const taxDocumentStatusDictionary = {
+  issued: { label: "Emitida", tone: "success" },
+  voucher: { label: "Voucher electrónico", tone: "neutral" },
+  failed: { label: "Fallida", tone: "danger" },
+  pending: { label: "Pendiente", tone: "warning" },
+  review: { label: "Revisión", tone: "warning" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const taxProviderStatusDictionary = {
+  working: { label: "Funcionando", tone: "success" },
+  degraded: { label: "Degradado", tone: "warning" },
+  down: { label: "Caído", tone: "danger" },
+  unknown: { label: "Sin datos", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const tableCreditAccountStatusDictionary = {
+  open: { label: "Abierta", tone: "warning" },
+  bill_requested: { label: "Cuenta solicitada", tone: "warning" },
+  expired: { label: "Vencida", tone: "danger" },
+  settled: { label: "Saldada", tone: "success" },
+  closed_with_loss: { label: "Cerrada con fuga", tone: "danger" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const storedValueAccountStatusDictionary = {
+  active: { label: "Activa", tone: "success" },
+  frozen_for_recovery: { label: "Congelada por recuperación", tone: "warning" },
+  wind_down: { label: "Cierre gradual", tone: "warning" },
+} as const satisfies Record<string, StatusPresentation>;
+
 export const presenceLevelDictionary = {
   printed_with_qr: {
     label: "Código en la tarjeta",

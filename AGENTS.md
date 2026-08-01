@@ -142,6 +142,10 @@ Está **prohibido reportar algo como terminado sin haberlo ejecutado.** Antes de
 
 Nunca escribas "debería funcionar". O lo verificaste, o no está listo.
 
+**Ningún trabajo se considera terminado si su verificación automática está fallando.** Si un CI
+falla, se reporta explícitamente como fallo, nunca se omite ni se revierte el push sin dejar
+registro. Retroceder `origin/main` requiere quedar documentado en `BUILD_LOG.md` con la razón.
+
 ### 5.3 Regla de las dos vueltas
 
 Si un mismo error persiste después de **dos intentos de arreglo**, detente. No sigas

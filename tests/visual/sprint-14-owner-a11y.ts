@@ -12,6 +12,7 @@ const executablePath =
 const route = process.env.TABLIO_A11Y_ROUTE ?? "/dueno";
 const readySelector =
   process.env.TABLIO_A11Y_READY_SELECTOR ?? "[data-owner-dashboard-ready]";
+const clickRoleName = process.env.TABLIO_A11Y_CLICK_ROLE_NAME;
 
 const browser = await chromium.launch({ executablePath, headless: true });
 const results = [];
@@ -27,6 +28,15 @@ try {
     });
     await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
     await page.locator(readySelector).waitFor({ state: "visible" });
+    if (clickRoleName) {
+      await page.getByRole("button", { name: clickRoleName }).click();
+      // A pointer click sets the input modality to "mouse", which makes the
+      // browser's :focus-visible heuristic ignore the script-driven
+      // element.focus() calls below and reports false positives. One
+      // keyboard press restores "keyboard" modality before auditing focus.
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Shift+Tab");
+    }
 
     const audit = await page.evaluate(() => {
       type Rgb = { r: number; g: number; b: number; a: number };

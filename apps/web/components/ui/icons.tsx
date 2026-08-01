@@ -105,3 +105,17 @@ export const CloseIcon: IconComponent = (props) => (
     <path d="m6 6 12 12M18 6 6 18" />
   </IconFrame>
 );
+
+export const RefreshIcon: IconComponent = (props) => (
+  <IconFrame {...props}>
+    <path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" />
+    <path d="M18 3v4h-4M6 21v-4h4" />
+  </IconFrame>
+);
+
+export const WarningIcon: IconComponent = (props) => (
+  <IconFrame {...props}>
+    <path d="M12 3.5 21.5 20h-19z" />
+    <path d="M12 9.5v4.5M12 17h.01" />
+  </IconFrame>
+);

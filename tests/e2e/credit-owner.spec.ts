@@ -99,11 +99,9 @@ test("una fuga alimenta el costo mensual y su tendencia para el dueño", async (
   await page.getByRole("button", { name: "Cerrar con fuga" }).click();
   await page.goto("/caja");
   await page.getByRole("button", { name: "Cierre", exact: true }).click();
-  await expect(
-    page
-      .locator(".cashierCloseWarning")
-      .filter({ hasText: "Fuga de crédito de mesa" }),
-  ).toContainText("Fuga de crédito de mesa: $18.500");
+  await expect(page.getByTestId("cashier-shift-credit-loss")).toContainText(
+    "Fuga de crédito de mesa: $18.500",
+  );
   await page.goto("/dueno");
   await expect(
     page.getByText("El costo real del crédito de mesa este mes"),
