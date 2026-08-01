@@ -372,7 +372,6 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-#variable_conflict use_variable
 declare
   tenant uuid := private.require_tenant_context();
   result public.tenant_table_credit_settings%rowtype;
@@ -512,6 +511,7 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+#variable_conflict use_variable
 declare
   tenant uuid := private.require_tenant_context();
   account public.table_credit_accounts%rowtype;
