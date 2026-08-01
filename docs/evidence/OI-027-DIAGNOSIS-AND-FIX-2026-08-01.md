@@ -167,3 +167,67 @@ antes que corrección" usado en toda esta reconciliación.
 Ver sección 2 arriba ("Arreglo aplicado", dentro del diagnóstico) — se reescribió
 `20260729174339_sprint_09_credit_open_limit.sql` con el contenido exacto ya verificado como
 aplicado en producción. Cambio sólo en el archivo local; cero ejecuciones contra la base real.
+
+## OI-030 (seguimiento) — pragma `#variable_conflict` movido a la función correcta
+
+Aprobado explícitamente por el fundador tras el diagnóstico: se movió `#variable_conflict
+use_variable` de `configure_table_credit` (donde no hace nada, sin colisión de nombres) a
+`create_table_credit_order` (donde sí hace falta, por la colisión real con `order_id`) en
+`20260729172848_sprint_09_table_credit_owner.sql`. Verificado byte a byte contra
+`pg_get_functiondef` en vivo para ambas funciones. Cero cambios contra producción. CI verde:
+`https://github.com/jtmenesesg-arch/tablio/actions/runs/30709380710`.
+
+## OI-031 — rol de solo lectura y verificación programada
+
+Para cerrar el mínimo inmediato de OI-031 se creó `schema_drift_readonly`, un rol de Postgres
+dedicado en la base real, con privilegios mínimos:
+
+```sql
+create role schema_drift_readonly with login password '<generado, 24 bytes aleatorios>'
+  nosuperuser nocreatedb nocreaterole noinherit;
+grant connect on database postgres to schema_drift_readonly;
+grant usage on schema public, private to schema_drift_readonly;
+```
+
+Se probó explícitamente que el rol **no puede escribir nada**: `CREATE TABLE` y `DELETE` contra
+una tabla real fallaron ambos con `permission denied`, como se esperaba. El connection string
+completo (con el rol nuevo, nunca el superusuario) quedó guardado como el secreto de GitHub
+`SCHEMA_DRIFT_PROD_DB_URL`, usado únicamente por `.github/workflows/schema-drift-check.yml`.
+
+**Corrección sobre la marcha:** el primer intento de este rol incluyó también
+`grant select on all tables ...`, pensando que el script de manifiesto lo necesitaría. No era
+así — el script sólo lee catálogos del sistema (`pg_class`, `pg_proc`, etc.), nunca las tablas de
+negocio. Ese `grant` de más modificó el ACL de cada tabla en producción (visible en
+`pg_class.relacl`), lo que el propio manifiesto captura como parte de la definición de cada
+tabla — y por lo tanto el primer corrido del workflow nuevo falló, detectando su propia huella
+como si fuera una divergencia real. Se revirtió con `revoke select on all tables ...` y
+`alter default privileges ... revoke select on tables ...`; confirmado con
+`select count(*) from pg_class where relacl::text like '%schema_drift_readonly%'` = 0.
+
+**Otros dos falsos positivos cerrados al activar el workflow por primera vez** (ninguno requirió
+tocar producción, los dos ya estaban diagnosticados o eran del mismo tipo que uno ya conocido):
+
+1. Las 3 líneas `clock_timestamp()` en `confirm_provider_payment_event` (el hallazgo "inerte" de
+   OI-030) — revertidas a `p_received_at` en el archivo local para que coincida exactamente con
+   producción, ya que no había ninguna razón para mantener la inconsistencia una vez que el
+   parámetro se confirmó sin uso.
+2. `public.rls_auto_enable()` — función que el propio Supabase instala en proyectos alojados, no
+   creada por ninguna migración de Tablio. Excluida explícitamente en `scripts/schema-manifest.sql`
+   en vez de dejar que apareciera como una diferencia permanente en cada corrida.
+3. El ACL implícito-vs-explícito del dueño (`postgres`) en tablas donde nunca se le otorgó nada
+   directamente — un detalle de contabilidad interna de Postgres, no una diferencia de acceso
+   real (el dueño siempre tiene esos permisos, figuren o no explícitos). Filtrado de forma
+   general en `scripts/schema-manifest.sql` para cualquier tabla, no sólo la que lo disparó
+   primero (`private.user_tenant_context`).
+
+Verificado con el rol de solo lectura, de punta a punta, que el manifiesto vuelve exactamente al
+mismo número de filas (4276) con o sin estos ajustes de exclusión — confirmando que ninguno
+oculta contenido real, sólo ruido de bookkeeping.
+
+`.github/workflows/schema-drift-check.yml` corrido manualmente (`workflow_dispatch`) hasta
+quedar en verde por primera vez tras estos tres ajustes:
+`https://github.com/jtmenesesg-arch/tablio/actions/runs/30720714110`. Historial completo de
+intentos (falla por el `grant select` de más → falla por los 2 falsos positivos conocidos → falla
+sólo por el ACL implícito → verde) en
+`https://github.com/jtmenesesg-arch/tablio/actions/workflows/schema-drift-check.yml`. Queda
+programado diario a las 13:00 UTC además de poder dispararse a mano.
