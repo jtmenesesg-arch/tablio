@@ -48,8 +48,15 @@
   propia de cada bar, sin conocer SDKs ni formatos del proveedor.
 - **p95:** valor bajo el cual queda el 95% de las mediciones observadas.
 - **PWA:** sitio web con comportamiento similar a una app, sin exigir instalación.
-- **Código de presencia:** número de 4 dígitos impreso/mostrado en la mesa que demuestra
-  cercanía física antes de abrir una sesión de dispositivo.
+- **Código de presencia:** número de 4 dígitos exigido antes de abrir una sesión. Si está
+  impreso junto al QR sólo prueba conocimiento de la tarjeta y protege contra links
+  reenviados; no prueba presencia física fuerte frente a una foto.
+- **Nivel de entrega de presencia:** forma de entregar el código: junto al QR, separado o
+  rotativo por día/turno. Es independiente de si el código es obligatorio.
+- **Rotación de presencia:** versión auditable del código de una mesa, con inicio, término y
+  motivo. Sólo puede existir una activa por mesa.
+- **Vault:** caja cifrada de Supabase cuya llave vive separada de la base. Tablio la usa para
+  recuperar un QR o código únicamente mediante funciones restringidas y auditadas.
 - **Sesión de dispositivo:** identidad anónima y recuperable de un teléfono dentro de una
   sesión de mesa; tiene carrito, alias y vencimientos propios.
 - **Sesión de empleado:** turno autenticado ligado a `auth.uid()`, tenant, venue, vencimientos

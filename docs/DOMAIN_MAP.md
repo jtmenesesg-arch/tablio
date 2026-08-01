@@ -76,7 +76,14 @@ configuración tributaria, estaciones y capacidades. No hardcodea supuestos excl
 ### 2. Espacio físico
 
 Modela locales, zonas, mesas, QRs, códigos de presencia y estaciones. Alimenta operación,
-onboarding y futura clasificación de planes por tamaño.
+onboarding y clasificación de planes por tamaño. Crear una mesa origina automáticamente su
+QR, código vigente y tarjeta imprimible; el QR no se administra como una entidad separada.
+La creación pública no entrega secretos: el servidor los recupera de Vault sólo al ver o
+imprimir, siempre con permiso y auditoría.
+
+La política de presencia separa “exigir código” de “cómo entregarlo”. El tenant decide y una
+zona puede sobreescribir: código impreso junto al QR, código separado o código rotativo diario
+o por turno. Cambiar esa política no invalida el QR.
 
 ### 3. Identidad, acceso y auditoría
 
@@ -95,6 +102,10 @@ Abre el contexto físico en el que interactúan varias personas. Valida QR no pr
 corto y reglas configurables de presencia. Una sesión contiene dispositivos con token opaco,
 alias y carrito independientes. La sesión de dispositivo vence tras 4 horas de inactividad,
 12 horas absolutas o antes si la mesa se cierra.
+
+Los fallos de código se registran en privado y tienen límites independientes por dispositivo y
+mesa. Nivel 1 sólo acredita conocimiento de la tarjeta; no prueba presencia fuerte contra una
+foto. El nivel 2 separa el código y el nivel 3 lo rota.
 
 ### 6. Carrito y CheckoutQuote
 

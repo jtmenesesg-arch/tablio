@@ -32,6 +32,11 @@
 - **Crédito y dueño:** migraciones `20260729172848` a `20260729175502`
 - **Suite Sprint 9:** `supabase/tests/database/009_table_credit_owner.test.sql`
   (`1..51` verde en el proyecto remoto, con rollback)
+- **Mesas, QR y presencia configurable:** `20260731213000_sprint_14_tables_qr_presence.sql`,
+  corrección estática `20260731213200_sprint_14_advisor_fix.sql` e índices de cobertura
+  `20260731213300_sprint_14_advisor_indexes.sql`
+- **Suite QR/presencia:** `supabase/tests/database/014_tables_qr_presence.test.sql` (`1..32`
+  verde en el proyecto remoto, dentro de una transacción forzada a rollback)
 - **Hardening Sprint 10:** `supabase/tests/database/010_sprint_10_hardening.test.sql`
   (`1..5` verde con 96 filas por tenant); suites 001–010: 316/316.
 
@@ -85,14 +90,34 @@ Punto físico operable, sin significado de cuenta financiera.
 
 Campos: `id`, `tenant_id`, `venue_id`, `zone_id`, `table_number`, `display_name`, `capacity`,
 `service_mode`, `qr_token_hash`, `qr_version`, `qr_active`, `presence_mode`,
-`presence_code_hash`, `presence_code_expires_at`, `active`, `plan_countable`, `settings`,
-timestamps.
+`presence_code_hash`, `presence_code_expires_at`, `presence_required`,
+`presence_delivery_level`, `presence_rotation_period`, `presence_assets_managed`, `active`,
+`plan_countable`, `settings`, timestamps.
 
 Reglas:
 
 - `UNIQUE (tenant_id, table_number)`.
-- QR aleatorio, versionado y revocable; se guarda hash, no token reutilizable en claro.
-- El código corto pertenece a una sesión/rotación, no es contraseña permanente.
+- QR aleatorio, versionado y revocable. El hash público valida; el token recuperable de cada
+  versión vive cifrado en Vault para renderizar una reimpresión bajo demanda.
+- Crear una mesa no devuelve el QR ni el código por la fachada pública. Un render posterior
+  los recupera en servidor con permiso, motivo y auditoría.
+- Cambiar nivel de presencia no toca `qr_token_hash` ni `qr_version`.
+- El código corto pertenece a `presence_code_rotations`; su secreto vive cifrado en Vault.
+- Filas anteriores quedan con `presence_assets_managed = false` hasta reprovisión explícita,
+  evitando invalidar tarjetas existentes durante la migración.
+
+### Presencia configurable y secretos QR
+
+- `tenant_presence_settings`: exigencia, nivel, cadencia y límites anti-fuerza-bruta.
+- `zone_presence_overrides`: excepción opcional de una zona sobre la política del tenant.
+- `presence_code_rotations`: historia y vigencia del código por mesa.
+- `private.table_qr_vault_secrets`: relación entre mesa/versión y secreto cifrado en Vault.
+- `private.presence_code_vault_secrets`: relación entre rotación y código cifrado.
+- `private.presence_verification_attempts`: intentos, bloqueos por dispositivo/mesa y evidencia.
+
+Crear mesa individual o masivamente usa funciones server-side auditadas. Las tablas privadas
+fuerzan RLS, no tienen acceso directo para `anon/authenticated` y jamás aparecen en respuestas
+del panel.
 
 ### `stations`
 

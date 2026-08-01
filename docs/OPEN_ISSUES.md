@@ -389,6 +389,22 @@ hardware hasta probarla con el piloto.
 - **Regla hasta cerrar:** no inventar un tema global. KDS conserva su tratamiento actual y
   queda fuera del shell hasta su migración aprobada.
 
+## OI-027 — Historial local y remoto de migraciones no coincide
+
+- **Estado:** bloqueante técnico antes de la próxima migración de esquema; no bloquea este
+  checkpoint visual ni cambia el esquema efectivo aplicado.
+- **Evidencia:** al preparar Sprint 14, `supabase db push` desde el repositorio canónico quiso
+  volver a aplicar migraciones de Sprints 11–13. La base sí las contiene, pero fueron
+  publicadas con timestamps distintos y algunos hotfixes remotos no son idénticos a los
+  archivos locales.
+- **Mitigación usada:** se descargó el historial remoto a un directorio temporal, se comparó y
+  se aplicaron exclusivamente `20260731213000`, `20260731213200` y `20260731213300`. No se usó
+  `migration repair` a ciegas ni se alteró la historia remota.
+- **Pendiente:** reconciliar archivo por archivo Sprints 11–13, conservar el estado efectivo y
+  recién entonces alinear el historial canónico con una reparación revisada.
+- **Riesgo:** ignorarlo podría duplicar DDL, fallar un despliegue o registrar como aplicada una
+  migración cuyo contenido no corresponde.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -418,3 +434,4 @@ hardware hasta probarla con el piloto.
 | OI-024 | Bloqueante tributario antes del piloto                               |
 | OI-025 | Bloqueante legal y tributario antes de usar saldo con dinero real    |
 | OI-026 | No bloquea negocio; bloquea migración visual de superficies oscuras  |
+| OI-027 | Bloquea la próxima migración de esquema; no este checkpoint visual   |
