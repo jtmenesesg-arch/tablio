@@ -3,8 +3,16 @@
 alter table private.user_tenant_context enable row level security;
 alter table private.user_tenant_context force row level security;
 
-revoke execute on function public.rls_auto_enable()
-  from public, anon, authenticated, service_role;
+-- Older hosted projects could contain this platform helper while a clean local
+-- Supabase stack does not. Hardening must be reproducible in both cases.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    execute 'revoke execute on function public.rls_auto_enable() '
+      || 'from public, anon, authenticated, service_role';
+  end if;
+end;
+$$;
 
 create or replace function private.set_active_tenant(p_tenant_id uuid)
 returns void
