@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/cn";
 import { formatClp, formatRelativeTime } from "@/lib/format";
@@ -87,65 +88,6 @@ function ConnectionBadge({
         </span>
       </div>
     </div>
-  );
-}
-
-function ReasonDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel,
-  danger,
-  working,
-  onConfirm,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  danger?: boolean;
-  working: boolean;
-  onConfirm: (reason: string) => void;
-}) {
-  return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
-        <form
-          className="space-y-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const reason = String(
-              new FormData(event.currentTarget).get("reason") ?? "",
-            ).trim();
-            if (reason) onConfirm(reason);
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <Textarea
-            autoFocus
-            minLength={3}
-            name="reason"
-            placeholder="Motivo"
-            required
-          />
-          <button
-            className={cn(
-              "w-full",
-              danger ? darkDangerButton : darkPrimaryButton,
-            )}
-            disabled={working}
-            type="submit"
-          >
-            {working ? "Guardando…" : confirmLabel}
-          </button>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 

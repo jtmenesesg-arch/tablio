@@ -2,6 +2,40 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de Superadmin
+
+### Qué cambió
+
+- `/superadmin` (`apps/web/app/superadmin/superadmin-dashboard.tsx`) se reescribió completo
+  sobre el sistema de diseño claro estándar (no el patrón oscuro de KDS/Garzón: es la oficina de
+  soporte de Tablio, no el mostrador de un bar). Sin `AppShell`, porque su navegación no es la de
+  un tenant. Patrón maestro-detalle: lista de locales a la izquierda, detalle a la derecha.
+- Se agregó `subscriptionStatusDictionary` a `lib/ui-statuses.ts` con las mismas ocho etiquetas
+  que ya existían, ahora con tono semántico (`Badge`) en vez de una clase CSS por estado.
+- Se promovió el `ReasonDialog` que nació en Garzón a `components/ui/reason-dialog.tsx`
+  (segunda pantalla que lo necesita: motivo de baja de un tenant), ahora sobre el `Button`
+  compartido.
+- Alta de tenant y umbral de alerta pasaron de `window.prompt()` a diálogos propios con `Input`.
+  **"Entrar como soporte" se dejó intacto en `window.prompt()`** a propósito: el test de
+  impersonación escucha el diálogo nativo del navegador, igual que dos flujos de Caja.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- `pnpm test` (Vitest): 144/144.
+- Playwright `tests/e2e/platform.spec.ts`: 5/5 (incluye onboarding y superadmin, comparten
+  archivo; la parte de onboarding no se tocó en este incremento y sigue verde).
+- Auditoría de contraste/táctil/foco/gradientes/desborde en escritorio y móvil: lista sin
+  selección y con un tenant seleccionado (feature flags, cobranza, exposición de saldo) — **0
+  fallos** en las 4 combinaciones (`docs/evidence/SPRINT-14-SUPERADMIN-A11Y.json`,
+  `docs/evidence/SPRINT-14-SUPERADMIN-detail-A11Y.json`).
+- Suite completa de Playwright corrida después del incremento.
+
+### Límite deliberado
+
+Sólo se migraron Caja, KDS, Garzón y Superadmin hasta ahora. Onboarding y Crédito siguen en la
+cola; la PWA del comensal queda para el final y con revisión aparte.
+
 ## 2026-08-01 — Sprint 14 · migración visual de Garzón
 
 ### Qué cambió

@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-08-01T05:24:59.198807Z",
+  "route": "/superadmin (detalle de tenant seleccionado)",
+  "rules": {
+    "textContrast": "WCAG AA: 4.5:1 normal, 3:1 texto grande",
+    "touchTarget": "56 x 56 px minimo",
+    "focus": "indicador visible por outline o ring",
+    "gradients": "cero en producto",
+    "overflow": "sin desborde horizontal de pagina"
+  },
+  "results": [
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "textFailures": [],
+      "touchFailures": [],
+      "focusFailures": [],
+      "gradients": [],
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "textFailures": [],
+      "touchFailures": [],
+      "focusFailures": [],
+      "gradients": [],
+      "horizontalOverflow": false
+    }
+  ],
+  "passed": true
+}

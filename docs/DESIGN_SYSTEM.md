@@ -1,7 +1,7 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS y Garzón**. Las demás pantallas
-conservan temporalmente sus estilos anteriores hasta que se migren una por una.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón y Superadmin**. Las
+demás pantallas conservan temporalmente sus estilos anteriores hasta que se migren una por una.
 
 ## Fuentes de verdad
 
@@ -223,10 +223,39 @@ oscuro — se lee de un vistazo o no sirve.
   tareas (vacío y con una entrega lista + un llamado), mesas (con crédito) y turno, escritorio y
   móvil (`docs/evidence/SPRINT-14-WAITER-*-A11Y.json`).
 
+## Superadmin (2026-08-01)
+
+`/superadmin` vuelve al sistema claro estándar (no es KDS/Garzón): es la oficina de soporte de
+Tablio, de uso diurno, no el mostrador de un bar. No usa `AppShell` porque su navegación no es
+la de un tenant — no tiene sentido un sidebar que enlace a `/dueno`, `/caja`, etc. para alguien
+que administra muchos locales — pero reusa exactamente los mismos tokens, `Card`, `Badge`,
+`Button`, `Dialog`, `Select` que el resto.
+
+- Patrón maestro-detalle: lista de tenants a la izquierda (`role="row"` por fila, como pedía el
+  test ya existente), detalle a la derecha con estado vacío explícito cuando no hay selección.
+- Se agregó `subscriptionStatusDictionary` a `lib/ui-statuses.ts` con las mismas ocho etiquetas
+  que ya existían (Prueba, Al día, Cobro fallido, En gracia, Administración restringida,
+  Suspensión agendada, Suspendido, Cancelado), ahora con tono semántico en vez de una clase CSS
+  por estado.
+- Se promovió `ReasonDialog` (nacido en Garzón) a `components/ui/reason-dialog.tsx`: ya es la
+  segunda pantalla que lo necesita (motivo de baja de un tenant). Ahora usa el `Button`
+  compartido en vez de los botones oscuros propios de Garzón.
+- **"Entrar como soporte" se dejó intencionalmente en `window.prompt()`**, a diferencia de los
+  otros tres flujos de esta misma pantalla (alta de tenant, umbral de alerta, baja de tenant) que
+  sí pasaron a diálogo propio: el test E2E de impersonación escucha el diálogo nativo del
+  navegador (`page.once("dialog", …)`), igual que el cierre de turno y el reintento de boleta en
+  Caja. Mismo criterio en las tres pantallas: sólo se modernizan las interacciones que ningún
+  test engancha al diálogo nativo.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde con la lista sin selección y con
+  un tenant seleccionado (feature flags, cobranza simulada, exposición de saldo), escritorio y
+  móvil (`docs/evidence/SPRINT-14-SUPERADMIN-A11Y.json` y
+  `docs/evidence/SPRINT-14-SUPERADMIN-detail-A11Y.json`).
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas`, `/caja`, `/kds` y `/garzon` ya están en el sistema de diseño (KDS y
-Garzón con su tratamiento propio documentado arriba). Las tarjetas de impresión son un asset de
-la pantalla de Mesas, no otro panel migrado. Los colores literales del CSS histórico siguen
-presentes en el resto de las pantallas para no alterarlas sin validación. El siguiente incremento
-debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera familia.
+`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon` y `/superadmin` ya están en el sistema de
+diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las tarjetas de impresión son
+un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del CSS histórico
+siguen presentes en el resto de las pantallas para no alterarlas sin validación. El siguiente
+incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera
+familia.

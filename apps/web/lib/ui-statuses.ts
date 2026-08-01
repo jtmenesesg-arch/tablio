@@ -74,6 +74,17 @@ export const storedValueAccountStatusDictionary = {
   wind_down: { label: "Cierre gradual", tone: "warning" },
 } as const satisfies Record<string, StatusPresentation>;
 
+export const subscriptionStatusDictionary = {
+  trialing: { label: "Prueba", tone: "neutral" },
+  active: { label: "Al día", tone: "success" },
+  past_due: { label: "Cobro fallido", tone: "danger" },
+  grace: { label: "En gracia", tone: "warning" },
+  admin_restricted: { label: "Administración restringida", tone: "warning" },
+  suspension_scheduled: { label: "Suspensión agendada", tone: "warning" },
+  suspended: { label: "Suspendido", tone: "danger" },
+  cancelled: { label: "Cancelado", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
 export const presenceLevelDictionary = {
   printed_with_qr: {
     label: "Código en la tarjeta",
