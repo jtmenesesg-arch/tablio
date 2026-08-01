@@ -1,0 +1,50 @@
+name: Schema reproducibility
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/schema-reproducibility.yml"
+      - "scripts/schema-manifest.sql"
+      - "supabase/config.toml"
+      - "supabase/migrations/**"
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild-from-zero:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.72.7
+
+      - name: Start an isolated Supabase stack
+        run: supabase start
+
+      - name: Rebuild exclusively from repository migrations
+        run: supabase db reset
+
+      - name: Export deterministic Tablio schema manifest
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --no-psqlrc \
+            --set ON_ERROR_STOP=1 \
+            --csv \
+            --file scripts/schema-manifest.sql \
+            --output schema-manifest.csv
+          sha256sum schema-manifest.csv > schema-manifest.sha256
+
+      - name: Upload clean-room schema evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-room-schema-manifest
+          path: |
+            schema-manifest.csv
+            schema-manifest.sha256
+          if-no-files-found: error
+          retention-days: 7
