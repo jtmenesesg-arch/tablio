@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-08-01T05:16:07.906Z",
+  "route": "/garzon",
+  "rules": {
+    "textContrast": "WCAG AA: 4.5:1 normal, 3:1 texto grande",
+    "touchTarget": "56 × 56 px mínimo",
+    "focus": "indicador visible por outline o ring",
+    "gradients": "cero en producto",
+    "overflow": "sin desborde horizontal de página"
+  },
+  "results": [
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "checkedTextNodes": 30,
+      "textFailures": [],
+      "touchFailures": [],
+      "focusFailures": [],
+      "gradients": [],
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      "checkedTextNodes": 30,
+      "textFailures": [],
+      "touchFailures": [],
+      "focusFailures": [],
+      "gradients": [],
+      "horizontalOverflow": false
+    }
+  ],
+  "passed": true
+}

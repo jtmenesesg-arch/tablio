@@ -13,6 +13,7 @@ const route = process.env.TABLIO_A11Y_ROUTE ?? "/dueno";
 const readySelector =
   process.env.TABLIO_A11Y_READY_SELECTOR ?? "[data-owner-dashboard-ready]";
 const clickRoleName = process.env.TABLIO_A11Y_CLICK_ROLE_NAME;
+const storageStatePath = process.env.TABLIO_A11Y_STORAGE_STATE;
 
 const browser = await chromium.launch({ executablePath, headless: true });
 const results = [];
@@ -25,6 +26,7 @@ try {
     const page = await browser.newPage({
       viewport: { width: viewport.width, height: viewport.height },
       deviceScaleFactor: 1,
+      storageState: storageStatePath,
     });
     await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
     await page.locator(readySelector).waitFor({ state: "visible" });
@@ -36,6 +38,11 @@ try {
       // keyboard press restores "keyboard" modality before auditing focus.
       await page.keyboard.press("Tab");
       await page.keyboard.press("Shift+Tab");
+      // Tab-switch buttons animate their active/inactive colors over
+      // var(--motion-feedback) (120ms). Without waiting past that, the
+      // audit can sample a still-interpolating background mid-transition
+      // and report a false contrast failure.
+      await page.waitForTimeout(250);
     }
 
     const audit = await page.evaluate(() => {

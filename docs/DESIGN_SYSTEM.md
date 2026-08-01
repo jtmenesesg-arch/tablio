@@ -1,6 +1,6 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja y KDS**. Las demás pantallas
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS y Garzón**. Las demás pantallas
 conservan temporalmente sus estilos anteriores hasta que se migren una por una.
 
 ## Fuentes de verdad
@@ -179,10 +179,54 @@ propias documentadas aquí para no perderlas en la próxima migración:
   `docs/evidence/SPRINT-14-KDS-tickets-A11Y.json`). El script de contraste funciona igual sobre
   fondo oscuro: calcula la razón real, no asume tema claro.
 
+## Garzón (2026-08-01) — mismo patrón que KDS, para el mismo bar oscuro
+
+`/garzon` sigue el patrón acotado de KDS documentado arriba (ver también OI-026): sin `AppShell`
+—es una PWA de un solo propósito para el teléfono del garzón, no un panel de escritorio—, fondo
+sólido oscuro, tokens de acento compartidos, superficies estructurales con valores arbitrarios.
+Contexto de diseño explícito del fundador: celular, una mano, en movimiento, bar ruidoso y
+oscuro — se lee de un vistazo o no sirve.
+
+- **Prioridad visual a las entregas listas:** una tarjeta de tarea recibe un borde izquierdo
+  grueso de color según urgencia (`border-l-destructive` crítica, `border-l-warning` atrasada,
+  `border-l-success` para una entrega lista sin atraso, `border-l-border` el resto) y las
+  entregas listas suman una insignia `✓ ENTREGA LISTA` en verde. La urgencia real (crítica o
+  atrasada) sigue ganando sobre el tipo de tarea, porque una entrega vieja importa más que una
+  nueva.
+- **Indicador de conexión** con el mismo patrón de KDS: insignia con punto + "En línea" /
+  "Reconectando" / "PUEDE ESTAR DESACTUALIZADO" + "Actualizado hace…", siempre visible en la
+  barra superior, más una franja roja de ancho completo cuando la última sincronización supera
+  el umbral — para que nunca se confunda "no hay tareas" con "la app se colgó".
+- Las tarjetas de tarea y de mesa reusan `bg-background`/`Badge` (tokens claros), igual que la
+  comanda de KDS: se leen como una ficha de papel sobre el mostrador oscuro.
+- Los cinco flujos que pedían motivo por `window.prompt()` (descartar solicitud, traspasar zona,
+  reportar incidencia, separar mesas, transferir mesa) pasaron a un diálogo propio con
+  `Textarea`, igual que el resto del sistema — ninguno estaba enganchado a un test que escuchara
+  el diálogo nativo del navegador, a diferencia de Caja.
+- **Dos bugs reales encontrados y corregidos antes de reportar** (ninguno llegó a producción):
+  1. Una tarjeta de mesa con texto blanco sobre fondo blanco: un `<button>` interno no declaraba
+     `bg-*`. Este proyecto no carga el preflight de Tailwind (`globals.css` importa sólo
+     `tailwindcss/utilities.css`), así que un botón nativo sin fondo explícito muestra el fondo
+     gris por defecto del navegador en vez de heredar transparencia. **Regla nueva:** todo
+     `<button>` de este código necesita un `bg-*` explícito (aunque sea `bg-transparent`), nunca
+     asumir que hereda "sin fondo".
+  2. Las casillas "agrupar" quedaban en 13×13 px nativos: usaban `size-5`, y `spacing-5` no
+     existe en la escala aprobada (`4, 8, 12, 16, 24, 32, 48, 64`), así que la clase no generaba
+     nada y el navegador conservaba su tamaño por defecto. Se cambió a `size-touch` (56 px):
+     además de corregir la auditoría, es la decisión correcta para el contexto de una mano.
+- El script de auditoría (`tests/visual/sprint-14-owner-a11y.ts`) ganó soporte de
+  `TABLIO_A11Y_STORAGE_STATE` para auditar pantallas con sesión (útil para Garzón y para
+  cualquier pantalla futura detrás de login), y una espera de 250 ms tras el clic de pestaña:
+  sin ella, la auditoría podía medir el color de un botón a mitad de su transición CSS de
+  120 ms y reportar un falso fallo de contraste en el tab recién activado.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde en login, selección de zona,
+  tareas (vacío y con una entrega lista + un llamado), mesas (con crédito) y turno, escritorio y
+  móvil (`docs/evidence/SPRINT-14-WAITER-*-A11Y.json`).
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas`, `/caja` y `/kds` ya están en el sistema de diseño (KDS con su
-tratamiento propio documentado arriba). Las tarjetas de impresión son un asset de la pantalla de
-Mesas, no otro panel migrado. Los colores literales del CSS histórico siguen presentes en el
-resto de las pantallas para no alterarlas sin validación. El siguiente incremento debe migrarlas
-una por una y eliminar sus reglas antiguas, no superponer una tercera familia.
+`/dueno`, `/dueno/mesas`, `/caja`, `/kds` y `/garzon` ya están en el sistema de diseño (KDS y
+Garzón con su tratamiento propio documentado arriba). Las tarjetas de impresión son un asset de
+la pantalla de Mesas, no otro panel migrado. Los colores literales del CSS histórico siguen
+presentes en el resto de las pantallas para no alterarlas sin validación. El siguiente incremento
+debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera familia.

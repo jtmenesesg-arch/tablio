@@ -2,6 +2,71 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de Garzón
+
+### Qué cambió
+
+- `/garzon` (`apps/web/app/garzon/waiter-panel.tsx`) se reescribió completo sobre el sistema de
+  diseño, siguiendo el mismo patrón acotado que KDS (sin `AppShell`, fondo sólido oscuro, tokens
+  de acento compartidos — ver `DESIGN_SYSTEM.md` y OI-026): es una PWA de un solo propósito para
+  el teléfono del garzón en un bar oscuro y ruidoso, no un panel de escritorio.
+- Prioridad visual explícita a las entregas listas: borde izquierdo de color por urgencia real
+  (crítica/atrasada siguen ganando) y una insignia verde "✓ ENTREGA LISTA" para una entrega sin
+  atraso, además de las banderas ya existentes (crítica, atrasada, sin asignar, pagado).
+- Indicador de conexión permanente igual que KDS: insignia + "Actualizado hace…" en la barra
+  superior, más una franja roja de ancho completo si la última sincronización se atrasa.
+- Los cinco flujos que pedían motivo por `window.prompt()` (descartar solicitud, traspasar zona,
+  incidencia, separar mesas, transferir mesa) pasaron a un diálogo propio con `Textarea`. Ninguno
+  estaba enganchado a una prueba que escuchara el diálogo nativo del navegador (a diferencia de
+  Caja, donde sí y por eso ahí se dejaron intactos).
+- Se centralizó `formatRelativeTime`/`formatClp` de `lib/format.ts` en vez de los helpers locales
+  duplicados.
+
+### Dos bugs reales encontrados y corregidos antes de reportar
+
+1. **Tarjeta de mesa ilegible (texto blanco sobre fondo blanco).** Un `<button>` interno no tenía
+   `bg-*` explícito. Este proyecto no carga el preflight de Tailwind
+   (`globals.css` sólo importa `tailwindcss/utilities.css`), así que un botón nativo sin fondo
+   declarado muestra el gris por defecto del navegador en vez de heredar transparencia — nunca
+   antes había pasado porque todos los botones anteriores (Caja, KDS, el propio `Button`
+   compartido) siempre declaran su fondo. Regla nueva documentada: todo `<button>` de este
+   código necesita `bg-*` explícito, aunque sea `bg-transparent`.
+2. **Casillas "agrupar" de 13×13 px.** Usaban `size-5`; `spacing-5` no existe en la escala
+   aprobada (`4, 8, 12, 16, 24, 32, 48, 64`), así que la clase no generaba nada y el navegador
+   conservaba el tamaño nativo del checkbox. Se cambió a `size-touch` (56 px) — además de
+   corregir la auditoría, es lo correcto para "una mano, en movimiento".
+
+Ambos se encontraron en captura de pantalla antes de reportar, no en producción ni por un
+usuario.
+
+### El script de auditoría necesitó dos mejoras propias
+
+- Ganó `TABLIO_A11Y_STORAGE_STATE` para auditar pantallas con sesión iniciada (Garzón requiere
+  login por PIN; el script no tenía forma de reutilizar una sesión).
+- Ganó una espera de 250 ms tras el clic de cambio de pestaña: sin ella, el chequeo de contraste
+  a veces medía el color de un botón a mitad de su transición CSS de 120 ms
+  (`duration-[var(--motion-feedback)]`) y reportaba un fallo de contraste falso e intermitente en
+  el tab recién activado o en "Tareas". Se confirmó reproduciendo 3 veces sin la espera (siempre
+  fallaba igual) y 3 veces con la espera (siempre pasaba) antes de aceptar la causa.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- `pnpm test` (Vitest): 144/144.
+- Playwright `tests/e2e/waiter.spec.ts`: 4/4.
+- Auditoría de contraste/táctil/foco/gradientes/desborde en escritorio y móvil: login, selección
+  de zona, tareas (vacío y con una entrega lista + un llamado), mesas (con crédito) y turno — **0
+  fallos** en las 10 combinaciones (`docs/evidence/SPRINT-14-WAITER-*-A11Y.json`).
+- Suite completa de Playwright (todas las pantallas) corrida después del incremento.
+- `tests/e2e/credit-owner.spec.ts › caja y garzón separan...` volvió a fallar de forma
+  intermitente al correr junto a otras suites (mismo patrón que OI-029) y pasó limpio en
+  aislamiento repetido; no es una regresión de este incremento.
+
+### Límite deliberado
+
+Sólo se migraron Caja, KDS y Garzón hasta ahora. Superadmin, Onboarding y Crédito siguen en la
+cola; la PWA del comensal queda para el final y con revisión aparte.
+
 ## 2026-08-01 — Sprint 14 · migración visual de KDS
 
 ### Qué cambió

@@ -379,15 +379,27 @@ hardware hasta probarla con el piloto.
 
 ## OI-026 — Matriz semántica para modo oscuro
 
-- **Estado:** no bloquea el panel Dueño; requiere decisión antes de migrar KDS o garzón.
+- **Estado:** no bloquea el panel Dueño, Mesas ni Caja. KDS (2026-08-01) y Garzón (2026-08-01)
+  se migraron sin esperar esta decisión, usando un patrón acotado explicado abajo — no se
+  inventó la matriz completa.
 - **Evidencia:** el brand book permite fondos claros o negro puro, pero no define valores
   oscuros para `card`, `muted`, `accent`, bordes, estados ni superficies elevadas.
-- **Pendiente:** aprobar una matriz semántica oscura derivada de la misma paleta, con contraste
-  medido y sin introducir grises o naranjas nuevos.
-- **Riesgo:** resolver cada pantalla por separado recrearía la deriva de colores que este
-  incremento corrige.
-- **Regla hasta cerrar:** no inventar un tema global. KDS conserva su tratamiento actual y
-  queda fuera del shell hasta su migración aprobada.
+- **Patrón usado en KDS y Garzón (no es la matriz, es el límite mínimo defendible):** los
+  colores de acento (naranja de marca, verde de éxito, ámbar de aviso, rojo crítico) son los
+  mismos tokens compartidos que usa el resto del producto — nunca un color inventado. Sólo las
+  superficies estructurales oscuras (fondo de página, barras, tarjetas de resumen) usan valores
+  Tailwind arbitrarios (`bg-[#111110]`, etc.), documentados por pantalla en `DESIGN_SYSTEM.md`.
+  Los elementos que representan "papel" (comanda en KDS, tarjeta de mesa en Garzón) siguen
+  usando los tokens claros normales (`bg-background`, `Badge`), porque un papel se lee igual de
+  claro sobre cualquier mostrador.
+- **Pendiente real:** convertir ese patrón repetido dos veces en tokens con nombre
+  (`--sidebar-dark`, `--surface-dark`, etc.) en vez de hex sueltos por archivo, **sólo si**
+  aparece una tercera pantalla que lo necesite. Superadmin/Onboarding/Crédito son paneles de
+  oficina de uso diurno y se planean en el sistema claro; si eso cambia, requiere esta decisión
+  primero.
+- **Riesgo:** resolver cada pantalla por separado sin este límite recrearía la deriva de colores
+  que este incremento corrige. El límite documentado arriba es lo que lo evita mientras no haya
+  una matriz nombrada.
 
 ## OI-027 — Historial local y remoto de migraciones no coincide
 
