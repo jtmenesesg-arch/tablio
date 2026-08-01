@@ -2,6 +2,70 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — OI-030 corregido y cerrado; OI-031 registrado; verificación programada agregada
+
+### Diagnóstico primero (sin arreglar), como pidió el fundador
+
+Investigando a fondo las 3 sospechas de OI-030 (con acceso de solo lectura a producción), 2
+resultaron ser falsas alarmas por comparar contra el contenido *original* de una migración vieja
+en vez del estado *actual* de producción:
+
+- El timestamp "cuándo se recibió un pago": el parámetro que cambiaba de valor
+  (`p_received_at`/`clock_timestamp()`) no se usa en ningún lugar de la función que lo recibe
+  (`advance_payment_intent`) — verificado leyendo su cuerpo completo. Cero efecto.
+- El backoff de reintentos del outbox: producción ya tiene, en vivo, exactamente la misma
+  fórmula de "jitter completo" que describe el repositorio — una migración posterior
+  (`sprint_02_retry_policy_alignment.sql`) ya la había alineado. La comparación original miraba
+  una versión intermedia superada.
+- `#variable_conflict use_variable`: esta sí era real, pero al revés de lo reportado — producción
+  lo tiene correctamente en `create_table_credit_order` (arreglo histórico real y necesario, esa
+  función usa `order_id` como variable y como columna real en varias tablas) y correctamente NO
+  lo tiene en `configure_table_credit` (sin colisión de nombres ahí). El archivo local tenía el
+  pragma en la función equivocada.
+
+### Arreglo aplicado (aprobado explícitamente antes de tocar nada)
+
+Se movió `#variable_conflict use_variable` de `configure_table_credit` a
+`create_table_credit_order` en `20260729172848_sprint_09_table_credit_owner.sql`, verificado
+byte a byte contra las definiciones reales en producción. Cero cambios contra producción — sólo
+el archivo local. CI de reproducibilidad verde después del arreglo:
+`https://github.com/jtmenesesg-arch/tablio/actions/runs/30709380710`.
+
+### OI-031: el hueco estructural detrás de todo esto
+
+El mismo diagnóstico confirmó algo más importante que los bugs puntuales: **ninguna suite de
+pruebas del repositorio valida jamás el comportamiento real de este proyecto Supabase.** Vitest
+prueba TypeScript puro sin base de datos; pgTAP corre, según el propio ADR-000, "sobre Supabase
+local"; Playwright levanta un servidor que usa *stores* en memoria, no Supabase. Es exactamente
+la razón por la que OI-027 y OI-030 pudieron divergir de producción durante días sin que nada lo
+detectara. Registrado como **OI-031**, bloqueante antes del piloto, con dos opciones de cierre
+evaluadas (proyecto de staging con pgTAP real vs. verificación periódica de esquema) — detalle
+completo, pros/contras y costo en `docs/OPEN_ISSUES.md`.
+
+### Mínimo inmediato agregado
+
+Nuevo workflow `.github/workflows/schema-drift-check.yml`: reconstruye el esquema desde cero
+(mismo patrón que `schema-reproducibility.yml`) y lo compara, objeto por objeto, contra
+producción real vía conexión de sólo lectura. Corre diario (`schedule`) y bajo demanda
+(`workflow_dispatch`); **falla el job si algo diverge**, en vez de esperar a que alguien lo note
+por casualidad. Pendiente: agregar el secreto `SCHEMA_DRIFT_PROD_DB_URL` al repositorio — el
+workflow falla explícitamente con un mensaje claro si no está configurado, no falla en silencio.
+El CI de reproducibilidad de esquema (`schema-reproducibility.yml`) ya corría en cada push que
+toca `supabase/migrations/**` desde que se creó; no necesitó cambios.
+
+### Verificación
+
+- Estilos computados en vivo (conexión de solo lectura) confirmando que `configure_table_credit`
+  y `create_table_credit_order` ahora coinciden exactamente con producción.
+- CI `schema-reproducibility` en verde tras el arreglo.
+- Confirmado leyendo código (no asumido): `playwright.config.ts` (`webServer.command: "pnpm
+  dev:e2e"`), `vitest.config.ts` (sólo incluye `*.test.ts`) y
+  `packages/application/src/financial/financial-core.test.ts` (sin conexión a BD) para las
+  afirmaciones de OI-031.
+- Confirmado que las tablas de negocio reales (`orders`, `payment_intent_events`,
+  `table_credit_accounts`, etc.) tienen cero filas — ningún dato existente pudo verse afectado
+  por ninguna de las divergencias encontradas en OI-027/OI-030.
+
 ## 2026-08-01 — OI-027 cerrado: reconciliación del historial de migraciones + OI-030 nuevo
 
 ### Qué cambió

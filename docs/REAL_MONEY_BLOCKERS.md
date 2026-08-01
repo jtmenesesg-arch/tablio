@@ -28,6 +28,15 @@ ni presentarse como sistema tributario productivo hasta cerrar y evidenciar todo
 11. **Cobro del SaaS:** antes de cobrar al bar, elegir proveedor separado, validar
     mensualidad/setup, impuestos, reintentos y conciliación. Nunca reutilizar la cuenta que
     recibe pagos de comensales.
+12. **Validar comportamiento financiero contra base real:** hoy ninguna prueba automática
+    (Vitest, pgTAP, Playwright) ejercita este proyecto Supabase real — Vitest prueba lógica
+    TypeScript sin base de datos, pgTAP corre sobre un stack local efímero, y Playwright corre
+    sobre *stores* en memoria (`owner-demo-store.ts` y equivalentes), no sobre Supabase. Antes de
+    procesar dinero real hace falta un ambiente (staging u otro) donde confirmación de pagos,
+    reintentos del outbox y crédito de mesa se prueben contra Postgres real de punta a punta, no
+    sólo contra una reconstrucción de esquema. Ver OI-031 para el diagnóstico completo y la
+    verificación programada que cierra el riesgo inmediato de divergencia silenciosa mientras
+    tanto.
 
 Los planes/precios, OCR de carta e índices sin uso no impiden un piloto demo, pero requieren
 validación antes de escalar o cobrar el SaaS.

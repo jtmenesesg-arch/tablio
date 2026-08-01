@@ -1,0 +1,81 @@
+name: Schema drift check (production vs. repository)
+
+# OI-031: nothing else validates production against what the repository actually
+# describes. This job rebuilds the schema from the migrations in this repo (the
+# same clean room as schema-reproducibility.yml) and compares it, object by
+# object, against the real linked Supabase project. It fails the moment the two
+# disagree, instead of letting the gap sit silently for days like OI-027/OI-030
+# did before anyone happened to look.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 13:00 UTC daily — outside Chile business hours (10:00 CLT / 09:00 CLT DST).
+    - cron: "0 13 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  compare-production-to-repository:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.72.7
+
+      - name: Start an isolated Supabase stack
+        run: supabase start
+
+      - name: Rebuild exclusively from repository migrations
+        run: supabase db reset
+
+      - name: Export clean-room manifest
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --no-psqlrc \
+            --set ON_ERROR_STOP=1 \
+            --csv \
+            --file scripts/schema-manifest.sql \
+            --output clean-room-manifest.csv
+
+      - name: Export production manifest
+        env:
+          PROD_DB_URL: ${{ secrets.SCHEMA_DRIFT_PROD_DB_URL }}
+          # Belt-and-suspenders: even with a scoped read-only role, force the
+          # session itself to reject writes. schema-manifest.sql is a SELECT,
+          # but this job should never be able to write to production, full stop.
+          PGOPTIONS: "-c default_transaction_read_only=on"
+        run: |
+          if [ -z "$PROD_DB_URL" ]; then
+            echo "::error::SCHEMA_DRIFT_PROD_DB_URL is not set — add it as a repo secret (read-only role recommended, see docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md)."
+            exit 1
+          fi
+          psql "$PROD_DB_URL" \
+            --no-psqlrc \
+            --set ON_ERROR_STOP=1 \
+            --csv \
+            --file scripts/schema-manifest.sql \
+            --output production-manifest.csv
+
+      - name: Compare production against the clean-room rebuild
+        run: |
+          if ! diff -u production-manifest.csv clean-room-manifest.csv; then
+            echo "::error::Production and the repository's migrations describe different schemas. See the diff above — it lists exactly which objects differ. This is the same class of drift documented in OI-027/OI-030; do not silently patch it here, diagnose against the real database first (docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md has the method)."
+            exit 1
+          fi
+          echo "Production and the repository's clean-room rebuild match exactly."
+
+      - name: Upload manifests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-drift-manifests
+          path: |
+            production-manifest.csv
+            clean-room-manifest.csv
+          if-no-files-found: error
+          retention-days: 14

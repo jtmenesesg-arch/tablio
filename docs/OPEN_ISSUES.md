@@ -489,43 +489,140 @@ hardware hasta probarla con el piloto.
 
 ## OI-030 — El núcleo financiero de Sprint 2 en producción no coincide con el repositorio
 
-- **Estado:** bloqueante antes del piloto. Toca confirmación de eventos de pago y reintentos del
-  outbox — la ruta de plata más sensible del producto. **No se tocó nada; sólo se diagnosticó.**
-- **Encontrado:** 2026-08-01, al verificar (más allá de que el CI quedara en verde) que el
-  esquema reconstruido desde cero de OI-027 fuera realmente equivalente al de producción, no
-  sólo "sin errores". Comparando `scripts/schema-manifest.sql` corrido contra la base real
-  contra el artefacto que generó el CI.
-- **Evidencia exacta (verificada con `diff` contra el SQL que realmente corrió en producción,
-  guardado en `supabase_migrations.schema_migrations`, no contra hipótesis):**
-  1. `20260728064954_sprint_02_financial_core.sql` (núcleo financiero de Sprint 2) tiene hoy una
-     variable local `database_recorded_at timestamptz := clock_timestamp();` que reemplaza al
-     parámetro `p_recorded_at` en varios lugares, y `clock_timestamp()` reemplazando al
-     parámetro `p_received_at` dentro de `confirm_provider_payment_event` — un cambio real en de
-     dónde sale el instante que se registra como "cuándo se recibió" un evento de pago, no un
-     cambio cosmético.
-  2. El mismo archivo local tiene una función nueva,
-     `private.outbox_retry_ceiling_seconds(p_attempt integer)`, y una fórmula de backoff de
-     reintentos del outbox distinta a la que realmente corre en producción.
-  3. `20260729172848_sprint_09_table_credit_owner.sql` tiene hoy la línea
-     `#variable_conflict use_variable` en `configure_table_credit`/`create_table_credit_order`
-     que el SQL aplicado en producción para esa misma versión no tiene. Existe una migración
-     posterior (`sprint_09_credit_order_variable_fix.sql`) que dice en un comentario que
-     "production already received the equivalent repair" — la verificación directa contra la
-     base real no lo confirma para esta línea puntual.
-- **Pregunta sin responder todavía:** ¿cuál de las dos versiones (la que corre hoy en producción,
-  o la que describe el repositorio) es la que realmente se quiere? Ninguna de las dos se asumió
-  como correcta — a diferencia de OI-027, aquí no hay evidencia de que el repositorio simplemente
-  quedó mal etiquetado; parece una evolución real de la lógica que nunca se desplegó, o un
-  experimento que se llevó al archivo sin desplegarse. Necesita mirar el código de aplicación que
-  llama a estas funciones para saber cuál semántica espera hoy.
-- **Riesgo:** si el código de aplicación fue escrito asumiendo el comportamiento nuevo (por
-  ejemplo, `clock_timestamp()` para "recibido") pero producción todavía ejecuta el
-  comportamiento viejo (`p_received_at`), hay una divergencia silenciosa entre lo que el sistema
-  cree que está pasando con la conciliación de pagos y lo que realmente pasa.
-- **Evidencia completa:** sección "Verificación de equivalencia" en
-  `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
-- **No bloquea:** el checkpoint visual de Sprint 14 ni el cierre de OI-027 (asuntos
-  independientes). Sí debe resolverse antes de cualquier piloto con pagos reales.
+- **Estado:** **cerrado 2026-08-01.** El diagnóstico profundo (pedido explícitamente por el
+  fundador, con instrucción de no arreglar nada hasta explicarlo) redujo tres sospechas a una
+  sola diferencia real, la corrigió y verificó contra producción.
+- **Encontrado:** al verificar (más allá de que el CI quedara en verde) que el esquema
+  reconstruido desde cero de OI-027 fuera realmente equivalente al de producción. Comparando
+  `scripts/schema-manifest.sql` corrido contra la base real contra el artefacto del CI aparecieron
+  3 funciones con texto distinto.
+- **Las tres, verificadas en vivo contra la base real (no contra hipótesis):**
+  1. **`confirm_provider_payment_event` (timestamp "recibido"): no era una diferencia real.** 3
+     líneas usaban `clock_timestamp()` en vez de `p_received_at` al llamar a
+     `advance_payment_intent`, pero ese parámetro **no se usa en ningún lugar del cuerpo de esa
+     función** (confirmado leyendo su definición completa en vivo) — la función siempre calcula su
+     propio timestamp internamente. Cero efecto práctico en turnos, conciliación o detección de
+     confirmaciones tardías.
+  2. **Backoff de reintentos del outbox: tampoco era real.** La comparación original miraba el
+     contenido *original* de `sprint_02_financial_core.sql`, antes de que una migración posterior
+     (`sprint_02_retry_policy_alignment.sql`) la corrigiera — confirmado en vivo que
+     `private.fail_outbox_message` en producción ya usa exactamente la misma fórmula de "jitter
+     completo" con `outbox_retry_ceiling_seconds` que describe el repositorio. Mismo patrón que ya
+     había aparecido en OI-027 con las invitaciones a la misma mesa.
+  3. **`#variable_conflict use_variable`: esta sí era real,** pero al revés de lo reportado
+     primero: producción **sí** tiene el pragma en `create_table_credit_order` (aplicado por un
+     arreglo histórico real y necesario — esa función usa `order_id` como variable local y como
+     columna real en varias tablas que toca) y **no** lo tiene en `configure_table_credit` (nunca
+     lo necesitó, sin colisión de nombres en su cuerpo). El archivo local tenía el pragma en la
+     función equivocada — quedó así al intentar consolidar un parche histórico separado
+     (`sprint_09_credit_order_variable_fix.sql`, hoy un no-op intencional) directamente en la
+     migración canónica.
+- **Arreglo aplicado:** se movió el pragma de `configure_table_credit` a `create_table_credit_order`
+  en `20260729172848_sprint_09_table_credit_owner.sql`, verificado byte a byte contra las
+  definiciones reales en producción (`pg_get_functiondef`, conexión de solo lectura). Cero cambios
+  contra producción — sólo el archivo local.
+- **CI verde después del arreglo:** `https://github.com/jtmenesesg-arch/tablio/actions/runs/30709380710`.
+- **Impacto en datos existentes:** ninguno posible — se confirmó que las tablas de negocio
+  (`orders`, `payment_intent_events`, `table_credit_accounts`, `table_credit_order_links`,
+  `outbox_messages`, `outbox_delivery_attempts`, `table_credit_losses`,
+  `tenant_table_credit_settings`) tienen **cero filas** en la base real. Nunca se procesó una
+  transacción real.
+- **Relación con OI-028:** ninguna. `owner_monthly_credit_loss` (la vista detrás de esa cifra) es
+  una suma simple sobre `table_credit_losses`, sin dependencia de nada de este asunto — y
+  `/dueno` hoy ni siquiera lee de la base real, usa el store en memoria. Capas distintas,
+  problemas independientes.
+- **Hallazgo transversal que sí queda abierto:** el mismo diagnóstico confirmó que ninguna
+  suite de pruebas del repositorio (Vitest, pgTAP, Playwright) valida jamás el comportamiento
+  real de esta base — todas corren contra el repositorio o una reconstrucción de él. Registrado
+  aparte como **OI-031**, bloqueante antes del piloto.
+- **Evidencia completa:** `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`, sección
+  "Verificación de equivalencia" (diagnóstico original) más el registro de corrección posterior.
+
+## OI-031 — Ninguna prueba automática valida el comportamiento real de la base
+
+- **Estado:** bloqueante antes del piloto. No es un detalle técnico — es un hueco en la garantía
+  de que el sistema hace lo que decimos que hace con la plata.
+- **Encontrado:** 2026-08-01, diagnosticando OI-030. Es la causa raíz de por qué OI-027 y OI-030
+  pudieron divergir de producción durante días sin que nada lo detectara.
+- **Qué valida cada suite hoy, en lenguaje simple:**
+  - **Vitest** (`packages/**/*.test.ts`): funciones de TypeScript puras — máquinas de estado,
+    reglas de negocio. Nunca abre una conexión a ninguna base de datos, ni local ni real.
+    Verificado leyendo `packages/application/src/financial/financial-core.test.ts`.
+  - **pgTAP** (`supabase/tests/database/*.test.sql`): corre, según el propio `ADR-000`, "sobre
+    Supabase **local**" — una base Postgres efímera reconstruida desde los archivos de
+    `supabase/migrations/` en una máquina de desarrollo o en el CI. Nunca toca este proyecto real.
+  - **Playwright** (`tests/e2e/*.spec.ts`): levanta un servidor Next.js local (`pnpm dev:e2e`) cuyas
+    rutas de API corren sobre *stores* en memoria (`owner-demo-store.ts`, `waiter-demo-store.ts`,
+    `table-credit-demo-store.ts`, etc.), no sobre Supabase. Nunca toca ninguna base de datos real
+    ni local.
+  - **CI de reproducibilidad de esquema** (`schema-reproducibility.yml`, cerrando OI-027): es la
+    única verificación que hoy compara algo contra la *forma* del esquema — pero corre sólo ante
+    cambios en `supabase/migrations/**`, y compara el repositorio contra sí mismo (una
+    reconstrucción limpia), no contra producción. No haber comparado explícitamente contra
+    producción fue exactamente lo que permitió que OI-027/OI-030 pasaran inadvertidos.
+- **Conclusión:** el repositorio puede describir un comportamiento (financiero, de crédito, de
+  reintentos) que producción no tiene, o viceversa, y ninguna prueba automática se entera. La
+  garantía de "las pruebas pasan" hoy sólo cubre "el repositorio es internamente consistente", no
+  "el sistema en producción hace lo que decimos".
+
+### Propuesta de cierre
+
+**Opción A — Proyecto Supabase de staging con pgTAP real.**
+- *Qué es:* un segundo proyecto Supabase (no local, hosteado) que recibe las mismas migraciones
+  que producción, donde pgTAP corre de verdad contra una base Postgres real, y donde
+  eventualmente Playwright también podría apuntar en vez de a los stores en memoria.
+- *Pros:* la única opción que valida comportamiento real (RLS, triggers, funciones, extensiones
+  específicas del hosting), no sólo forma del esquema. Prepara el terreno para el requisito del
+  punto 4 (validar lo financiero contra base real antes del piloto). Sirve además para demos y QA
+  manual.
+- *Contras:* costo recurrente (plan pago de Supabase si el free tier se pausa por inactividad —
+  del orden de USD 25/mes por proyecto; el free tier podría alcanzar pero no es confiable para CI
+  programado). Requiere mantener un segundo historial de migraciones sincronizado — el mismo
+  problema que causó OI-027 podría repetirse ahí si no se disciplina igual. Para que Playwright
+  también lo use, hay que dejar de depender de los *stores* en memoria en las rutas de API — un
+  cambio de arquitectura grande, no una tarea de una tarde.
+- *Nunca se debe correr pgTAP contra producción directamente*, ni siquiera dentro de una
+  transacción con rollback — pgTAP crea datos de prueba y ejecuta escrituras; el riesgo de un bug
+  en un test que deje algo escrito, o de contención de locks, es real. Un ambiente separado no es
+  opcional para esto.
+
+**Opción B — Verificación periódica que compara producción contra la reconstrucción del repositorio.**
+- *Qué es:* un job programado (diario) que hace lo mismo que ya hace `schema-reproducibility.yml`
+  (reconstruir el esquema desde cero en un stack local efímero) más una conexión de sólo lectura a
+  producción, corre `scripts/schema-manifest.sql` contra ambas, y **falla el workflow si algo no
+  coincide** — igual a como se diagnosticó OI-030 manualmente, pero automático y recurrente.
+- *Pros:* se puede construir hoy mismo, sin infraestructura nueva ni costo recurrente relevante
+  (minutos de GitHub Actions, dentro del plan gratuito). Ataca exactamente el síntoma que permitió
+  que OI-027/030 pasaran inadvertidos: divergencia silenciosa entre repositorio y producción.
+- *Contras:* sólo compara *forma* del esquema (tablas, columnas, restricciones, funciones,
+  triggers, políticas), no *comportamiento en tiempo de ejecución*. No detectaría un bug que
+  repositorio y producción compartan por igual, ni nada fuera de los esquemas `public`/`private`.
+  No cierra la brecha de que Playwright valide contra *stores* en memoria.
+
+**Recomendación:** implementar la Opción B ahora — es exactamente lo que pediste como mínimo
+inmediato (punto 3), cierra la ventana de "días sin saber que se separaron", y no tiene costo
+recurrente. Tratar la Opción A como el paso siguiente, explícitamente ligado al punto 4 de tu
+mensaje: cuando exista un ambiente con datos reales (o se acerque el piloto), ahí se justifica el
+costo y el mantenimiento de un segundo proyecto Supabase — no antes.
+- **Acción tomada:** ver "Mínimo inmediato" más abajo.
+
+### Mínimo inmediato (punto 3 del fundador)
+
+1. **CI de reproducibilidad en cada push que toque migraciones:** ya estaba así desde que se creó
+   (`schema-reproducibility.yml`, disparado por cambios en `supabase/migrations/**`,
+   `supabase/config.toml`, `scripts/schema-manifest.sql` o el propio workflow) — confirmado, sin
+   cambios necesarios.
+2. **Verificación programada producción vs. reconstrucción:** ver `docs/BUILD_LOG.md` (entrada del
+   2026-08-01) para el workflow agregado y su estado.
+
+### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
+
+Antes de cualquier piloto con pagos reales, hace falta validar el comportamiento financiero
+(confirmación de pagos, outbox, crédito de mesa) contra una base real con datos reales — no sólo
+contra los *stores* en memoria que usa hoy la PWA/paneles, y no sólo contra una reconstrucción
+limpia del esquema. Esto es la Opción A de arriba, más pruebas end-to-end que efectivamente
+ejerciten esa base. Registrado también en `docs/REAL_MONEY_BLOCKERS.md` si corresponde revisarlo
+ahí antes del piloto.
 
 ## Clasificación final de asuntos
 
@@ -559,4 +656,5 @@ hardware hasta probarla con el piloto.
 | OI-027 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
 | OI-028 | Bloqueante antes del piloto; no bloquea el checkpoint visual         |
 | OI-029 | Por descartar antes del piloto; no bloquea el checkpoint visual      |
-| OI-030 | Bloqueante antes de piloto con pagos reales; no bloquea el checkpoint visual |
+| OI-030 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
+| OI-031 | Bloqueante antes del piloto; ver propuesta de cierre en su sección   |
