@@ -12,10 +12,15 @@ begin
   )
   into definition;
 
-  corrected := replace(
+  if position('#variable_conflict use_variable' in definition) > 0 then
+    return;
+  end if;
+
+  corrected := regexp_replace(
     definition,
-    E'AS $function$\\ndeclare',
-    E'AS $function$\\n#variable_conflict use_variable\\ndeclare'
+    '(AS \\$function\\$[[:space:]]*)(declare)',
+    E'\\1#variable_conflict use_variable\n\\2',
+    'i'
   );
 
   if corrected = definition then
