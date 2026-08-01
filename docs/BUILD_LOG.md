@@ -2,6 +2,89 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de Crédito + dos bugs reales encontrados al revisar
+
+### Qué cambió
+
+- `/credito` (`apps/web/app/credito/credit-demo.tsx`) se reescribió completo sobre el sistema de
+  diseño claro estándar, con `AppShell` (`ownerNavigation("cashier")`, comparte sección con
+  Caja). Estructura: insignia de riesgo, 3 `MetricCard` de exposición, tarjeta de cuenta con
+  saldo, grilla de 3 columnas (Operación de caja / Pantalla del cliente / Validación del garzón)
+  e historial. `.creditLiveCode`/`.creditError` pasaron a `data-testid`.
+- Se corrigió un error de lint por comillas rectas sin escapar (`&ldquo;`/`&rdquo;`).
+
+### Dos bugs reales encontrados al revisar las capturas (no cosméticos, no de esta pantalla sola)
+
+Al mirar las capturas de "Pantalla del cliente" (la tarjeta oscura que ve el comensal) para
+verificar visualmente, aparecieron dos bugs de contraste invisible — el mismo patrón de raíz que
+ya afectó a KDS y Garzón esta semana (`cn()` es `clsx` puro, sin `tailwind-merge`: cuando un
+componente base declara un color y el que lo usa intenta pisarlo con otra clase de color, no hay
+fusión — gana el orden en que Tailwind generó el CSS, no el orden en el JSX), pero esta vez en
+componentes compartidos usados por TODAS las pantallas ya migradas, no en una pantalla aislada:
+
+1. **Botón `variant="outline"` sin borde visible en todo el sistema.** `components/ui/button.tsx`
+   declaraba `border border-transparent` en la base de `cva` y el variant `outline` intentaba
+   pisarlo con `border-border`; el transparente ganaba siempre. Se confirmó que esto ya estaba
+   presente en Mesas ("Crear varias") desde el primer incremento del sprint — no es nuevo de
+   Crédito, solo se hizo evidente ahí porque hay tres botones outline seguidos. **Corregido en la
+   raíz**: se sacó `border-transparent` de la base y cada variant (`primary`, `secondary`,
+   `outline`, `ghost`, `destructive`) ahora declara su propio color de borde sin conflicto.
+   Verificado con estilos computados antes/después en Crédito y en Mesas; visualmente sin cambio
+   para los variants sólidos (su borde ahora coincide exactamente con su propio fondo, que es como
+   se veían antes) y con borde gris correcto en `outline`.
+2. **Texto invisible en la tarjeta oscura de Crédito — bug real, no cosmético.** `Card` declara
+   `text-card-foreground` (casi negro) en su base; `credit-demo.tsx` le pasaba `text-background`
+   (casi blanco) a la `Card` para invertir el tema, pero por el mismo motivo del punto anterior no
+   ganaba. Efecto medido con estilos computados: el estado "PAGADO/NO PAGADO", el monto en pesos
+   y — el más serio — **los 6 dígitos del código de verificación que el cliente lee en voz alta al
+   garzón** se renderizaban en `rgb(17,17,16)` sobre un fondo `rgb(17,17,16)`: negro sobre negro,
+   ilegible. **Corregido** agregando `text-background` explícito en esos tres elementos
+   directamente (no en el contenedor), siguiendo la misma lección ya documentada: nunca confiar en
+   pisar el color de un ancestro/base, darle su propio valor explícito al elemento que lo necesita.
+   Es el único lugar del código que usa este patrón de tarjeta invertida, así que el arreglo queda
+   acotado a Crédito.
+
+Ninguno de los dos bugs lo detectó la auditoría automática de contraste sin ayuda: el bug del
+borde no toca contraste de texto (no lo audita); el bug de la tarjeta sí lo hizo aparecer como
+falla real (`ratio: 1`) en el primer corrido del script sobre `/credito`, y esa falla fue la pista
+que llevó a investigar y encontrarlo — confirma que la revisión visual manual sigue siendo
+necesaria además del script.
+
+### Tercer hallazgo: falso positivo en el propio script de auditoría
+
+Con el bug de la tarjeta ya corregido, quedaban dos fallas de contraste (`ratio: 0`) en textos con
+opacidad (`text-background/70`). Investigado con estilos computados: Chromium reporta el color de
+estos textos como `oklab(...)`, no `rgb(...)`, porque el `color-mix()` detrás del modificador
+`/70` de Tailwind no siempre puede volver a sRGB sin pérdida — y el regex de `parseRgb()` en
+`tests/visual/sprint-14-owner-a11y.ts` sólo entendía `rgb()`/`rgba()`. Confirmado visualmente que
+el texto se ve bien (gris claro legible sobre fondo oscuro); era un defecto del script, no de la
+pantalla. **Corregido en el script**: `parseRgb()` ahora también convierte `oklab()` a sRGB con
+las matrices estándar de Ottosson, así que futuras pantallas con modificadores de opacidad no van
+a generar esta misma falsa alarma.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes (corridos otra vez después del fix de
+  `button.tsx`, no solo antes).
+- `pnpm test` (Vitest): 144/144.
+- Playwright completo: 44 pasan, 1 falla en el patrón preexistente ya documentado (esta corrida
+  tocó OI-028, la cifra de fuga mensual; en otras corridas de la sesión tocó OI-029 en su lugar —
+  ambos ya registrados, ninguno nuevo), 1 se salta en cascada de `credit-owner.spec.ts` — sin
+  regresiones.
+- Auditoría de contraste/táctil/foco/gradientes/desborde en `/credito`, escritorio y móvil, con
+  crédito abierto y con código de verificación generado: **0 fallos** después de los dos arreglos
+  (`docs/evidence/SPRINT-14-CREDIT-A11Y.json`).
+- Regresión dirigida del fix de `button.tsx` (afecta a todas las pantallas migradas que usan
+  `variant="outline"`): auditoría re-corrida en `/dueno`, `/caja`, `/superadmin`, `/onboarding` —
+  las cuatro en 0 fallos, sin cambios respecto a lo ya reportado. KDS y Garzón no usan el
+  componente `Button` compartido (tienen sus propias clases oscuras), así que el fix no los toca;
+  no se re-auditaron por esa razón, no por omisión.
+
+### Límite deliberado
+
+Con esto quedan migradas Caja, KDS, Garzón, Superadmin, Onboarding y Crédito. Sólo falta la PWA
+del comensal, que se deja para el final con revisión aparte (decisión del fundador).
+
 ## 2026-08-01 — Sprint 14 · migración visual de Onboarding
 
 ### Qué cambió

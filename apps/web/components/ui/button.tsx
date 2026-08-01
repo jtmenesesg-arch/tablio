@@ -4,20 +4,20 @@ import * as React from "react";
 import { cn } from "@/lib/cn";
 
 const buttonVariants = cva(
-  "inline-flex min-h-touch items-center justify-center gap-2 whitespace-nowrap rounded-button border border-transparent px-6 py-3 text-small font-bold transition-[background-color,color,border-color,opacity,transform] duration-[var(--motion-feedback)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-icon [&_svg]:shrink-0",
+  "inline-flex min-h-touch items-center justify-center gap-2 whitespace-nowrap rounded-button border px-6 py-3 text-small font-bold transition-[background-color,color,border-color,opacity,transform] duration-[var(--motion-feedback)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-icon [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         primary:
-          "bg-primary text-primary-foreground hover:bg-primary-hover active:translate-y-px",
+          "border-primary bg-primary text-primary-foreground hover:bg-primary-hover active:translate-y-px",
         secondary:
-          "bg-secondary text-secondary-foreground hover:opacity-90 active:translate-y-px",
+          "border-secondary bg-secondary text-secondary-foreground hover:opacity-90 active:translate-y-px",
         outline:
           "border-border bg-card text-card-foreground hover:bg-muted active:translate-y-px",
         ghost:
-          "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+          "border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
         destructive:
-          "bg-destructive text-destructive-foreground hover:opacity-90 active:translate-y-px",
+          "border-destructive bg-destructive text-destructive-foreground hover:opacity-90 active:translate-y-px",
       },
       size: {
         default: "",

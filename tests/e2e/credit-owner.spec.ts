@@ -70,23 +70,23 @@ test("pago parcial deja saldo, comprobante y código vivo de un solo uso", async
   ).toBe(true);
   await page.reload();
   await page.getByRole("button", { name: "Generar código vivo" }).click();
-  const code = await page.locator(".creditLiveCode strong").innerText();
+  const code = await page.getByTestId("credit-live-code-value").innerText();
 
   await page.getByLabel("Código que muestra el cliente").fill("000000");
   await page
     .getByRole("button", { name: "Validar contra el servidor" })
     .click();
-  await expect(page.locator(".creditError")).toContainText("Código inválido");
+  await expect(page.getByTestId("credit-error")).toContainText("Código inválido");
 
   await page.getByLabel("Código que muestra el cliente").fill(code);
   await page
     .getByRole("button", { name: "Validar contra el servidor" })
     .click();
-  await expect(page.locator(".creditLiveCode")).toBeHidden();
+  await expect(page.getByTestId("credit-live-code")).toBeHidden();
   await page
     .getByRole("button", { name: "Validar contra el servidor" })
     .click();
-  await expect(page.locator(".creditError")).toContainText("ya utilizado");
+  await expect(page.getByTestId("credit-error")).toContainText("ya utilizado");
 });
 
 test("una fuga alimenta el costo mensual y su tendencia para el dueño", async ({

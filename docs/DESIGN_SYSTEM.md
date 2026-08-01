@@ -1,8 +1,8 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón, Superadmin y
-Onboarding**. Las demás pantallas conservan temporalmente sus estilos anteriores hasta que se
-migren una por una.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón, Superadmin, Onboarding
+y Crédito**. Sólo falta la PWA del comensal. Las demás pantallas conservan temporalmente sus
+estilos anteriores hasta que se migren una por una.
 
 ## Fuentes de verdad
 
@@ -270,11 +270,46 @@ tenant-scoped (prepara ESTE local) y ya estaba enlazada desde la navegación com
   (`docs/evidence/SPRINT-14-ONBOARDING-A11Y.json`,
   `docs/evidence/SPRINT-14-ONBOARDING-menu-A11Y.json`).
 
+## Crédito (2026-08-01)
+
+`/credito` vuelve al tema claro estándar con `AppShell` (comparte sección de navegación con Caja).
+Tres columnas: operación de caja, "pantalla del cliente" (tarjeta oscura invertida, la única en
+el producto — ver abajo) y validación del garzón.
+
+- **La misma lección de KDS (arriba), pero esta vez en un componente compartido, no en una
+  pantalla aislada.** Revisando las capturas aparecieron dos bugs reales del mismo origen —
+  `cn()` es `clsx` sin fusión, una base que fija un color de texto/borde gana sobre la clase que
+  el que lo usa le pasa para pisarlo:
+  - `components/ui/button.tsx`: la base de `cva` fijaba `border-transparent`; el variant
+    `outline` nunca lograba mostrar su `border-border`. Afectaba a **todas** las pantallas ya
+    migradas que usan `variant="outline"` (confirmado también en Mesas, no es nuevo de Crédito).
+    Corregido en la raíz: cada variant declara su propio color de borde, ninguno depende de pisar
+    la base.
+  - `credit-demo.tsx` le pasaba `text-background` a un `Card` (cuya base fija
+    `text-card-foreground`) para invertir el tema de la "pantalla del cliente". No ganaba: el
+    estado de pago, el monto y — el más grave — **los 6 dígitos del código de verificación que el
+    cliente lee en voz alta al garzón** se renderizaban negro sobre negro, invisibles. Corregido
+    dándole `text-background` explícito a cada elemento de texto directamente, no al contenedor.
+    Detalle completo y verificación en `BUILD_LOG.md`.
+  - La regla sigue siendo la misma: cuando algo necesita pisar un color que un componente base ya
+    fija, el color explícito va en el elemento que lo necesita (o el componente base se
+    rediseña con variants completos, como ya hace `Button`), nunca como una clase suelta que
+    confía en ganarle a la base por orden de JSX.
+- El script de auditoría (`tests/visual/sprint-14-owner-a11y.ts`) tenía un falso positivo propio:
+  no sabía leer colores `oklab()` (los que produce Chromium para textos con modificador de
+  opacidad, ej. `text-background/70`, porque el `color-mix()` detrás no siempre vuelve a sRGB sin
+  pérdida). Ahora convierte `oklab()` a sRGB con las matrices estándar antes de calcular
+  contraste, así que pantallas futuras con opacidad en el texto no van a disparar esta alarma.
+- Auditoría de contraste/táctil/foco/gradientes/desborde en `/credito`, escritorio y móvil, con
+  crédito abierto y con código de verificación generado: **0 fallos** tras los dos arreglos
+  (`docs/evidence/SPRINT-14-CREDIT-A11Y.json`).
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin` y `/onboarding` ya están en
-el sistema de diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las tarjetas de
-impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del
-CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin validación. El
-siguiente incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una
-tercera familia.
+`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin`, `/onboarding` y `/credito` ya
+están en el sistema de diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las
+tarjetas de impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores
+literales del CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin
+validación. Sólo falta la PWA del comensal, que queda para el final con revisión aparte. El
+siguiente incremento después de eso debe construir las pantallas nuevas de Tarea 4, no superponer
+una tercera familia de estilos.

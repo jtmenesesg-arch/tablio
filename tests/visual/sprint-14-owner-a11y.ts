@@ -49,16 +49,52 @@ try {
       type Rgb = { r: number; g: number; b: number; a: number };
 
       function parseRgb(value: string): Rgb | undefined {
-        const match = value.match(
+        const rgbMatch = value.match(
           /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)/,
         );
-        if (!match) return undefined;
-        return {
-          r: Number(match[1]),
-          g: Number(match[2]),
-          b: Number(match[3]),
-          a: match[4] === undefined ? 1 : Number(match[4]),
-        };
+        if (rgbMatch) {
+          return {
+            r: Number(rgbMatch[1]),
+            g: Number(rgbMatch[2]),
+            b: Number(rgbMatch[3]),
+            a: rgbMatch[4] === undefined ? 1 : Number(rgbMatch[4]),
+          };
+        }
+        // Chromium reports colors built from an opacity modifier (e.g. a
+        // Tailwind `/70` on a CSS-variable color) as oklab(), not rgb(),
+        // because the underlying color-mix() can't always round-trip through
+        // sRGB without loss. Convert with the standard Ottosson oklab ->
+        // linear-sRGB matrices so these still get a real contrast ratio
+        // instead of silently reading as a false failure.
+        const oklabMatch = value.match(
+          /oklab\(\s*([\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)/,
+        );
+        if (oklabMatch) {
+          const L = Number(oklabMatch[1]);
+          const a = Number(oklabMatch[2]);
+          const bChan = Number(oklabMatch[3]);
+          const l_ = L + 0.3963377774 * a + 0.2158037573 * bChan;
+          const m_ = L - 0.1055613458 * a - 0.0638541728 * bChan;
+          const s_ = L - 0.0894841775 * a - 1.2914855480 * bChan;
+          const l = l_ ** 3;
+          const m = m_ ** 3;
+          const s = s_ ** 3;
+          const toSrgb = (linear: number) => {
+            const clamped = Math.min(1, Math.max(0, linear));
+            const encoded =
+              clamped <= 0.0031308
+                ? 12.92 * clamped
+                : 1.055 * clamped ** (1 / 2.4) - 0.055;
+            return Math.round(encoded * 255);
+          };
+          return {
+            r: toSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            g: toSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            b: toSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+            a: oklabMatch[4] === undefined ? 1 : Number(oklabMatch[4]),
+          };
+        }
+        return undefined;
       }
 
       function background(element: Element): Rgb {
