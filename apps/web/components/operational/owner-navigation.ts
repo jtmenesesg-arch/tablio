@@ -1,0 +1,32 @@
+import type { AppShellNavItem } from "./app-shell";
+import {
+  LayoutIcon,
+  MoneyIcon,
+  SettingsIcon,
+  TableIcon,
+  TeamIcon,
+} from "@/components/ui/icons";
+
+export type OwnerNavigationKey = "summary" | "tables";
+
+export function ownerNavigation(
+  active: OwnerNavigationKey,
+): readonly AppShellNavItem[] {
+  return [
+    {
+      active: active === "summary",
+      href: "/dueno",
+      icon: LayoutIcon,
+      label: "Resumen",
+    },
+    {
+      active: active === "tables",
+      href: "/dueno/mesas",
+      icon: TableIcon,
+      label: "Mesas",
+    },
+    { href: "/caja", icon: MoneyIcon, label: "Caja" },
+    { href: "/garzon", icon: TeamIcon, label: "Equipo" },
+    { href: "/onboarding", icon: SettingsIcon, label: "Configurar" },
+  ];
+}

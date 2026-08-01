@@ -4,6 +4,8 @@ import { chromium } from "@playwright/test";
 
 const baseUrl = process.env.TABLIO_VISUAL_BASE_URL ?? "http://localhost:3102";
 const stage = process.env.TABLIO_VISUAL_STAGE ?? "after";
+const route = process.env.TABLIO_VISUAL_ROUTE ?? "/dueno";
+const subject = process.env.TABLIO_VISUAL_SUBJECT ?? "owner";
 const readySelector =
   process.env.TABLIO_VISUAL_READY_SELECTOR ?? "[data-owner-dashboard-ready]";
 const outputDirectory = resolve("docs/evidence/sprint-14");
@@ -23,17 +25,20 @@ try {
       viewport: { width: viewport.width, height: viewport.height },
       deviceScaleFactor: 1,
     });
-    await page.goto(`${baseUrl}/dueno`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
     await page.locator(readySelector).waitFor({ state: "visible" });
     await page.screenshot({
       path: resolve(
         outputDirectory,
-        `${stage}-owner-${viewport.name}-viewport.png`,
+        `${stage}-${subject}-${viewport.name}-viewport.png`,
       ),
       fullPage: false,
     });
     await page.screenshot({
-      path: resolve(outputDirectory, `${stage}-owner-${viewport.name}.png`),
+      path: resolve(
+        outputDirectory,
+        `${stage}-${subject}-${viewport.name}.png`,
+      ),
       fullPage: true,
     });
     await page.close();

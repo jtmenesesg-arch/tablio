@@ -661,3 +661,56 @@ impresión física, despliegue/observabilidad y validaciones de infraestructura 
   verdes.
 - Security Advisors no agregó hallazgos. Performance Advisors confirmó cero claves foráneas
   Sprint 13 sin índice; `unused_index` sigue bajo OI-008 hasta tener tráfico representativo.
+
+## 2026-07-31 — Sprint 14 · Reconciliación de mesas, QR y presencia
+
+### Migración segura
+
+- Se separó `presence_required` de `presence_delivery_level`, con política por tenant y
+  excepción opcional por zona.
+- Mesas nuevas nacen con código obligatorio y `PRINTED_WITH_QR`. El QR, su hash, el código,
+  la rotación y la auditoría se crean en una sola transacción; la creación masiva también es
+  atómica.
+- QR y código recuperables viven cifrados en Vault. No se guarda SVG, PNG ni PDF; `qrcode`
+  renderiza el SVG en servidor cuando una persona autorizada ve o imprime la tarjeta.
+- La fachada de creación no devuelve secretos. Revelar exige permiso, motivo y auditoría.
+  Las fachadas públicas usan `SECURITY INVOKER`; el trabajo privilegiado vive en `private`.
+- La verificación registra fallos, serializa intentos por mesa y aplica límites por dispositivo
+  y por mesa antes de devolver una respuesta genérica.
+
+### Checkpoint visual aprobado para revisión
+
+- El shell compartido mantiene sidebar de 224 px en escritorio y navegación inferior en móvil.
+- El panel Dueño conserva la pantalla piloto y comparte navegación, formatos y estados con la
+  nueva pantalla de Mesas.
+- Mesas incluye resumen útil, tarjetas, alta individual, alta masiva, ver/regenerar/revocar QR
+  con advertencias y tarjeta imprimible bajo demanda. Nunca muestra tokens ni UUID internos.
+- Sólo se migraron Dueño y Mesas. El resto de las pantallas permanece intacto hasta recibir la
+  validación visual solicitada.
+
+### Verificación local
+
+- Vitest específico: 3/3; Playwright Mesas: 4/4.
+- TypeScript y ESLint: verdes.
+- Auditoría propia en Dueño y Mesas, escritorio y móvil: cero fallos de contraste AA, objetivos
+  táctiles de 56 px, foco visible, gradientes o desborde horizontal.
+- Suite completa: 144/144 Vitest, 4/4 Playwright Mesas, TypeScript, ESLint, Prettier y build
+  Next.js verdes.
+
+### Verificación remota — 1 de agosto de 2026
+
+- Se aplicaron al proyecto `xmwewmukoxdeuilmkahr` las migraciones `20260731213000`,
+  `20260731213200` y `20260731213300`.
+- pgTAP ejecutó 32/32 pruebas dentro de una migración temporal que terminó deliberadamente en
+  error después de `finish()`: el sentinel `TABLIO_PGTAP_OK_32` confirmó el verde y obligó el
+  rollback completo de fixtures y del propio artefacto de verificación.
+- Security Advisor quedó con los nueve hallazgos históricos: seis `WARN` de OI-019 y tres
+  `INFO` de OI-023. Ninguno pertenece a las tablas o RPCs de Sprint 14.
+- Performance Advisor detectó inicialmente tres claves foráneas de auditoría sin índice. La
+  migración `20260731213300` agregó la cobertura y la segunda ejecución confirmó cero
+  `unindexed_foreign_keys`.
+- Los índices recién creados aparecen como `unused_index`, informativo y esperado sin tráfico;
+  se conservan porque cubren claves foráneas y su evaluación con carga real sigue OI-008.
+- Se detectó divergencia histórica de timestamps y hotfixes entre migraciones locales y
+  remotas de Sprints 11–13. La aplicación segura usó una copia temporal del historial remoto y
+  el trabajo de reconciliación quedó registrado en OI-027.

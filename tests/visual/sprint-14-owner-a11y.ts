@@ -9,6 +9,9 @@ const outputPath = resolve(
 const executablePath =
   process.env.TABLIO_CHROME_PATH ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const route = process.env.TABLIO_A11Y_ROUTE ?? "/dueno";
+const readySelector =
+  process.env.TABLIO_A11Y_READY_SELECTOR ?? "[data-owner-dashboard-ready]";
 
 const browser = await chromium.launch({ executablePath, headless: true });
 const results = [];
@@ -22,10 +25,8 @@ try {
       viewport: { width: viewport.width, height: viewport.height },
       deviceScaleFactor: 1,
     });
-    await page.goto(`${baseUrl}/dueno`, { waitUntil: "networkidle" });
-    await page
-      .locator("[data-owner-dashboard-ready]")
-      .waitFor({ state: "visible" });
+    await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle" });
+    await page.locator(readySelector).waitFor({ state: "visible" });
 
     const audit = await page.evaluate(() => {
       type Rgb = { r: number; g: number; b: number; a: number };
@@ -185,7 +186,7 @@ try {
 
 const report = {
   generatedAt: new Date().toISOString(),
-  route: "/dueno",
+  route,
   rules: {
     textContrast: "WCAG AA: 4.5:1 normal, 3:1 texto grande",
     touchTarget: "56 × 56 px mínimo",

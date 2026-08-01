@@ -7,6 +7,7 @@
   --tracking-tight: -0.025em;
   --tracking-wide: 0.05em;
 
+  --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
   --breakpoint-xl: 80rem;
@@ -25,9 +26,12 @@
   --spacing-loading-card: 10rem;
   --spacing-chart: 16rem;
   --spacing-skeleton-label: 8rem;
+  --spacing-table-card: 20rem;
 
   --container-3xl: 48rem;
   --container-5xl: 64rem;
+  --container-qr-preview: 20rem;
+  --container-qr-print: 18rem;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

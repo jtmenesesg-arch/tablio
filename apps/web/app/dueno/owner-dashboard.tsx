@@ -1,11 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AppShell,
-  AppShellLoading,
-  type AppShellNavItem,
-} from "@/components/operational/app-shell";
+import { AppShell, AppShellLoading } from "@/components/operational/app-shell";
+import { ownerNavigation } from "@/components/operational/owner-navigation";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,34 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  BuildingIcon,
-  DownloadIcon,
-  LayoutIcon,
-  MoneyIcon,
-  SettingsIcon,
-  TeamIcon,
-} from "@/components/ui/icons";
+import { BuildingIcon, DownloadIcon } from "@/components/ui/icons";
+import { formatClp } from "@/lib/format";
 import type { OwnerDashboard as OwnerData } from "../../lib/owner-contract";
 
-const money = (value: number) =>
-  new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    maximumFractionDigits: 0,
-  }).format(value);
+const money = formatClp;
 
-const ownerNav: readonly AppShellNavItem[] = [
-  {
-    active: true,
-    href: "/dueno",
-    icon: LayoutIcon,
-    label: "Resumen",
-  },
-  { href: "/caja", icon: MoneyIcon, label: "Caja" },
-  { href: "/garzon", icon: TeamIcon, label: "Equipo" },
-  { href: "/onboarding", icon: SettingsIcon, label: "Configurar" },
-];
+const ownerNav = ownerNavigation("summary");
 
 function SectionHeading({
   eyebrow,

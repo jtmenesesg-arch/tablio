@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-01T01:36:13.586Z",
-  "route": "/dueno",
+  "generatedAt": "2026-08-01T01:36:16.031Z",
+  "route": "/dueno/mesas",
   "rules": {
     "textContrast": "WCAG AA: 4.5:1 normal, 3:1 texto grande",
     "touchTarget": "56 × 56 px mínimo",
@@ -15,7 +15,7 @@
         "width": 1440,
         "height": 900
       },
-      "checkedTextNodes": 157,
+      "checkedTextNodes": 269,
       "textFailures": [],
       "touchFailures": [],
       "focusFailures": [],
@@ -28,7 +28,7 @@
         "width": 390,
         "height": 844
       },
-      "checkedTextNodes": 157,
+      "checkedTextNodes": 269,
       "textFailures": [],
       "touchFailures": [],
       "focusFailures": [],

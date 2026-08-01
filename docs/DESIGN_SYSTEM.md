@@ -1,7 +1,7 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en el panel Dueño**. Las demás pantallas conservan temporalmente sus
-estilos anteriores hasta que el fundador apruebe esta dirección.
+Estado: **piloto validado en Dueño y extendido a Mesas para revisión**. Las demás pantallas
+conservan temporalmente sus estilos anteriores hasta que el fundador apruebe esta dirección.
 
 ## Fuentes de verdad
 
@@ -81,9 +81,11 @@ disfrazan como espaciado.
 
 - `Button`, con Radix Slot para `asChild`.
 - `Input`.
+- `Select` y `Textarea`.
 - `Card`.
 - `Badge` / chip.
 - `Alert`.
+- `Dialog`, sobre Radix, siempre opaco y con foco/teclado resueltos.
 - `Skeleton`.
 - Iconos internos livianos con `currentColor`.
 
@@ -97,9 +99,24 @@ negro puro, pero no define las equivalencias semánticas completas de `card`, `m
 `accent`, estados y bordes en oscuro. El KDS actual conserva su tratamiento propio hasta su
 migración. Antes de migrar KDS o garzón se debe aprobar esa matriz; no se dedujo en silencio.
 
+## Patrones de página
+
+- Encabezado: H1, contexto con datos reales y acción principal a la derecha.
+- Entidades como Mesas: grilla de tarjetas, estado semántico, dato principal grande y tarjeta
+  punteada para agregar.
+- Flujos: kanban con contadores; maestros: lista y detalle; analítica: período, métricas y
+  gráficos; listados operativos: tabla con estados y acciones.
+- Estados técnicos nunca se imprimen tal cual. `ui-statuses.ts` es el diccionario único.
+- Montos, fechas, duraciones y tiempos relativos usan `lib/format.ts`.
+- Tokens, UUID y secretos no aparecen fuera del superadmin.
+- Todo vacío explica por qué está vacío y qué acción sigue.
+
+El badge de aviso conserva el fondo ámbar oficial, pero usa texto negro: ámbar sobre el fondo
+suave medía 3,13:1 y fallaba AA. No se inventó un nuevo amarillo.
+
 ## Límite de la migración
 
-Sólo `/dueno` usa el nuevo shell y la biblioteca interna. Los colores literales del CSS
-histórico siguen presentes para no alterar catorce pantallas sin validación. El siguiente
-incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera
-familia visual.
+Sólo `/dueno` y `/dueno/mesas` usan el nuevo shell y la biblioteca interna. Las tarjetas de
+impresión son un asset de esa pantalla, no otro panel migrado. Los colores literales del CSS
+histórico siguen presentes para no alterar el resto sin validación. El siguiente incremento
+debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera familia.

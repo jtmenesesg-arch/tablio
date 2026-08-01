@@ -22,3 +22,7 @@ License. El archivo de producción corresponde al subconjunto oficial
 El brand book de `/brand/tablio_branding.html` y la aplicación de referencia
 `/reference/table-tray-qr/` fueron entregados por el fundador. La referencia se conserva sólo
 para tokens, shell y convenciones visuales; no aporta lógica de negocio a Tablio.
+
+Los QR se renderizan bajo demanda en SVG con
+[`qrcode` 1.5.4](https://www.npmjs.com/package/qrcode?activeTab=readme). La biblioteca sólo
+codifica el token generado por servidor; no aporta lógica de negocio ni guarda artefactos.
