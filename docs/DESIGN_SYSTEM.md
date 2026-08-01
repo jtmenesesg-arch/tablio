@@ -1,7 +1,8 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón y Superadmin**. Las
-demás pantallas conservan temporalmente sus estilos anteriores hasta que se migren una por una.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón, Superadmin y
+Onboarding**. Las demás pantallas conservan temporalmente sus estilos anteriores hasta que se
+migren una por una.
 
 ## Fuentes de verdad
 
@@ -251,11 +252,29 @@ que administra muchos locales — pero reusa exactamente los mismos tokens, `Car
   móvil (`docs/evidence/SPRINT-14-SUPERADMIN-A11Y.json` y
   `docs/evidence/SPRINT-14-SUPERADMIN-detail-A11Y.json`).
 
+## Onboarding (2026-08-01)
+
+`/onboarding` vuelve a `AppShell` — a diferencia de Superadmin, esta pantalla **sí** es
+tenant-scoped (prepara ESTE local) y ya estaba enlazada desde la navegación compartida como
+"Configurar". Se agregó la clave `"configure"` a `OwnerNavigationKey`.
+
+- El asistente de 9 pasos (`stepNav`, antes una clase CSS) pasó a una fila de botones con
+  scroll horizontal propio (`data-testid="onboarding-step-nav"`), igual que las pestañas de
+  Caja: número o `✓` + nombre del paso, estado activo/completo por color.
+- Cada campo usa el mismo patrón `FieldLabel` con `htmlFor`/`id` que ya usa Mesas, en vez de
+  `<label>` envolviendo el input sin asociación explícita.
+- Es el primer componente con reglas de negocio reales que sobreviven a una migración de 9
+  pasos casi sin tocarlas: sólo cambiaron clases y componentes, ninguna mutación ni validación.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde en el paso 1 (Local) y en el
+  paso 3 con carta importada y en revisión (botón "Publicar" deshabilitado), escritorio y móvil
+  (`docs/evidence/SPRINT-14-ONBOARDING-A11Y.json`,
+  `docs/evidence/SPRINT-14-ONBOARDING-menu-A11Y.json`).
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon` y `/superadmin` ya están en el sistema de
-diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las tarjetas de impresión son
-un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del CSS histórico
-siguen presentes en el resto de las pantallas para no alterarlas sin validación. El siguiente
-incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una tercera
-familia.
+`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin` y `/onboarding` ya están en
+el sistema de diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las tarjetas de
+impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores literales del
+CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin validación. El
+siguiente incremento debe migrarlas una por una y eliminar sus reglas antiguas, no superponer una
+tercera familia.

@@ -7,7 +7,7 @@ import {
   TeamIcon,
 } from "@/components/ui/icons";
 
-export type OwnerNavigationKey = "summary" | "tables" | "cashier";
+export type OwnerNavigationKey = "summary" | "tables" | "cashier" | "configure";
 
 export function ownerNavigation(
   active: OwnerNavigationKey,
@@ -32,6 +32,11 @@ export function ownerNavigation(
       label: "Caja",
     },
     { href: "/garzon", icon: TeamIcon, label: "Equipo" },
-    { href: "/onboarding", icon: SettingsIcon, label: "Configurar" },
+    {
+      active: active === "configure",
+      href: "/onboarding",
+      icon: SettingsIcon,
+      label: "Configurar",
+    },
   ];
 }

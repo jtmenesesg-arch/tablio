@@ -26,12 +26,12 @@ test("onboarding completo deja un tenant operativo", async ({ page }) => {
   await page.getByLabel(/Estaciones separadas/).fill("Barra, Cocina");
   await page.getByRole("button", { name: "Guardar tamaño" }).click();
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Tamaño$/ })
     .click();
   await expect(page.getByText("Flujo", { exact: true })).toBeVisible();
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Carta$/ })
     .click();
 
@@ -52,23 +52,23 @@ test("onboarding completo deja un tenant operativo", async ({ page }) => {
   await page.getByRole("button", { name: "Agregar persona" }).click();
 
   await page.getByRole("button", { name: "Generar QRs" }).click();
-  await page.locator(".stepNav").getByRole("button", { name: /QRs$/ }).click();
+  await page.getByTestId("onboarding-step-nav").getByRole("button", { name: /QRs$/ }).click();
   await expect(page.getByText("4101")).toBeVisible();
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Prueba$/ })
     .click();
 
   await page.getByRole("button", { name: "Ejecutar prueba completa" }).click();
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Prueba$/ })
     .click();
   await expect(page.getByText("Venta demo").locator("..")).toContainText(
     "passed",
   );
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Producción$/ })
     .click();
 
@@ -106,7 +106,7 @@ test("importación nunca publica sin confirmación humana", async ({ page }) => 
   await reset(page);
   await page.goto("/onboarding");
   await page
-    .locator(".stepNav")
+    .getByTestId("onboarding-step-nav")
     .getByRole("button", { name: /Carta$/ })
     .click();
   await page.getByRole("button", { name: "Extraer borrador" }).click();

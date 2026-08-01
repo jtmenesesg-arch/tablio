@@ -2,6 +2,39 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-01 — Sprint 14 · migración visual de Onboarding
+
+### Qué cambió
+
+- `/onboarding` (`apps/web/app/onboarding/owner-onboarding.tsx`) se reescribió completo sobre el
+  sistema de diseño. A diferencia de Superadmin, sí usa `AppShell`: es la preparación de ESTE
+  local y ya estaba enlazada desde la navegación compartida como "Configurar". Se agregó la
+  clave `"configure"` a `OwnerNavigationKey`.
+- El asistente de 9 pasos pasó de una clase CSS (`.stepNav`) a una fila de botones con scroll
+  horizontal propio, `data-testid="onboarding-step-nav"` para que el test la siga encontrando.
+- Todos los campos de los 9 pasos (local, tamaño, carta, tributación, pasarela, personal, QRs,
+  prueba, producción) se restilaron con `Input`/`Select`/`Textarea`/`Button`/`Card`/`Alert`
+  compartidos, asociando cada etiqueta a su campo con `htmlFor`/`id`. Ninguna mutación, ninguna
+  validación ni el orden de los pasos cambió.
+
+### Verificación
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: verdes.
+- `pnpm test` (Vitest): 144/144.
+- Playwright `tests/e2e/platform.spec.ts`: 5/5 — recorre el asistente completo de punta a punta
+  (los 9 pasos, incluida la publicación de carta con revisión humana obligatoria) más los tests
+  de Superadmin que comparten archivo.
+- Auditoría de contraste/táctil/foco/gradientes/desborde: verde en el paso 1 (Local) y en el
+  paso 3 con carta importada, botón "Publicar" deshabilitado incluido, escritorio y móvil — **0
+  fallos** (`docs/evidence/SPRINT-14-ONBOARDING-A11Y.json`,
+  `docs/evidence/SPRINT-14-ONBOARDING-menu-A11Y.json`).
+- Suite completa de Playwright corrida después del incremento.
+
+### Límite deliberado
+
+Sólo se migraron Caja, KDS, Garzón, Superadmin y Onboarding hasta ahora. Crédito sigue en la
+cola; la PWA del comensal queda para el final y con revisión aparte.
+
 ## 2026-08-01 — Sprint 14 · migración visual de Superadmin
 
 ### Qué cambió

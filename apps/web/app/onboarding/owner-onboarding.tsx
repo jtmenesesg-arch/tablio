@@ -1,11 +1,28 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { AppShell, AppShellLoading } from "@/components/operational/app-shell";
+import { ownerNavigation } from "@/components/operational/owner-navigation";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/cn";
+import { formatClp, formatDateTime } from "@/lib/format";
 import type {
   OnboardingBootstrap,
   OnboardingMutation,
   OnboardingStepCode,
-} from "../../lib/platform-contract";
+} from "@/lib/platform-contract";
 
 const stepLabels: Record<OnboardingStepCode, string> = {
   venue: "Local",
@@ -19,11 +36,9 @@ const stepLabels: Record<OnboardingStepCode, string> = {
   production: "Producción",
 };
 
-const money = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
+const stepOrder = Object.keys(stepLabels) as OnboardingStepCode[];
+
+const navItems = ownerNavigation("configure");
 
 async function responseBody(response: Response): Promise<OnboardingBootstrap> {
   const body = (await response.json()) as OnboardingBootstrap & {
@@ -31,6 +46,40 @@ async function responseBody(response: Response): Promise<OnboardingBootstrap> {
   };
   if (!response.ok) throw new Error(body.error ?? "No pudimos guardar.");
   return body;
+}
+
+function FieldLabel({
+  children,
+  htmlFor,
+}: {
+  children: ReactNode;
+  htmlFor: string;
+}) {
+  return (
+    <label className="block space-y-2 text-small font-bold" htmlFor={htmlFor}>
+      <span>{children}</span>
+    </label>
+  );
+}
+
+function StepHeading({
+  step,
+  title,
+  description,
+}: {
+  step: number;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-label uppercase tracking-wide text-muted-foreground">
+        Paso {step}
+      </p>
+      <h2 className="text-h2 text-foreground">{title}</h2>
+      <p className="text-body text-muted-foreground">{description}</p>
+    </div>
+  );
 }
 
 export function OwnerOnboarding() {
@@ -91,9 +140,7 @@ export function OwnerOnboarding() {
     [data?.completedSteps],
   );
 
-  if (!data) {
-    return <main className="platformLoading">Preparando onboarding…</main>;
-  }
+  if (!data) return <AppShellLoading navItems={navItems} />;
 
   function submitVenue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -152,559 +199,628 @@ export function OwnerOnboarding() {
   }
 
   return (
-    <main className="platformShell onboardingShell">
-      <header className="platformHeader">
-        <div>
-          <span className="demoPill">MODO DEMO · NO MUEVE DINERO</span>
-          <p className="sectionKicker">Preparación del local</p>
-          <h1>{data.tenantName}</h1>
-          <p>Puedes cerrar esta página y continuar después.</p>
-        </div>
-        <div className="progressCard" aria-label="Progreso del onboarding">
-          <strong>{data.progressPercent}%</strong>
-          <span>completado</span>
-          <div>
-            <i style={{ width: `${data.progressPercent}%` }} />
+    <AppShell
+      banner="Modo demo · no mueve dinero real"
+      branchName="Onboarding"
+      navItems={navItems}
+      tenantName={data.tenantName}
+    >
+      <div className="space-y-6">
+        <header className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-2">
+            <Badge variant="demo">Preparación del local</Badge>
+            <h1 className="text-h1 tracking-tight text-foreground lg:text-h1-lg">
+              {data.tenantName}
+            </h1>
+            <p className="text-body text-muted-foreground">
+              Puedes cerrar esta página y continuar después.
+            </p>
           </div>
-        </div>
-      </header>
-
-      <nav className="stepNav" aria-label="Pasos del onboarding">
-        {(Object.keys(stepLabels) as OnboardingStepCode[]).map((step) => (
-          <button
-            className={
-              selectedStep === step
-                ? "active"
-                : completed.has(step)
-                  ? "complete"
-                  : ""
-            }
-            key={step}
-            onClick={() => setSelectedStep(step)}
-            type="button"
-          >
-            <b>
-              {completed.has(step)
-                ? "✓"
-                : Object.keys(stepLabels).indexOf(step) + 1}
-            </b>
-            {stepLabels[step]}
-          </button>
-        ))}
-      </nav>
-
-      {error && (
-        <div className="platformAlert error" role="alert">
-          {error}
-        </div>
-      )}
-
-      <section className="platformPanel">
-        {selectedStep === "venue" && (
-          <form className="platformForm" onSubmit={submitVenue}>
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 1</p>
-              <h2>Cuéntanos sobre el local</h2>
-              <p>Estos datos aparecen en la carta y los comprobantes.</p>
-            </div>
-            <label>
-              Nombre del local
-              <input defaultValue={data.venue.name} name="name" required />
-            </label>
-            <label>
-              Dirección
-              <input
-                defaultValue={data.venue.address}
-                name="address"
-                required
-              />
-            </label>
-            <div className="formGrid">
-              <label>
-                Tipo de local
-                <select defaultValue={data.venue.venueType} name="venueType">
-                  <option>Bar</option>
-                  <option>Cervecería</option>
-                  <option>Pub</option>
-                  <option>Food hall</option>
-                </select>
-              </label>
-              <label>
-                Horario
-                <input
-                  defaultValue={data.venue.openingHours}
-                  name="openingHours"
+          <Card aria-label="Progreso del onboarding" className="w-full lg:w-64">
+            <CardContent className="space-y-2 py-6">
+              <div className="flex items-baseline justify-between">
+                <strong className="text-h1">{data.progressPercent}%</strong>
+                <span className="text-small text-muted-foreground">
+                  completado
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-brand"
+                  style={{ width: `${data.progressPercent}%` }}
                 />
-              </label>
-            </div>
-            <button className="platformPrimary" disabled={working}>
-              Guardar y continuar
-            </button>
-          </form>
-        )}
+              </div>
+            </CardContent>
+          </Card>
+        </header>
 
-        {selectedStep === "size" && (
-          <form className="platformForm" onSubmit={submitSize}>
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 2</p>
-              <h2>Mesas, zonas y estaciones</h2>
-              <p>
-                Las mesas determinan principalmente el plan. El layout sólo
-                influye si zonas y estaciones exceden juntas límites generosos.
-              </p>
-            </div>
-            <label>
-              Zonas · una por línea, con cantidad de mesas
-              <textarea
-                defaultValue={
-                  data.size.zones.length
-                    ? data.size.zones
-                        .map((zone) => `${zone.name}:${zone.tableCount}`)
-                        .join("\n")
-                    : "Salón:8\nTerraza:4"
-                }
-                name="zones"
-                rows={4}
-              />
-            </label>
-            <label>
-              Estaciones separadas por coma
-              <input
-                defaultValue={
-                  data.size.stations
-                    .map((station) => station.name)
-                    .join(", ") || "Barra, Cocina"
-                }
-                name="stations"
-              />
-            </label>
-            <aside className="planProposal" data-plan={data.plan.proposed}>
-              <span>Plan propuesto · hipótesis comercial</span>
-              <strong>{data.plan.name}</strong>
-              <b>
-                {data.plan.monthlyClp
-                  ? `${money.format(data.plan.monthlyClp)}/mes`
-                  : "Cotización personalizada"}
-              </b>
-              <small>{data.size.tableCount} mesas activas</small>
-            </aside>
-            <button className="platformPrimary" disabled={working}>
-              Guardar tamaño
-            </button>
-          </form>
-        )}
+        {error ? <Alert tone="danger">{error}</Alert> : null}
 
-        {selectedStep === "menu" && (
-          <div className="platformForm">
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 3</p>
-              <h2>Importa y revisa la carta</h2>
-              <p>
-                Nunca publicamos automáticamente. Tú confirmas cada precio.
-                Puedes lanzar sin fotografías.
-              </p>
-            </div>
-            <label>
-              Origen
-              <select
-                onChange={(event) =>
-                  setMenuSource(
-                    event.target.value as "text" | "link" | "pdf" | "image",
-                  )
-                }
-                value={menuSource}
+        <nav
+          aria-label="Pasos del onboarding"
+          className="flex gap-2 overflow-x-auto pb-1"
+          data-testid="onboarding-step-nav"
+        >
+          {stepOrder.map((step, index) => {
+            const isActive = selectedStep === step;
+            const isComplete = completed.has(step);
+            return (
+              <button
+                className={cn(
+                  "flex shrink-0 min-h-touch items-center gap-2 rounded-button border px-4 text-small font-bold transition-colors duration-[var(--motion-feedback)] motion-reduce:transition-none",
+                  isActive
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : isComplete
+                      ? "border-success bg-success-soft text-success"
+                      : "border-border bg-card text-card-foreground hover:bg-muted",
+                )}
+                key={step}
+                onClick={() => setSelectedStep(step)}
+                type="button"
               >
-                <option value="text">Texto</option>
-                <option value="link">Enlace</option>
-                <option value="pdf">PDF</option>
-                <option value="image">Imagen</option>
-              </select>
-            </label>
-            {menuSource === "text" || menuSource === "link" ? (
-              <label>
-                {menuSource === "text" ? "Pega la carta" : "Enlace de la carta"}
-                <textarea
-                  onChange={(event) => setMenuContent(event.target.value)}
-                  rows={5}
-                  value={menuContent}
+                <span
+                  className={cn(
+                    "grid size-6 shrink-0 place-items-center rounded-full text-label font-black",
+                    isActive
+                      ? "bg-primary-foreground text-primary"
+                      : isComplete
+                        ? "bg-success text-success-foreground"
+                        : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {isComplete ? "✓" : index + 1}
+                </span>
+                {stepLabels[step]}
+              </button>
+            );
+          })}
+        </nav>
+
+        <Card>
+          <CardContent className="space-y-6 py-6">
+            {selectedStep === "venue" ? (
+              <form className="space-y-6" onSubmit={submitVenue}>
+                <StepHeading
+                  description="Estos datos aparecen en la carta y los comprobantes."
+                  step={1}
+                  title="Cuéntanos sobre el local"
                 />
-              </label>
-            ) : (
-              <label>
-                Selecciona {menuSource === "pdf" ? "un PDF" : "una imagen"}
-                <input
-                  accept={menuSource === "pdf" ? ".pdf" : "image/*"}
-                  onChange={(event) =>
-                    setMenuContent(event.target.files?.[0]?.name ?? "")
-                  }
-                  type="file"
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldLabel htmlFor="venue-name">Nombre del local</FieldLabel>
+                  <Input
+                    defaultValue={data.venue.name}
+                    id="venue-name"
+                    name="name"
+                    required
+                  />
+                  <FieldLabel htmlFor="venue-address">Dirección</FieldLabel>
+                  <Input
+                    defaultValue={data.venue.address}
+                    id="venue-address"
+                    name="address"
+                    required
+                  />
+                  <FieldLabel htmlFor="venue-type">Tipo de local</FieldLabel>
+                  <Select
+                    defaultValue={data.venue.venueType}
+                    id="venue-type"
+                    name="venueType"
+                  >
+                    <option>Bar</option>
+                    <option>Cervecería</option>
+                    <option>Pub</option>
+                    <option>Food hall</option>
+                  </Select>
+                  <FieldLabel htmlFor="venue-hours">Horario</FieldLabel>
+                  <Input
+                    defaultValue={data.venue.openingHours}
+                    id="venue-hours"
+                    name="openingHours"
+                  />
+                </div>
+                <Button disabled={working} type="submit">
+                  Guardar y continuar
+                </Button>
+              </form>
+            ) : null}
+
+            {selectedStep === "size" ? (
+              <form className="space-y-6" onSubmit={submitSize}>
+                <StepHeading
+                  description="Las mesas determinan principalmente el plan. El layout sólo influye si zonas y estaciones exceden juntas límites generosos."
+                  step={2}
+                  title="Mesas, zonas y estaciones"
                 />
-              </label>
-            )}
-            <button
-              className="platformSecondary"
-              disabled={working}
-              onClick={() =>
-                void mutate({
-                  action: "menu.import",
-                  source: menuSource,
-                  sourceLabel: menuContent || `${menuSource} demo`,
-                  content: menuSource === "text" ? menuContent : undefined,
-                })
-              }
-              type="button"
-            >
-              Extraer borrador
-            </button>
-            {data.menu.items.length > 0 && (
-              <>
-                <div className="reviewWarning">
-                  <strong>Revisión humana obligatoria</strong>
-                  <span>
-                    Corrige nombres y precios. Todavía no está publicado.
-                  </span>
-                </div>
-                <div className="menuReviewTable">
-                  {data.menu.items.map((item) => (
-                    <article key={item.id}>
-                      <label>
-                        Producto
-                        <input
-                          defaultValue={item.name}
-                          onBlur={(event) =>
-                            void mutate({
-                              action: "menu.item.update",
-                              ...item,
-                              name: event.target.value,
-                              itemId: item.id,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Categoría
-                        <input
-                          defaultValue={item.category}
-                          onBlur={(event) =>
-                            void mutate({
-                              action: "menu.item.update",
-                              ...item,
-                              category: event.target.value,
-                              itemId: item.id,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Precio CLP
-                        <input
-                          defaultValue={item.priceClp}
-                          min={0}
-                          onBlur={(event) =>
-                            void mutate({
-                              action: "menu.item.update",
-                              ...item,
-                              priceClp: Number(event.target.value),
-                              itemId: item.id,
-                            })
-                          }
-                          type="number"
-                        />
-                      </label>
-                    </article>
-                  ))}
-                </div>
-                <div className="buttonRow">
-                  <button
-                    className="platformSecondary"
-                    onClick={() =>
-                      void mutate({ action: "menu.review.confirm" })
+                <div className="space-y-4">
+                  <FieldLabel htmlFor="size-zones">
+                    Zonas · una por línea, con cantidad de mesas
+                  </FieldLabel>
+                  <Textarea
+                    defaultValue={
+                      data.size.zones.length
+                        ? data.size.zones
+                            .map((zone) => `${zone.name}:${zone.tableCount}`)
+                            .join("\n")
+                        : "Salón:8\nTerraza:4"
                     }
-                    type="button"
-                  >
-                    Confirmar revisión
-                  </button>
-                  <button
-                    className="platformPrimary"
-                    disabled={data.menu.status !== "reviewed" || working}
-                    onClick={() => void mutate({ action: "menu.publish" })}
-                    type="button"
-                  >
-                    Publicar carta revisada
-                  </button>
+                    id="size-zones"
+                    name="zones"
+                    rows={4}
+                  />
+                  <FieldLabel htmlFor="size-stations">
+                    Estaciones separadas por coma
+                  </FieldLabel>
+                  <Input
+                    defaultValue={
+                      data.size.stations
+                        .map((station) => station.name)
+                        .join(", ") || "Barra, Cocina"
+                    }
+                    id="size-stations"
+                    name="stations"
+                  />
                 </div>
-              </>
-            )}
-          </div>
-        )}
+                <Alert className="space-y-1" data-plan={data.plan.proposed}>
+                  <p className="text-label uppercase tracking-wide text-muted-foreground">
+                    Plan propuesto · hipótesis comercial
+                  </p>
+                  <p className="text-h3">{data.plan.name}</p>
+                  <p className="text-body">
+                    {data.plan.monthlyClp
+                      ? `${formatClp(data.plan.monthlyClp)}/mes`
+                      : "Cotización personalizada"}
+                  </p>
+                  <p className="text-small text-muted-foreground">
+                    {data.size.tableCount} mesas activas
+                  </p>
+                </Alert>
+                <Button disabled={working} type="submit">
+                  Guardar tamaño
+                </Button>
+              </form>
+            ) : null}
 
-        {selectedStep === "tax" && (
-          <form className="platformForm" onSubmit={submitTax}>
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 4</p>
-              <h2>Datos tributarios</h2>
-              <p>El proveedor DTE real sigue pendiente antes del piloto.</p>
-            </div>
-            <div className="formGrid">
-              <label>
-                RUT del emisor
-                <input defaultValue={data.tax.rut} name="rut" required />
-              </label>
-              <label>
-                Giro
-                <input
-                  defaultValue={data.tax.businessActivity}
-                  name="businessActivity"
-                  required
+            {selectedStep === "menu" ? (
+              <div className="space-y-6">
+                <StepHeading
+                  description="Nunca publicamos automáticamente. Tú confirmas cada precio. Puedes lanzar sin fotografías."
+                  step={3}
+                  title="Importa y revisa la carta"
                 />
-              </label>
-            </div>
-            <label>
-              Dirección tributaria
-              <input
-                defaultValue={data.tax.issuerAddress}
-                name="issuerAddress"
-              />
-            </label>
-            <label>
-              Modo tributario
-              <select defaultValue={data.tax.mode} name="mode">
-                <option value="ELECTRONIC_PAYMENT_VOUCHER">
-                  Voucher para pago electrónico
-                </option>
-                <option value="DTE_FOR_ALL_SALES">
-                  Boleta DTE para toda venta
-                </option>
-                <option value="HYBRID_BY_PAYMENT_METHOD">
-                  Híbrido según medio de pago
-                </option>
-              </select>
-            </label>
-            <button className="platformPrimary" disabled={working}>
-              Guardar datos tributarios
-            </button>
-          </form>
-        )}
-
-        {selectedStep === "gateway" && (
-          <div className="platformForm">
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 5</p>
-              <h2>Conecta la cuenta del bar</h2>
-              <p>
-                El comensal paga directamente a tu comercio. Tablio nunca
-                recibe, retiene ni distribuye esa plata.
-              </p>
-            </div>
-            <div className="gatewayCard">
-              <span>Pasarela simulada</span>
-              <strong>{data.gateway.status}</strong>
-              <small>{data.gateway.merchantLabel ?? "Sin conexión"}</small>
-            </div>
-            <div className="buttonRow">
-              <button
-                className="platformPrimary"
-                disabled={data.gateway.status !== "disconnected"}
-                onClick={() =>
-                  void mutate({ action: "gateway.connect", mode: "oauth" })
-                }
-                type="button"
-              >
-                Conectar mi cuenta
-              </button>
-              <button
-                className="platformSecondary"
-                disabled={data.gateway.status === "disconnected"}
-                onClick={() => void mutate({ action: "gateway.verify" })}
-                type="button"
-              >
-                Verificar comercio
-              </button>
-              <button
-                className="platformTextButton"
-                disabled={data.gateway.status === "disconnected"}
-                onClick={() => void mutate({ action: "gateway.disconnect" })}
-                type="button"
-              >
-                Desconectar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {selectedStep === "staff" && (
-          <form className="platformForm" onSubmit={submitStaff}>
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 6</p>
-              <h2>Invita al equipo</h2>
-            </div>
-            <div className="formGrid three">
-              <label>
-                Nombre
-                <input name="name" placeholder="Camila" required />
-              </label>
-              <label>
-                Rol
-                <select name="role">
-                  <option value="waiter">Garzón</option>
-                  <option value="cashier_admin">Caja/Admin</option>
-                  <option value="kds">KDS</option>
-                </select>
-              </label>
-              <label>
-                PIN de 4 dígitos
-                <input
-                  inputMode="numeric"
-                  maxLength={4}
-                  name="pin"
-                  pattern="\d{4}"
-                  required
-                />
-              </label>
-            </div>
-            <button className="platformPrimary" disabled={working}>
-              Agregar persona
-            </button>
-            <ul className="compactList">
-              {data.staff.map((employee) => (
-                <li key={employee.id}>
-                  <strong>{employee.name}</strong>
-                  <span>{employee.role}</span>
-                </li>
-              ))}
-            </ul>
-          </form>
-        )}
-
-        {selectedStep === "qr" && (
-          <div className="platformForm">
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 7</p>
-              <h2>QRs y presencia</h2>
-              <p>
-                Cada mesa recibe un QR no predecible y un código de presencia de
-                4 dígitos.
-              </p>
-            </div>
-            <div className="buttonRow">
-              <button
-                className="platformPrimary"
-                onClick={() => void mutate({ action: "qr.generate" })}
-                type="button"
-              >
-                Generar QRs
-              </button>
-              <button
-                className="platformSecondary"
-                disabled={!data.qrCodes.length}
-                onClick={() => window.print()}
-                type="button"
-              >
-                Imprimir
-              </button>
-            </div>
-            <div className="qrGrid">
-              {data.qrCodes.slice(0, 12).map((qr) => (
-                <article key={qr.qrToken}>
-                  <span>QR</span>
-                  <strong>{qr.tableName}</strong>
-                  <b>{qr.presenceCode}</b>
-                </article>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {selectedStep === "verification" && (
-          <div className="platformForm">
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 8</p>
-              <h2>Venta y reembolso de prueba</h2>
-              <p>
-                El simulador comprueba confirmación server-side, pedido,
-                comandas y devolución sin mover plata.
-              </p>
-            </div>
-            <div className="verificationGrid">
-              <article>
-                <span>Venta demo</span>
-                <strong>{data.verification.sale}</strong>
-              </article>
-              <article>
-                <span>Reembolso demo</span>
-                <strong>{data.verification.refund}</strong>
-              </article>
-            </div>
-            <button
-              className="platformPrimary"
-              onClick={() => void mutate({ action: "verification.run" })}
-              type="button"
-            >
-              Ejecutar prueba completa
-            </button>
-          </div>
-        )}
-
-        {selectedStep === "production" && (
-          <div className="platformForm">
-            <div className="panelHeading">
-              <p className="sectionKicker">Paso 9</p>
-              <h2>Plan y habilitación</h2>
-            </div>
-            <aside className="planProposal final">
-              <span>Propuesta · hipótesis comercial</span>
-              <strong>Plan {data.plan.name}</strong>
-              <b>
-                {data.plan.monthlyClp
-                  ? `${money.format(data.plan.monthlyClp)}/mes`
-                  : "Cotización personalizada"}
-              </b>
-              {data.plan.setupClp && (
-                <small>Setup inicial {money.format(data.plan.setupClp)}</small>
-              )}
-              {data.plan.effectiveAt && (
-                <small>
-                  Cambio al siguiente ciclo ·{" "}
-                  {new Date(data.plan.effectiveAt).toLocaleDateString("es-CL")}
-                </small>
-              )}
-            </aside>
-            <div className="billingConnect">
-              <strong>Cobro de Tablio</strong>
-              <p>
-                Este medio paga setup y mensualidad a Tablio. Es independiente
-                de la cuenta donde recibes las ventas del bar.
-              </p>
-              {data.billing.status === "ready" ? (
-                <span>✓ {data.billing.paymentMethodLabel}</span>
-              ) : (
-                <button
-                  className="platformSecondary"
+                <div className="space-y-4">
+                  <FieldLabel htmlFor="menu-source">Origen</FieldLabel>
+                  <Select
+                    id="menu-source"
+                    onChange={(event) =>
+                      setMenuSource(
+                        event.target.value as "text" | "link" | "pdf" | "image",
+                      )
+                    }
+                    value={menuSource}
+                  >
+                    <option value="text">Texto</option>
+                    <option value="link">Enlace</option>
+                    <option value="pdf">PDF</option>
+                    <option value="image">Imagen</option>
+                  </Select>
+                  {menuSource === "text" || menuSource === "link" ? (
+                    <>
+                      <FieldLabel htmlFor="menu-content">
+                        {menuSource === "text"
+                          ? "Pega la carta"
+                          : "Enlace de la carta"}
+                      </FieldLabel>
+                      <Textarea
+                        id="menu-content"
+                        onChange={(event) => setMenuContent(event.target.value)}
+                        rows={5}
+                        value={menuContent}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <FieldLabel htmlFor="menu-file">
+                        Selecciona {menuSource === "pdf" ? "un PDF" : "una imagen"}
+                      </FieldLabel>
+                      <input
+                        accept={menuSource === "pdf" ? ".pdf" : "image/*"}
+                        className="block text-body"
+                        id="menu-file"
+                        onChange={(event) =>
+                          setMenuContent(event.target.files?.[0]?.name ?? "")
+                        }
+                        type="file"
+                      />
+                    </>
+                  )}
+                </div>
+                <Button
+                  disabled={working}
                   onClick={() =>
                     void mutate({
-                      action: "billing.connect",
-                      ownerEmail: "dueno@local.demo",
+                      action: "menu.import",
+                      source: menuSource,
+                      sourceLabel: menuContent || `${menuSource} demo`,
+                      content: menuSource === "text" ? menuContent : undefined,
                     })
                   }
                   type="button"
+                  variant="outline"
                 >
-                  Conectar cobro demo de Tablio
-                </button>
-              )}
-            </div>
-            <button
-              className="platformPrimary"
-              disabled={!data.canActivateProduction || working}
-              onClick={() => void mutate({ action: "production.activate" })}
-              type="button"
-            >
-              {data.status === "ready"
-                ? "Producción habilitada"
-                : "Habilitar producción"}
-            </button>
-          </div>
-        )}
-      </section>
-    </main>
+                  Extraer borrador
+                </Button>
+                {data.menu.items.length > 0 ? (
+                  <>
+                    <Alert tone="warning">
+                      <strong className="block">Revisión humana obligatoria</strong>
+                      <span className="text-small">
+                        Corrige nombres y precios. Todavía no está publicado.
+                      </span>
+                    </Alert>
+                    <div className="space-y-3">
+                      {data.menu.items.map((item) => (
+                        <article
+                          className="grid gap-3 rounded-surface-lg border border-border bg-muted p-3 sm:grid-cols-3"
+                          key={item.id}
+                        >
+                          <label className="block space-y-1 text-small font-bold">
+                            <span>Producto</span>
+                            <Input
+                              defaultValue={item.name}
+                              onBlur={(event) =>
+                                void mutate({
+                                  action: "menu.item.update",
+                                  ...item,
+                                  name: event.target.value,
+                                  itemId: item.id,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="block space-y-1 text-small font-bold">
+                            <span>Categoría</span>
+                            <Input
+                              defaultValue={item.category}
+                              onBlur={(event) =>
+                                void mutate({
+                                  action: "menu.item.update",
+                                  ...item,
+                                  category: event.target.value,
+                                  itemId: item.id,
+                                })
+                              }
+                            />
+                          </label>
+                          <label className="block space-y-1 text-small font-bold">
+                            <span>Precio CLP</span>
+                            <Input
+                              defaultValue={item.priceClp}
+                              min={0}
+                              onBlur={(event) =>
+                                void mutate({
+                                  action: "menu.item.update",
+                                  ...item,
+                                  priceClp: Number(event.target.value),
+                                  itemId: item.id,
+                                })
+                              }
+                              type="number"
+                            />
+                          </label>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        onClick={() => void mutate({ action: "menu.review.confirm" })}
+                        type="button"
+                        variant="outline"
+                      >
+                        Confirmar revisión
+                      </Button>
+                      <Button
+                        disabled={data.menu.status !== "reviewed" || working}
+                        onClick={() => void mutate({ action: "menu.publish" })}
+                        type="button"
+                      >
+                        Publicar carta revisada
+                      </Button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
+            {selectedStep === "tax" ? (
+              <form className="space-y-6" onSubmit={submitTax}>
+                <StepHeading
+                  description="El proveedor DTE real sigue pendiente antes del piloto."
+                  step={4}
+                  title="Datos tributarios"
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FieldLabel htmlFor="tax-rut">RUT del emisor</FieldLabel>
+                  <Input
+                    defaultValue={data.tax.rut}
+                    id="tax-rut"
+                    name="rut"
+                    required
+                  />
+                  <FieldLabel htmlFor="tax-activity">Giro</FieldLabel>
+                  <Input
+                    defaultValue={data.tax.businessActivity}
+                    id="tax-activity"
+                    name="businessActivity"
+                    required
+                  />
+                  <FieldLabel htmlFor="tax-address">
+                    Dirección tributaria
+                  </FieldLabel>
+                  <Input
+                    defaultValue={data.tax.issuerAddress}
+                    id="tax-address"
+                    name="issuerAddress"
+                  />
+                  <FieldLabel htmlFor="tax-mode">Modo tributario</FieldLabel>
+                  <Select defaultValue={data.tax.mode} id="tax-mode" name="mode">
+                    <option value="ELECTRONIC_PAYMENT_VOUCHER">
+                      Voucher para pago electrónico
+                    </option>
+                    <option value="DTE_FOR_ALL_SALES">
+                      Boleta DTE para toda venta
+                    </option>
+                    <option value="HYBRID_BY_PAYMENT_METHOD">
+                      Híbrido según medio de pago
+                    </option>
+                  </Select>
+                </div>
+                <Button disabled={working} type="submit">
+                  Guardar datos tributarios
+                </Button>
+              </form>
+            ) : null}
+
+            {selectedStep === "gateway" ? (
+              <div className="space-y-6">
+                <StepHeading
+                  description="El comensal paga directamente a tu comercio. Tablio nunca recibe, retiene ni distribuye esa plata."
+                  step={5}
+                  title="Conecta la cuenta del bar"
+                />
+                <Alert className="space-y-1">
+                  <p className="text-label uppercase tracking-wide text-muted-foreground">
+                    Pasarela simulada
+                  </p>
+                  <p className="text-h3">{data.gateway.status}</p>
+                  <p className="text-small text-muted-foreground">
+                    {data.gateway.merchantLabel ?? "Sin conexión"}
+                  </p>
+                </Alert>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={data.gateway.status !== "disconnected"}
+                    onClick={() =>
+                      void mutate({ action: "gateway.connect", mode: "oauth" })
+                    }
+                    type="button"
+                  >
+                    Conectar mi cuenta
+                  </Button>
+                  <Button
+                    disabled={data.gateway.status === "disconnected"}
+                    onClick={() => void mutate({ action: "gateway.verify" })}
+                    type="button"
+                    variant="outline"
+                  >
+                    Verificar comercio
+                  </Button>
+                  <Button
+                    disabled={data.gateway.status === "disconnected"}
+                    onClick={() => void mutate({ action: "gateway.disconnect" })}
+                    type="button"
+                    variant="ghost"
+                  >
+                    Desconectar
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {selectedStep === "staff" ? (
+              <form className="space-y-6" onSubmit={submitStaff}>
+                <StepHeading description="" step={6} title="Invita al equipo" />
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <FieldLabel htmlFor="staff-name">Nombre</FieldLabel>
+                  <Input
+                    id="staff-name"
+                    name="name"
+                    placeholder="Camila"
+                    required
+                  />
+                  <FieldLabel htmlFor="staff-role">Rol</FieldLabel>
+                  <Select id="staff-role" name="role">
+                    <option value="waiter">Garzón</option>
+                    <option value="cashier_admin">Caja/Admin</option>
+                    <option value="kds">KDS</option>
+                  </Select>
+                  <FieldLabel htmlFor="staff-pin">PIN de 4 dígitos</FieldLabel>
+                  <Input
+                    id="staff-pin"
+                    inputMode="numeric"
+                    maxLength={4}
+                    name="pin"
+                    pattern="\d{4}"
+                    required
+                  />
+                </div>
+                <Button disabled={working} type="submit">
+                  Agregar persona
+                </Button>
+                <ul className="space-y-2">
+                  {data.staff.map((employee) => (
+                    <li
+                      className="flex items-center justify-between gap-4 border-b border-border py-2 text-body"
+                      key={employee.id}
+                    >
+                      <strong>{employee.name}</strong>
+                      <span className="text-muted-foreground">
+                        {employee.role}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </form>
+            ) : null}
+
+            {selectedStep === "qr" ? (
+              <div className="space-y-6">
+                <StepHeading
+                  description="Cada mesa recibe un QR no predecible y un código de presencia de 4 dígitos."
+                  step={7}
+                  title="QRs y presencia"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => void mutate({ action: "qr.generate" })}
+                    type="button"
+                  >
+                    Generar QRs
+                  </Button>
+                  <Button
+                    disabled={!data.qrCodes.length}
+                    onClick={() => window.print()}
+                    type="button"
+                    variant="outline"
+                  >
+                    Imprimir
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {data.qrCodes.slice(0, 12).map((qr) => (
+                    <article
+                      className="space-y-1 rounded-surface-lg border border-border bg-card p-3 text-center"
+                      key={qr.qrToken}
+                    >
+                      <p className="text-label uppercase tracking-wide text-muted-foreground">
+                        QR
+                      </p>
+                      <p className="text-h3">{qr.tableName}</p>
+                      <p className="text-body font-bold tracking-widest">
+                        {qr.presenceCode}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {selectedStep === "verification" ? (
+              <div className="space-y-6">
+                <StepHeading
+                  description="El simulador comprueba confirmación server-side, pedido, comandas y devolución sin mover plata."
+                  step={8}
+                  title="Venta y reembolso de prueba"
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Card>
+                    <CardContent className="space-y-1 py-6">
+                      <p className="text-label uppercase tracking-wide text-muted-foreground">
+                        Venta demo
+                      </p>
+                      <p className="text-h3 capitalize">
+                        {data.verification.sale}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="space-y-1 py-6">
+                      <p className="text-label uppercase tracking-wide text-muted-foreground">
+                        Reembolso demo
+                      </p>
+                      <p className="text-h3 capitalize">
+                        {data.verification.refund}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Button
+                  onClick={() => void mutate({ action: "verification.run" })}
+                  type="button"
+                >
+                  Ejecutar prueba completa
+                </Button>
+              </div>
+            ) : null}
+
+            {selectedStep === "production" ? (
+              <div className="space-y-6">
+                <StepHeading description="" step={9} title="Plan y habilitación" />
+                <Alert className="space-y-1">
+                  <p className="text-label uppercase tracking-wide text-muted-foreground">
+                    Propuesta · hipótesis comercial
+                  </p>
+                  <p className="text-h3">Plan {data.plan.name}</p>
+                  <p className="text-body">
+                    {data.plan.monthlyClp
+                      ? `${formatClp(data.plan.monthlyClp)}/mes`
+                      : "Cotización personalizada"}
+                  </p>
+                  {data.plan.setupClp ? (
+                    <p className="text-small text-muted-foreground">
+                      Setup inicial {formatClp(data.plan.setupClp)}
+                    </p>
+                  ) : null}
+                  {data.plan.effectiveAt ? (
+                    <p className="text-small text-muted-foreground">
+                      Cambio al siguiente ciclo ·{" "}
+                      {formatDateTime(data.plan.effectiveAt)}
+                    </p>
+                  ) : null}
+                </Alert>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cobro de Tablio</CardTitle>
+                    <p className="text-small text-muted-foreground">
+                      Este medio paga setup y mensualidad a Tablio. Es
+                      independiente de la cuenta donde recibes las ventas del
+                      bar.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {data.billing.status === "ready" ? (
+                      <p className="text-body font-bold text-success">
+                        ✓ {data.billing.paymentMethodLabel}
+                      </p>
+                    ) : (
+                      <Button
+                        onClick={() =>
+                          void mutate({
+                            action: "billing.connect",
+                            ownerEmail: "dueno@local.demo",
+                          })
+                        }
+                        type="button"
+                        variant="outline"
+                      >
+                        Conectar cobro demo de Tablio
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+                <Button
+                  disabled={!data.canActivateProduction || working}
+                  onClick={() => void mutate({ action: "production.activate" })}
+                  type="button"
+                >
+                  {data.status === "ready"
+                    ? "Producción habilitada"
+                    : "Habilitar producción"}
+                </Button>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
   );
 }
