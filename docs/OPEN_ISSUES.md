@@ -606,14 +606,26 @@ mensaje: cuando exista un ambiente con datos reales (o se acerque el piloto), ah
 costo y el mantenimiento de un segundo proyecto Supabase — no antes.
 - **Acción tomada:** ver "Mínimo inmediato" más abajo.
 
-### Mínimo inmediato (punto 3 del fundador)
+### Mínimo inmediato (punto 3 del fundador) — implementado y verificado en verde
 
 1. **CI de reproducibilidad en cada push que toque migraciones:** ya estaba así desde que se creó
    (`schema-reproducibility.yml`, disparado por cambios en `supabase/migrations/**`,
    `supabase/config.toml`, `scripts/schema-manifest.sql` o el propio workflow) — confirmado, sin
    cambios necesarios.
-2. **Verificación programada producción vs. reconstrucción:** ver `docs/BUILD_LOG.md` (entrada del
-   2026-08-01) para el workflow agregado y su estado.
+2. **Verificación programada producción vs. reconstrucción:** `.github/workflows/schema-drift-check.yml`,
+   corre diario (13:00 UTC) y bajo demanda, reconstruye el esquema desde los archivos del
+   repositorio y lo compara objeto por objeto contra producción real vía un rol de Postgres
+   dedicado y de solo lectura (`schema_drift_readonly` — probado explícitamente que no puede
+   escribir nada; connection string en el secreto de GitHub `SCHEMA_DRIFT_PROD_DB_URL`, nunca el
+   superusuario). Primera corrida en verde:
+   `https://github.com/jtmenesesg-arch/tablio/actions/runs/30720714110`. Llegar a verde requirió
+   cerrar tres falsos positivos (uno auto-inducido por sobre-otorgar permisos al crear el rol, y
+   dos ya diagnosticados en OI-030) — detalle completo en
+   `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
+
+**Lo que esto cierra:** que un desfase entre repositorio y producción pase inadvertido más de un
+día. **Lo que NO cierra:** que las pruebas automáticas validen comportamiento real (Opción A de
+arriba) — sigue pendiente, ligado a cuándo se acerque el piloto.
 
 ### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
 
@@ -657,4 +669,4 @@ ahí antes del piloto.
 | OI-028 | Bloqueante antes del piloto; no bloquea el checkpoint visual         |
 | OI-029 | Por descartar antes del piloto; no bloquea el checkpoint visual      |
 | OI-030 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
-| OI-031 | Bloqueante antes del piloto; ver propuesta de cierre en su sección   |
+| OI-031 | Mínimo inmediato en verde (verificación programada); cierre completo ligado al piloto |
