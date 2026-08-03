@@ -655,6 +655,30 @@ ahí antes del piloto.
 - **No bloquea:** la Tarea 4 puede construirse ya sobre este mecanismo. Estos son ajustes de
   higiene, no riesgos activos.
 
+## OI-033 — La aplicación entera opera sobre datos simulados, no sobre la base real
+
+- **Estado:** **bloqueante antes del piloto.** No es un detalle de cobertura de tests (eso es
+  OI-031) — es el hecho de que hoy, 2026-08-03, **ninguna pantalla de Tablio, ni una sola, lee ni
+  escribe en el proyecto real de Supabase.** Las 8 pantallas ya migradas visualmente (Dueño,
+  Mesas, Caja, KDS, Garzón, Superadmin, Onboarding, Crédito) y la PWA del comensal corren
+  íntegramente sobre *stores* en memoria del proceso de Node
+  (`apps/web/lib/*-demo-store.ts`), con tenants simulados por constantes UUID fijas. La única
+  excepción es `/dueno-real`, una pantalla de prueba de humo sin datos de negocio.
+- **Por qué se registra aparte, explícitamente:** hasta ahora este hecho vivía disperso como
+  contexto de apoyo dentro de OI-030 y OI-031 (evidencia y frases sueltas), nunca como su propio
+  asunto bloqueante con ese título. Corregido a pedido explícito del fundador.
+- **Alcance para cerrarlo:** ver el mapa de incrementos completo en `docs/BUILD_LOG.md`
+  (respuesta del 2026-08-03) — del orden de 45-70 incrementos repartidos entre las 8 pantallas
+  existentes, la PWA (la pieza más grande, porque además falta su migración visual) y las 4
+  pantallas nuevas de la Tarea 4. Estimación aproximada, no un compromiso de calendario.
+- **Relación con otros asuntos:** OI-031 (ninguna prueba automática valida la base real) es un
+  síntoma de esto mismo — si la aplicación nunca toca la base real, ninguna prueba que ejercite
+  la aplicación puede validarla tampoco, sin importar qué tan buena sea la suite. OI-032 son los
+  cabos sueltos puntuales del primer incremento que sí toca la base real (la autenticación).
+- **No bloquea:** seguir construyendo pantallas nuevas (Tarea 4) o terminando la migración visual
+  de la PWA — ambas pueden avanzar sabiendo que después hay que reconectarlas. Sí bloquea
+  cualquier promesa de que el producto está listo para procesar actividad real de un bar.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -690,3 +714,4 @@ ahí antes del piloto.
 | OI-030 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
 | OI-031 | Mínimo inmediato en verde (verificación programada); cierre completo ligado al piloto |
 | OI-032 | No bloqueante; limpieza de seguimiento tras ADR-015                  |
+| OI-033 | Bloqueante antes del piloto; la aplicación entera opera sobre datos simulados |

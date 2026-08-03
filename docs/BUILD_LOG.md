@@ -2,6 +2,81 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-03 — Respuesta al fundador: estado del piloto, mapa de alcance, y OI-033
+
+Tres preguntas del fundador tras cerrar la autenticación real. Registrado acá porque es
+información de estado del proyecto, no un incremento de código.
+
+### 1. Estado real de "Bar La Virgen"
+
+Verificado contra la base real (no supuesto): sólo existen el tenant, el venue y la membresía
+del dueño. **Cero** zonas, mesas, estaciones, productos o empleados — confirmado con conteos
+directos por tabla. `DEMO_ACCESS.md` (nuevo, en la raíz del repo) documenta los accesos reales
+tal como están hoy: el piloto real (login funcional, local vacío) y, por separado, el demo
+simulado de siempre (todas las pantallas, sin login, con datos de ejemplo) — son dos cosas
+distintas, no conectadas.
+
+### 2. Mapa de alcance — de "una pantalla real" a "todo el producto real"
+
+Estimación aproximada por pantalla, no un compromiso de calendario. Un incremento ≈ lo mismo que
+un "Incremento" de esta sesión (una pieza verificable de punta a punta antes de seguir):
+
+| Pantalla | Incrementos aprox. | Por qué |
+| --- | ---: | --- |
+| Dueño (real, no la prueba de humo) | 2-3 | La RPC (`owner_dashboard_summary`) ya está probada; falta la pantalla de producto completa |
+| Mesas | 3-4 | Zonas/mesas/QR con Vault ya existen a nivel de esquema (ADR-014); falta la capa de API+UI |
+| KDS | 3-4 | Necesita Realtime tenant-aware además de lectura/escritura de comandas |
+| Crédito de mesa | 2-3 | La mayoría de las RPC ya existen y se inspeccionaron en este mismo incremento |
+| Caja | 5-7 | 6 pestañas: turnos, excepciones, conciliación, sellos, saldo, cierre — la más grande de las 8 |
+| Garzón | 5-7 | **Bloqueado primero por un diseño sin decidir**: el login por PIN asume un `auth.uid()` previo (sesión de dispositivo/venue) que nadie definió — ligado a OI-029 |
+| Superadmin | 3-5 | Necesita una identidad de plataforma separada de `tenant_memberships` (rol `superadmin`, scope `platform`) — mecanismo de login propio, sin decidir |
+| Onboarding | 4-6 | Tiene que escribir tenant/zonas/mesas/carta reales de verdad — es como se crearán los próximos tenants piloto, no un formulario cualquiera |
+| PWA del comensal | 9-14 | La pieza más grande: ni siquiera tiene su migración visual hecha todavía, y es la ruta de pago real (CheckoutQuote, idempotencia) — el corazón del producto |
+| Tarea 4 · Equipo | 2-3 | Esquema ya existe (`employees`, `roles`); falta API de gestión |
+| Tarea 4 · Configuración | 2-3 | Esquema ya existe (`tenant_*_settings`); falta API de lectura/escritura |
+| Tarea 4 · Soporte | 3-5 | **Dominio nuevo de cero** — no existe ni una tabla; necesita su propio mini-ADR antes de migrar nada |
+| Tarea 4 · Reportes | 3-5 | Necesita vistas/RPC de desglose (por producto/hora/trabajador) que hoy no existen, más allá del resumen narrativo |
+
+**Total aproximado: entre 45 y 70 incrementos.** El grueso está en tres lugares: la PWA (dinero
+real), y las dos piezas de autenticación sin decidir (Garzón por PIN, Superadmin de plataforma).
+Superadmin, al ser una herramienta interna del propio equipo de Tablio y no algo que ve un
+cliente, puede razonablemente quedar para después del piloto sin bloquearlo — vale la pena
+decidir explícitamente el orden real cuando se planifique esto en serio, no asumir que las 13
+filas de la tabla se hacen en el orden en que están escritas.
+
+Registrado como bloqueante explícito y aparte en `docs/OPEN_ISSUES.md` → **OI-033**.
+
+### 3. Cómo pasó desapercibido — y qué cambiar
+
+Catorce sprints cerraron en verde porque **la puerta de verificación de `AGENTS.md` §5.2 nunca
+preguntó contra qué corría la verificación** — sólo si el código compilaba, los tests pasaban y
+los advisors de Supabase estaban limpios. Eso se cumplió con honestidad cada vez: los tests
+SÍ pasaban, pero contra un *store* en memoria o (para SQL) un stack local efímero, nunca contra
+el proyecto real. "Terminado" y "verificado" eran ciertos dentro de un alcance que nadie declaraba
+en voz alta.
+
+El patrón tiene un origen legítimo que se generalizó en silencio: `DOMAIN_MAP.md` documenta desde
+Sprint 10 que el producto usa "proveedores simulados" — pero esa frase nació para tres
+integraciones externas y de verdad difíciles de probar en desarrollo (pasarela de pago, DTE,
+cobro SaaS), listadas una por una en `docs/REAL_MONEY_BLOCKERS.md`. En algún punto ese mismo
+patrón se extendió a los datos propios del tenant (mesas, pedidos, personal — todo lo que hoy
+vive en `apps/web/lib/*-demo-store.ts`) sin que nadie tomara esa decisión explícitamente ni la
+escribiera en ningún lado. Cada pantalla nueva copió el patrón de la anterior porque parecía
+consistente y funcionaba — y cada demo, mirada sola, se ve completa y convincente. La brecha sólo
+se hace visible si alguien pregunta específicamente "¿esto toca Supabase?", pregunta que nadie
+hizo hasta que la Tarea 4 obligó a plantearla.
+
+**Propuesta de cambio a `AGENTS.md` (pendiente de tu aprobación, no aplicada todavía):**
+
+1. Extender la Puerta de verificación (§5.2) para exigir declarar explícitamente contra qué corrió
+   cada verificación — base real, stack local, o *store* en memoria — en vez de dejarlo implícito.
+2. Exigir, en cada `SPRINT-XX-SUMMARY.md`, una tabla explícita de "fuente de datos" por pantalla
+   tocada ese sprint (real / simulada, y por qué si es simulada) — para que la brecha sea visible
+   por construcción, no algo que hay que ir a buscar.
+3. Tratar "esta pantalla va a correr sobre datos simulados" como una decisión que se registra la
+   primera vez que se toma (en `OPEN_ISSUES.md` o `DECISION_RECORD.md`), igual que un cambio a una
+   decisión congelada — no un default silencioso.
+
 ## 2026-08-03 — Autenticación real del dueño (Supabase Auth), antes de la Tarea 4
 
 Plan `elegant-wobbling-phoenix`, ejecutado en 8 incrementos verificados uno a uno. Contexto y
