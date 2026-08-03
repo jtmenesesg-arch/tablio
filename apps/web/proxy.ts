@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // below so this increment cannot change their behavior at all; none of them
 // read Supabase cookies today. Route Handlers added later that do need a
 // fresh session call `createClient()` from lib/supabase/server.ts directly.
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

@@ -78,6 +78,34 @@ prueba — nunca fue parte de los datos reales):
 
 Aislamiento entre tenants confirmado contra la base real, no sólo contra pgTAP local.
 
+## Incrementos 5-7: login real por la UI, no sólo por script
+
+Construidos juntos por lo acoplados que están (el login necesita un destino real para probarse
+de punta a punta): `apps/web/app/login/` (página + Server Action + selector de local para el caso
+de varios tenants), `apps/web/lib/supabase/route-handler-client.ts` (helper para las rutas de API
+de la Tarea 4, con test unitario), y `apps/web/app/dueno-real/` (pantalla mínima de prueba, no
+producto final, que llama `owner_dashboard_summary` autenticado de verdad).
+
+**Verificado con un navegador real (Playwright + Chrome), no sólo con el script de Node del
+Incremento 4:**
+
+1. `/dueno-real` sin sesión → redirige a `/login`.
+2. Login con `jtmenesesg@gmail.com` a través del formulario real → redirige a `/dueno-real` y
+   muestra "Bar La Virgen" en el shell, `$0`/`0`/`$0` (datos reales, tenant vacío) y el
+   `tenant_id` real.
+3. Con sesión ya activa, volver a `/login` redirige automáticamente a `/dueno-real` (no muestra el
+   formulario de nuevo).
+
+**Detalle encontrado al renombrar `middleware.ts`:** Next.js 16.2.12 marca la convención
+`middleware.ts` como obsoleta a favor de `proxy.ts` (mismo comportamiento, sólo cambia el nombre
+del archivo y de la función exportada, de `middleware` a `proxy`). Se migró en este mismo
+incremento para no dejar una advertencia nueva en cada build; verificado que el login y el resto
+de la suite siguen funcionando igual después del cambio de nombre.
+
+**Regresión completa tras estos tres incrementos:** `typecheck`/`lint`/`build` verdes, Vitest
+149/149 (144 previos + 5 nuevos del helper de rutas), Playwright 44/46 — mismo patrón preexistente
+de siempre (OI-028), sin regresiones nuevas.
+
 ## Qué falta para el resto del plan
 
 - Incremento 5: página `/login` real usando este mismo mecanismo (ya probado por script, falta la
