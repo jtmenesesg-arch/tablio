@@ -74,6 +74,20 @@ export const storedValueAccountStatusDictionary = {
   wind_down: { label: "Cierre gradual", tone: "warning" },
 } as const satisfies Record<string, StatusPresentation>;
 
+export const employeeStatusDictionary = {
+  invited: { label: "Invitado", tone: "warning" },
+  active: { label: "Activo", tone: "success" },
+  suspended: { label: "Suspendido", tone: "danger" },
+  inactive: { label: "Inactivo", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const roleCodeLabels: Record<string, string> = {
+  owner: "Dueño",
+  cashier_admin: "Cajero/Admin",
+  waiter: "Garzón",
+  kds: "Cocina/Barra",
+};
+
 export const subscriptionStatusDictionary = {
   trialing: { label: "Prueba", tone: "neutral" },
   active: { label: "Al día", tone: "success" },

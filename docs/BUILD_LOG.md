@@ -2,6 +2,52 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-03 — Tarea 4: pantalla Equipo, primera pantalla de producto sobre datos reales
+
+### Qué cambió
+
+- Nueva migración `20260803161135_sprint_14_employee_management.sql`: dos RPC
+  (`create_employee`, `set_employee_pin`) que hashean el PIN en Postgres con
+  `extensions.crypt(..., extensions.gen_salt('bf'))` — el mismo esquema que ya usaba la
+  verificación de PIN de Sprint 5 — y auditan la acción en `audit_log`. Listar/activar/suspender
+  no necesitó RPC nueva: las políticas RLS de `staff.read`/`staff.manage` ya existían y alcanzan.
+  Aplicada al proyecto real con `supabase db push` (no con una ejecución SQL suelta, para no
+  repetir el problema de historial de OI-027).
+- `apps/web/app/equipo/`: pantalla real (lista, crear persona con PIN y roles, suspender/
+  reactivar, restablecer PIN), sobre `apps/web/lib/supabase/route-handler-client.ts` del
+  incremento de autenticación.
+- `apps/web/components/operational/owner-navigation.ts`: el ítem "Equipo" apuntaba a `/garzon`
+  (el panel operativo del garzón, no gestión de personal) — bug heredado de un sprint anterior.
+  Corregido para apuntar a `/equipo` y participar del estado activo de la navegación.
+- `apps/web/lib/ui-statuses.ts`: `employeeStatusDictionary`, `roleCodeLabels`.
+
+### Verificación
+
+- Migración aplicada y confirmada en `supabase migration list` (local y remoto coinciden).
+- Función probada en vivo contra producción, autenticado como el dueño real: creó un empleado de
+  prueba, confirmado en `select * from employees`, luego borrado (no era para quedarse — la
+  pantalla real es la que agrega personal de verdad).
+- Flujo completo por navegador (Playwright + Chrome, sesión real): estado vacío → crear "Camila
+  Torres" con rol Garzón → aparece en la lista → suspender → reactivar → restablecer PIN. Cada
+  paso confirmado contra la base real, incluida la fila nueva en `audit_log`
+  (`staff.created`, `staff.pin_reset`).
+- Sin sesión, `/equipo` redirige a `/login` — confirmado.
+- `typecheck`/`lint`/`build` verdes. Vitest 149/149. Playwright 44/46 (mismo patrón preexistente
+  de siempre, OI-028, sin regresiones — incluida la navegación compartida por las 8 pantallas ya
+  migradas, que usa el mismo archivo `owner-navigation.ts` que se tocó).
+
+### Fuente de datos por pantalla (regla nueva de `AGENTS.md` §5.6, primera vez que se aplica)
+
+| Pantalla tocada este incremento | Fuente | Nota |
+| --- | --- | --- |
+| `/equipo` | **Real** (Supabase, RLS) | Primera pantalla de producto (no de prueba) sobre la base real |
+| `/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin`, `/onboarding`, `/credito` | Simulada (`*-demo-store.ts`) | Sin cambios — comparten `owner-navigation.ts`, que sí se tocó, pero ninguna migró de fuente de datos en este incremento. Ver OI-033. |
+
+### Límite deliberado
+
+Sólo Equipo. Configuración, Soporte y Reportes (resto de la Tarea 4) siguen pendientes, cada uno
+con su propio incremento.
+
 ## 2026-08-03 — Respuesta al fundador: estado del piloto, mapa de alcance, y OI-033
 
 Tres preguntas del fundador tras cerrar la autenticación real. Registrado acá porque es
