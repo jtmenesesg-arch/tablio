@@ -142,6 +142,13 @@ Está **prohibido reportar algo como terminado sin haberlo ejecutado.** Antes de
 
 Nunca escribas "debería funcionar". O lo verificaste, o no está listo.
 
+**Toda verificación declara explícitamente contra qué corrió: la base real, un stack local
+efímero, o un *store*/fixture en memoria.** "Los tests pasan" no es una frase completa —
+pasar contra un *store* simulado, un Postgres local, y el proyecto real de Supabase son tres
+niveles de confianza distintos, y decir sólo "pasan" oculta cuál de los tres fue. Catorce
+sprints cerraron en verde sin que nadie notara que ninguna pantalla tocaba la base real
+(OI-033) precisamente porque nada exigía decir contra qué se había verificado.
+
 **Ningún trabajo se considera terminado si su verificación automática está fallando.** Si un CI
 falla, se reporta explícitamente como fallo, nunca se omite ni se revierte el push sin dejar
 registro. Retroceder `origin/main` requiere quedar documentado en `BUILD_LOG.md` con la razón.
@@ -154,6 +161,14 @@ misma historia; si se editan por separado, divergen en silencio — nada lo dete
 como el CI de reproducibilidad de esquema falla, y para entonces ya no queda claro qué fue lo que
 realmente se ejecutó. Motivo: OI-027, ver `docs/DECISION_RECORD.md` (2026-08-01) y
 `docs/evidence/OI-027-DIAGNOSIS-AND-FIX-2026-08-01.md`.
+
+**Que una pantalla o ruta use datos simulados (*store* en memoria, fixture) en vez de la base
+real es una decisión, no un default silencioso.** La primera vez que se introduce, se registra
+igual que un cambio a una decisión congelada — en `OPEN_ISSUES.md` si es temporal/conocida, en
+`DECISION_RECORD.md` si cambia algo ya asumido como real. "Simular un proveedor externo
+específico" (pasarela de pago, DTE, cobro SaaS — ver `docs/REAL_MONEY_BLOCKERS.md`) es una
+decisión legítima y acotada; que ese mismo patrón se extienda en silencio a los datos propios del
+tenant (mesas, pedidos, personal) no lo es. Motivo: OI-033.
 
 ### 5.3 Regla de las dos vueltas
 
@@ -212,6 +227,10 @@ Un sprint no se cierra sin:
 - Tests pasando en CI.
 - `SPRINT-XX-SUMMARY.md` escrito para un no-desarrollador, incluyendo **qué quedó abierto**
   y qué riesgos conoces.
+- **Tabla explícita de fuente de datos por cada pantalla que el sprint tocó:** base real, stack
+  local, o *store*/fixture en memoria — y si es simulada, por qué y desde cuándo. No es opcional
+  ni se resume como "modo demo" sin más detalle. Motivo: OI-033 — esta tabla es exactamente lo
+  que habría hecho visible, desde el primer sprint, que ninguna pantalla tocaba la base real.
 
 Nunca dejes una ruta de pago o de datos a medias o sin test.
 
