@@ -2,6 +2,65 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-03 — Autenticación real del dueño (Supabase Auth), antes de la Tarea 4
+
+Plan `elegant-wobbling-phoenix`, ejecutado en 8 incrementos verificados uno a uno. Contexto y
+decisiones completas en `docs/adr/ADR-015-autenticacion-real-del-dueno.md`; evidencia técnica
+detallada en `docs/evidence/SPRINT-14-AUTH-VERIFICATION.md`.
+
+### Qué cambió
+
+- `@supabase/ssr` + `@supabase/supabase-js` instalados (Incremento 1).
+- `apps/web/lib/supabase/{client,server}.ts`: clientes de Supabase para Client/Server
+  Components, siempre con la clave pública, nunca `service_role` (Incremento 2).
+- `apps/web/proxy.ts` (antes `middleware.ts` — renombrado por la convención nueva de Next.js
+  16.2.12): refresca la sesión en cada request de página, excluido explícitamente de todo
+  `/api/*` existente (Incremento 3).
+- Tenant piloto real creado: **Bar La Virgen**, con su dueño (`jtmenesesg@gmail.com`) — a pedido
+  del fundador, se conserva en vez de borrarse (Incremento 4).
+- `apps/web/app/login/`: página de login real (email+password, único método viable sin SMTP
+  configurado), selección de tenant cuando hay más de una membresía activa
+  (Incremento 5).
+- `apps/web/lib/supabase/route-handler-client.ts`: helper para las rutas de API que construirá la
+  Tarea 4, con test unitario (Incremento 6).
+- `apps/web/app/dueno-real/`: pantalla mínima de prueba (no producto final) que confirma el
+  pipeline completo funcionando con datos reales (Incremento 7).
+- `docs/DATA_MODEL.md`, `docs/adr/ADR-015-*.md`: documentación de cierre (Incremento 8).
+
+### Bug real encontrado y corregido (con aprobación previa)
+
+`private.set_active_tenant(uuid)` no tenía `EXECUTE` para `authenticated` en producción, aunque
+`20260728035137_harden_auth_and_advisor_findings.sql:55` ya lo especifica — bloqueaba el 100% de
+los logins reales porque nadie había ejercitado este camino desde que se borraron los fixtures de
+Sprint 0. Se comparó contra los otros 5 `grant ... to authenticated` similares del esquema; sólo
+éste faltaba, caso aislado. Se aplicó exactamente el `GRANT` que el archivo ya committeado
+especifica, con aprobación explícita antes de tocar producción.
+
+### Verificación
+
+- Cada incremento: `typecheck`/`lint`/`build` verdes antes de seguir al siguiente.
+- Incremento 3 (el de mayor riesgo de romper algo existente): las 8 pantallas ya migradas
+  cargadas manualmente, más Vitest y Playwright completos, confirmando cero regresiones antes de
+  seguir.
+- Incremento 4: login real por script (Node + `@supabase/supabase-js`) contra producción —
+  JWT sin `tenant_id` antes de elegir tenant, con el claim correcto después de
+  `refreshSession()`, `owner_dashboard_summary` respondiendo datos reales con RLS aplicado, y un
+  control negativo con un segundo usuario sin membresía (rechazado en ambos pasos, luego
+  borrado).
+- Incrementos 5-7: el mismo recorrido, esta vez por un navegador real (Playwright + Chrome) a
+  través de la página `/login` de verdad, no por script — confirma que la UI, no sólo el
+  mecanismo, funciona de punta a punta.
+- Regresión final completa: `pnpm typecheck`, `pnpm lint`, `pnpm build`, Vitest 149/149 (144
+  previos + 5 nuevos), Playwright 44/46 — mismo patrón preexistente de siempre (OI-028), sin
+  regresiones nuevas.
+
+### Límite deliberado
+
+Este incremento sólo construye la autenticación. Ninguna de las 8 pantallas ya migradas se tocó.
+`/dueno-real` es una prueba de humo, no reemplaza `/dueno`. Las 4 pantallas de la Tarea 4
+(Equipo, Configuración, Soporte, Reportes) se construyen en incrementos siguientes, ahora que
+tienen una base de autenticación real sobre la cual apoyarse.
+
 ## 2026-08-01 — OI-030 corregido y cerrado; OI-031 registrado; verificación programada agregada
 
 ### Diagnóstico primero (sin arreglar), como pidió el fundador

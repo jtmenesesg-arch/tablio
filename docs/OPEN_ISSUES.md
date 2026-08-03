@@ -636,6 +636,25 @@ limpia del esquema. Esto es la Opción A de arriba, más pruebas end-to-end que 
 ejerciten esa base. Registrado también en `docs/REAL_MONEY_BLOCKERS.md` si corresponde revisarlo
 ahí antes del piloto.
 
+## OI-032 — Cabos sueltos de la autenticación real del dueño
+
+- **Estado:** no bloqueante; seguimiento de limpieza tras ADR-015.
+- **Contraseña temporal sin forma de cambiarla:** el dueño de `Bar La Virgen`
+  (`jtmenesesg@gmail.com`) tiene una contraseña asignada manualmente al crear la cuenta — no
+  existe todavía ninguna pantalla de cambio de contraseña ni de recuperación (depende de SMTP,
+  sin configurar). Construir antes de dar la cuenta por operativa.
+- **`/dueno-real` es una prueba de humo, no debe quedar así:** confirma que el pipeline de
+  autenticación funciona, pero no es la pantalla de producto. Decidir, en un incremento aparte,
+  si `/dueno` se migra a datos reales reusando este mecanismo, o si `/dueno-real` se retira una
+  vez que exista ese reemplazo.
+- **Sin cobertura de CI para el login real:** el flujo completo (login → `set_active_tenant` →
+  `refreshSession` → RLS) sólo se verificó manualmente contra producción en este incremento — no
+  hay ningún test automático que lo vuelva a ejercitar. Correrlo en CI contra el proyecto
+  principal no es seguro una vez que tenga datos reales; la misma idea de branching de Supabase
+  que ya se anotó como pendiente para OI-031 (Opción A) resolvería esto también.
+- **No bloquea:** la Tarea 4 puede construirse ya sobre este mecanismo. Estos son ajustes de
+  higiene, no riesgos activos.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -670,3 +689,4 @@ ahí antes del piloto.
 | OI-029 | Por descartar antes del piloto; no bloquea el checkpoint visual      |
 | OI-030 | Cerrado 2026-08-01, ver evidencia en `docs/evidence/`                |
 | OI-031 | Mínimo inmediato en verde (verificación programada); cierre completo ligado al piloto |
+| OI-032 | No bloqueante; limpieza de seguimiento tras ADR-015                  |

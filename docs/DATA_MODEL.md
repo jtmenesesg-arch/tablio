@@ -576,6 +576,22 @@ validando `auth.uid()` y membresía, restringiendo grants y dejando una RPC púb
 `SECURITY INVOKER`. `private.user_tenant_context` tiene RLS forzado y una policy de denegación
 explícita para clientes.
 
+### Reverificación 2026-08-03 — ya conectado desde la aplicación, no sólo con fixtures
+
+El recorrido de arriba se repitió con Next.js real (`apps/web/app/login/`,
+`@supabase/ssr`), no con llamadas sueltas — es la primera vez que algo fuera de un script
+de prueba usa este mecanismo. Se encontró y corrigió un `GRANT` faltante en producción:
+`private.set_active_tenant(uuid)` no tenía `EXECUTE` para `authenticated`, aunque
+`20260728035137_harden_auth_and_advisor_findings.sql:55` ya lo especifica — bloqueaba el 100% de
+los logins reales. Se comparó contra los otros 5 `grant ... to authenticated` sobre funciones
+`private.*` de las migraciones; sólo éste faltaba. Detalle completo, incluida la evidencia
+rojo→verde con un control negativo, en `docs/evidence/SPRINT-14-AUTH-VERIFICATION.md`.
+
+A diferencia de la verificación anterior, el tenant y el usuario de esta ronda **no se
+borraron** — el fundador decidió conservarlos como el primer tenant piloto real (`Bar La Virgen`,
+`id: a63b2f89-1bd5-450e-a7b2-38ff73260b43`). Ver ADR-015 para las decisiones de diseño del login
+(email+password, Server Actions, el paso obligatorio de `refreshSession()`).
+
 ## Operación del garzón implementada en Sprint 5
 
 ### Identidad y turno
