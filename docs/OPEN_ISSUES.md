@@ -627,6 +627,18 @@ costo y el mantenimiento de un segundo proyecto Supabase — no antes.
 día. **Lo que NO cierra:** que las pruebas automáticas validen comportamiento real (Opción A de
 arriba) — sigue pendiente, ligado a cuándo se acerque el piloto.
 
+### Caso concreto de este hueco (2026-08-04, OI-034 Incremento 1)
+
+Se escribió `supabase/tests/database/012_diner_device_session.test.sql` (5 aserciones pgTAP)
+para cubrir la validación de sesión real del comensal — específicamente, que la sesión no
+sobreviva al cierre de su mesa. No se pudo ejecutar: esta máquina no tiene Docker, y nada en el
+esquema cierra una `table_session` todavía para provocar el escenario contra la base real
+tampoco. El resto del incremento (entrada real, límite de sesiones por mesa, expiración) sí se
+verificó de punta a punta contra el proyecto real con un cliente anónimo — sólo esta rama
+específica quedó sin ejecutar, cubierta sólo por revisión manual del SQL. Detalle completo en
+`docs/BUILD_LOG.md`. Es exactamente el tipo de hueco que este asunto ya predecía, ahora con un
+ejemplo concreto y una prueba escrita y lista para correr en cuanto exista dónde.
+
 ### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
 
 Antes de cualquier piloto con pagos reales, hace falta validar el comportamiento financiero

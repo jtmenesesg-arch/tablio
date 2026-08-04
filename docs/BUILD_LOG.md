@@ -2,6 +2,67 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-04 — OI-034 Incremento 1: sesión real del comensal
+
+**Qué se hizo:** primer incremento del tramo de toma de pedidos real. El esquema para esto ya
+existía completo desde el Sprint 3 (`diner_device_sessions`, `tenant_diner_settings` con sus TTL
+de 4h/12h ya definidos, el trigger que los aplica) — nunca se había cableado a ninguna RPC. Se
+agregó, por decisión explícita del fundador de reusar `verify_table_presence` tal cual en vez de
+inventar un token nuevo:
+
+- `private.claim_live_table_session`: abre (o reutiliza) la sesión de mesa viva — es el primer
+  INSERT que existe hacia `table_sessions` en todo el esquema; abrir una mesa nunca se había
+  cableado tampoco. Alcance mínimo a propósito: sólo abre, no cierra (el ciclo de vida completo
+  de cierre de mesa es otro incremento).
+- `private.require_diner_device_session`: valida y refresca la prueba de sesión en cada llamada
+  — la pieza que van a reusar los incrementos 3, 4 y 5. Rechaza sesión inexistente, vencida
+  (idle 4h / absoluto 12h, según ya definía Sprint 3), de otra mesa, o cuya `table_session` ya no
+  está abierta — y en ese último caso la marca `revoked` de inmediato, no sólo la rechaza esa vez.
+- `public.enter_table`/`private.enter_table`: punto de entrada real. Delega la verificación a
+  `verify_table_presence` (reusa su limitador de intentos por dispositivo/mesa tal cual), aplica
+  el techo nuevo de sesiones activas por mesa (`tenant_diner_settings.max_active_sessions_per_table`,
+  default 20), y crea la sesión.
+
+**Tres bugs reales encontrados verificando contra la base real (no en revisión de código):**
+
+1. El techo de candidatos de alias en la RPC (30) era menor que el tamaño real de la lista de
+   palabras que ya usa el producto (84 combinaciones, `apps/web/lib/diner-alias.ts`) — ninguna
+   llamada real podía completarse nunca.
+2. `returns table(..., alias text, ...)` crea una variable PL/pgSQL implícita llamada `alias`
+   que colisionaba con la columna `alias` en el `returning` del insert ("column reference alias
+   is ambiguous").
+3. El más importante: el registro en `audit_log` para "se alcanzó el tope de sesiones" iba
+   seguido de un `raise exception` en la misma transacción — Postgres deshace toda la transacción
+   cuando la excepción se propaga, así que el registro nunca quedaba escrito, a pesar de que el
+   código "se veía bien". Se corrigió alineando `enter_table` al mismo patrón que ya usaba
+   `verify_table_presence` para su propio caso de bloqueo: devuelve un resultado (`{ok, code}`)
+   en vez de lanzar excepción para los rechazos esperados de negocio, reservando las excepciones
+   de verdad para entradas inválidas. Verificado de nuevo después: el registro sí queda escrito.
+
+**Cómo se verificó — contra el proyecto real, con navegador/cliente anónimo, sin login:**
+
+- Entrada real y anónima en Mesa 1 de Bar La Virgen: crea una sesión real, alias "Zorro Azul",
+  `idle_expires_at` exactamente 4h después de crearse, `absolute_expires_at` exactamente 12h
+  después — coincide con los valores que ya definía Sprint 3.
+- Código de presencia incorrecto: rechazado limpiamente (`invalid_code`), reusa el limitador
+  existente, no crea ninguna sesión.
+- Colisión de alias bajo carga real: dos dispositivos entrando a la misma mesa con la misma
+  lista de candidatos — el segundo reintenta automáticamente y obtiene el siguiente alias libre.
+- **Tope de sesiones por mesa, probado de verdad:** 20 sesiones reales creadas en una mesa real
+  (Mesa 15), la intento 21 rechazado con el error esperado (`table_session_limit_reached`), y el
+  registro en `audit_log` confirmado presente después del fix del bug 3.
+
+**Qué NO se pudo verificar en este incremento — hueco de infraestructura, no de código:** el
+camino de "la sesión no sobrevive al cierre de la mesa" en `require_diner_device_session` se
+escribió como prueba pgTAP (`supabase/tests/database/012_diner_device_session.test.sql`, 5
+aserciones) pero **no se pudo ejecutar** — nada en el esquema cierra una `table_session` todavía
+(no hay forma de provocar el escenario contra la base real) y esta máquina no tiene Docker para
+correr un stack local (mismo hueco ya documentado en OI-031). Queda verificado sólo por revisión
+manual cuidadosa del SQL, no por ejecución. Registrado como continuación de OI-031, no como
+asunto nuevo.
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (nota en OI-031).
+
 ## 2026-08-04 — Cierre formal del Sprint 14: auditoría final y 28 bugs silenciosos más
 
 **Qué se hizo:** al preparar `docs/sprints/SPRINT-14-SUMMARY.md`, el fundador pidió el conteo
