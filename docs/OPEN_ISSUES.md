@@ -316,6 +316,16 @@ hardware hasta probarla con el piloto.
   caché fría y QR reales. El umbral inicial de aceptación es p95 ≤ 5 s para quedar utilizable.
 - **Riesgo:** el flujo financiero soporta la ráfaga, pero una apertura masiva puede sentirse
   lenta o sobrecargar una instancia fría antes de que el usuario llegue a la carta.
+- **Recomendación del fundador (2026-08-04), pendiente de implementar:** los 4,3 s de p95 con
+  240 escaneos simultáneos son el primer contacto de la persona con el producto, y en un bar con
+  red congestionada del viernes 23:30 puede ser peor. La pantalla inicial ("Bar X · Mesa 8", antes
+  de ingresar el código de presencia) debería servirse lo más estática posible desde CDN, sin
+  computación pesada en base de datos hasta que la persona interactúe — recién ahí se justifica
+  el costo de una consulta real. Deliberadamente no se implementa todavía: OI-034 Incremento 2
+  acaba de cambiar cómo carga esa pantalla (`diner_bootstrap_menu` real reemplazando al store en
+  memoria), así que esta optimización se hace después de que el flujo real completo esté
+  conectado, no antes — optimizar una pantalla que todavía va a cambiar de forma es trabajo que
+  se repite.
 
 ## OI-021 — Premio gratuito en boleta, impuestos y conciliación
 
@@ -749,6 +759,28 @@ ahí antes del piloto.
 - **No bloquea:** los otros 3 tests de ese archivo pasan; es un test aislado, sensible a la fecha
   real de ejecución, no una regresión de ningún incremento reciente.
 
+## OI-036 — Límites de escala de cientos de locales, no de los primeros diez
+
+- **Estado:** no bloqueante; revisar cuando haya volumen real, no antes.
+- **Qué se registró (2026-08-04), por decisión explícita del fundador:** cuatro puntos de escala
+  identificados durante OI-034 que no valen la pena resolver todavía porque son problemas de
+  cientos de locales operando a la vez, no de un piloto de los primeros diez:
+  1. **Límites de conexiones concurrentes de Supabase Realtime** — cuántas suscripciones (KDS,
+     garzón, estado del pedido en la PWA) soporta el plan actual antes de necesitar sharding o un
+     plan superior.
+  2. **Réplicas de lectura para reportes pesados** — `reportes-dashboard` y consultas analíticas
+     compitiendo por los mismos recursos que la ruta de pedidos/pagos en la misma base primaria.
+  3. **Connection pooling** — cuántas conexiones simultáneas a Postgres puede sostener el proyecto
+     antes de que haga falta PgBouncer/Supavisor en modo transacción explícito.
+  4. **Control de lotes en el consumidor DTE ante represamiento** — si el proveedor de boletas cae
+     por horas, el outbox acumula un lote grande; el consumidor necesita un control de tamaño de
+     lote/backoff para no reintentar todo de golpe cuando el proveedor vuelve.
+- **Por qué no ahora:** ninguno de los cuatro es visible con el volumen de un piloto de diez
+  locales. Resolverlos antes tiempo sería optimizar para una carga que todavía no existe, a costa
+  del tramo de OI-034 que sí es el camino crítico hacia un piloto real.
+- **Condición de revisión:** cuando el número de locales activos simultáneos empiece a acercarse a
+  la centena, o cuando cualquiera de los cuatro produzca una alerta real de saturación.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -787,3 +819,4 @@ ahí antes del piloto.
 | OI-033 | Bloqueante antes del piloto; la aplicación entera opera sobre datos simulados |
 | OI-034 | Bloqueante antes del piloto, parte de OI-033; sin RPC/RLS pública para pedidos/pagos |
 | OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |
+| OI-036 | No bloqueante; límites de escala de cientos de locales, revisar con volumen real |
