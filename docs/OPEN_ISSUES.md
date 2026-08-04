@@ -639,6 +639,15 @@ específica quedó sin ejecutar, cubierta sólo por revisión manual del SQL. De
 `docs/BUILD_LOG.md`. Es exactamente el tipo de hueco que este asunto ya predecía, ahora con un
 ejemplo concreto y una prueba escrita y lista para correr en cuanto exista dónde.
 
+**⛔ Bloqueante obligatorio, explícito, antes de que "cerrar una mesa" sea una función real (no
+sólo antes del piloto en general):** `012_diner_device_session.test.sql` tiene que correrse y
+quedar en verde antes de que exista cualquier RPC que ponga `table_sessions.state = 'closed'`.
+Hoy no urge porque nada cierra una mesa todavía — construir esa función sin antes correr esta
+prueba dejaría exactamente el mismo comportamiento sin probar que llevó a OI-027/OI-030: código
+que "se ve bien" pero nunca se ejecutó contra nada real. No basta con revisión manual para ese
+incremento en particular, precisamente porque ya hubo un intento de revisión manual acá (esta
+misma prueba) que no reemplaza la ejecución.
+
 ### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
 
 Antes de cualquier piloto con pagos reales, hace falta validar el comportamiento financiero

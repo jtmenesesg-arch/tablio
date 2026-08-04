@@ -479,13 +479,15 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-[720px] overflow-x-hidden bg-background pb-[112px] shadow-[0_0_60px_rgba(17,17,16,0.12)]">
-      <div
-        className="relative z-30 flex min-h-[31px] items-center justify-center gap-2 bg-foreground px-4 py-2 text-label font-extrabold uppercase tracking-wide text-background"
-        role="status"
-      >
-        <span className="size-2 shrink-0 rounded-full bg-brand" />
-        Modo demo · no mueve dinero real
-      </div>
+      {data.demo && (
+        <div
+          className="relative z-30 flex min-h-[31px] items-center justify-center gap-2 bg-foreground px-4 py-2 text-label font-extrabold uppercase tracking-wide text-background"
+          role="status"
+        >
+          <span className="size-2 shrink-0 rounded-full bg-brand" />
+          Modo demo · no mueve dinero real
+        </div>
+      )}
 
       {screen !== "entry" && (
         <header className="sticky top-0 z-20 grid min-h-[70px] grid-cols-[56px_1fr_56px] items-center gap-2 border-b border-border bg-card px-3 py-2">
@@ -597,9 +599,11 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 <Icon name="arrow" />
               </Button>
             </form>
-            <p className="text-center text-small text-muted-foreground">
-              Para esta demo usa <strong className="text-foreground">4826</strong>
-            </p>
+            {data.demo && (
+              <p className="text-center text-small text-muted-foreground">
+                Para esta demo usa <strong className="text-foreground">4826</strong>
+              </p>
+            )}
           </div>
         </section>
       )}

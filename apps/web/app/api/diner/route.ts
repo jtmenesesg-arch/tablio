@@ -7,6 +7,12 @@ import {
   joinDinerSession,
   mutateDiner,
 } from "../../../lib/diner-demo-store";
+import {
+  DinerRealError,
+  getRealDinerBootstrap,
+  isRealQrToken,
+  joinRealDinerSession,
+} from "../../../lib/diner-real-store";
 import type { DinerMutation } from "../../../lib/diner-contract";
 
 export const runtime = "nodejs";
@@ -14,9 +20,16 @@ export const dynamic = "force-dynamic";
 
 const DEVICE_COOKIE = "tablio_diner_device";
 const LOYALTY_COOKIE = "tablio_diner_loyalty";
+const REAL_DEVICE_COOKIE = "tablio_diner_device_real";
 const DEMO_QR = "demo-mesa-8";
 
 function errorResponse(error: unknown) {
+  if (error instanceof DinerRealError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.status, headers: { "cache-control": "no-store" } },
+    );
+  }
   const status = error instanceof DinerError ? error.status : 500;
   const message =
     error instanceof DinerError
@@ -39,6 +52,16 @@ export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
     const qrToken = requestUrl.searchParams.get("qr") ?? DEMO_QR;
     const cookieStore = await cookies();
+
+    if (isRealQrToken(qrToken)) {
+      const bootstrap = await getRealDinerBootstrap(
+        cookieStore.get(REAL_DEVICE_COOKIE)?.value,
+      );
+      return NextResponse.json(bootstrap, {
+        headers: { "cache-control": "no-store" },
+      });
+    }
+
     const bootstrap = await getDinerBootstrap(
       cookieStore.get(DEVICE_COOKIE)?.value,
       qrToken,
@@ -60,6 +83,24 @@ export async function POST(request: Request) {
     const mutation = (await request.json()) as DinerMutation;
     if (!mutation || typeof mutation.action !== "string") {
       throw new DinerError("La solicitud no es válida.", 400);
+    }
+
+    if (mutation.action === "join" && isRealQrToken(mutation.qrToken)) {
+      const joined = await joinRealDinerSession(
+        mutation.qrToken,
+        mutation.presenceCode,
+      );
+      const response = NextResponse.json(joined.bootstrap, {
+        headers: { "cache-control": "no-store" },
+      });
+      response.cookies.set(REAL_DEVICE_COOKIE, joined.token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 12 * 60 * 60,
+      });
+      return response;
     }
 
     if (mutation.action === "join") {
@@ -86,6 +127,17 @@ export async function POST(request: Request) {
     }
 
     const cookieStore = await cookies();
+    const realDeviceToken = cookieStore.get(REAL_DEVICE_COOKIE)?.value;
+    if (realDeviceToken) {
+      // OI-034 Incrementos 3-5 (carrito, quote, pago) todavía no existen.
+      // Rechazo explícito, nunca silencioso ni delegado al store en
+      // memoria — una sesión real nunca debe terminar mutando datos demo.
+      throw new DinerRealError(
+        "Esta acción todavía no está disponible para este local.",
+        501,
+      );
+    }
+
     const deviceToken = cookieStore.get(DEVICE_COOKIE)?.value;
     const bootstrap = await mutateDiner(deviceToken, mutation);
     const response = NextResponse.json(bootstrap, {

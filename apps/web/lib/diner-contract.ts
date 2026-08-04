@@ -110,7 +110,7 @@ export type WaiterPaymentRequest = Readonly<{
 }>;
 
 export type DinerBootstrap = Readonly<{
-  demo: true;
+  demo: boolean;
   authenticated: boolean;
   ordering: {
     available: boolean;

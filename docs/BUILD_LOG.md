@@ -2,6 +2,60 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-04 — OI-034 Incremento 2: carta real de solo lectura en la PWA
+
+**Qué se hizo:** segundo incremento del tramo. La PWA del comensal (`/mesa/[qr]`) ahora puede
+mostrar la carta real de un tenant en vez de sólo la carta simulada en memoria. Se agregó:
+
+- `private.diner_menu(p_tenant_id)`: consulta la carta real — disponibilidad calculada como
+  `available_for_order AND (not track_stock OR on_hand - reserved > 0)`. Nunca otorgada
+  directamente a `anon`; sólo la llama otra función `security definer`.
+- `private.diner_bootstrap_menu`/`public.diner_bootstrap_menu`: valida la sesión con
+  `require_diner_device_session` (del Incremento 1, ahora con `p_table_id` opcional para que una
+  recarga de página sólo con el token de dispositivo también funcione) y devuelve carta + sesión +
+  venue/mesa/moneda + sugerencias de propina en una sola ida y vuelta.
+- `apps/web/lib/diner-real-store.ts` (nuevo): capa TypeScript que arma el `DinerBootstrap` real.
+  Todo lo que todavía no tiene RPC real detrás (carrito, quote, pago, fidelidad, saldo, upsell)
+  se devuelve vacío/deshabilitado explícito — nunca simulado, para que la pantalla no muestre
+  datos falsos de un incremento que no existe todavía.
+- `apps/web/app/api/diner/route.ts`: ahora distingue QR real vs. demo (`isRealQrToken`, sólo
+  `demo-mesa-8`/`demo-mesa-9` siguen siendo demo) y rechaza explícitamente cualquier mutación que
+  no sea `join` para una sesión real con 501 ("todavía no está disponible") — nunca cae en
+  silencio al store en memoria.
+
+**Dos bugs reales encontrados, uno en la base y uno en la UI:**
+
+1. `require_diner_device_session` exigía `p_table_id` obligatorio, pero una recarga de página
+   sólo tiene el token de dispositivo (cookie) y el `qrToken` de la URL, no el UUID interno de la
+   mesa. Se hizo `p_table_id` opcional (`default null`, sólo valida el cruce si se entrega) y se
+   agregó `table_id` a lo que la función devuelve.
+2. **En la UI:** el banner "Modo demo · no mueve dinero real" y el hint "Para esta demo usa 4826"
+   en `diner-pwa.tsx` eran incondicionales — se mostraban también en una sesión real de Bar La
+   Virgen. Encontrado navegando la PWA real con Playwright, no en revisión de código. Corregido:
+   ambos ahora sólo se muestran cuando `data.demo === true`.
+
+**Cómo se verificó — RPC directo y navegador real, sin login, contra el proyecto real:**
+
+- Entrada anónima real en Mesa 4/5 de Bar La Virgen vía `enter_table` → `diner_bootstrap_menu`:
+  20 productos, 6 categorías, venue/mesa/propinas correctos.
+- **Producto agotado y con stock limitado (pedido explícito del fundador):** Negroni
+  (`available_for_order` pero sin stock) aparece con la etiqueta "Agotado", sin botón de agregar,
+  la tarjeta atenuada, y el click no abre el detalle (`if (!product.available) return;` en el
+  handler). Corona (stock 24) y Heineken (stock 4) aparecen normales, con botón de agregar
+  habilitado y abren el detalle con "Agregar" — confirmado con Playwright contra el navegador
+  real, no sólo a nivel de RPC.
+- Recarga de página sin volver a pedir el código: funciona (usa sólo la cookie de dispositivo).
+- QR token basura: rechazado limpiamente.
+- Suite completa como puerta de no-regresión sobre el store demo: `pnpm typecheck` y `pnpm lint`
+  limpios, 149/149 Vitest, 46/47 Playwright e2e (el único que no pasa es el ya registrado como
+  OI-035, sensible a la fecha, confirmado no relacionado a este cambio). Un test de e2e
+  (`sprint-10-hardening.spec.ts`, QR revocado/desconocido) sí regresionó primero: esperaba 404 y
+  el camino real devolvía 400 para el mismo código `invalid` de `verify_table_presence`. Corregido
+  mapeando ese código a 404 en `diner-real-store.ts`, mismo contrato que ya usaba
+  `diner-demo-store.ts` — vuelto a correr la suite completa después, verde.
+
+**Docs actualizados:** este incremento.
+
 ## 2026-08-04 — OI-034 Incremento 1: sesión real del comensal
 
 **Qué se hizo:** primer incremento del tramo de toma de pedidos real. El esquema para esto ya
