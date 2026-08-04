@@ -46,7 +46,7 @@ function NewEmployeeDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <form
-          className="space-y-5"
+          className="space-y-6"
           onSubmit={async (event) => {
             event.preventDefault();
             setBusy(true);
@@ -153,7 +153,7 @@ function ResetPinDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <form
-          className="space-y-5"
+          className="space-y-6"
           onSubmit={async (event) => {
             event.preventDefault();
             setBusy(true);
@@ -282,7 +282,7 @@ export function TeamDashboard() {
               const state = employeeStatusDictionary[employee.status];
               return (
                 <Card key={employee.id}>
-                  <CardContent className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+                  <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-h3 text-foreground">

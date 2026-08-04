@@ -88,6 +88,19 @@ export const roleCodeLabels: Record<string, string> = {
   kds: "Cocina/Barra",
 };
 
+export const supportTicketStatusDictionary = {
+  open: { label: "Abierto", tone: "warning" },
+  in_progress: { label: "En proceso", tone: "neutral" },
+  resolved: { label: "Resuelto", tone: "success" },
+  closed: { label: "Cerrado", tone: "neutral" },
+} as const satisfies Record<string, StatusPresentation>;
+
+export const supportTicketCategoryLabels: Record<string, string> = {
+  billing: "Facturación",
+  technical: "Técnico",
+  other: "Otro",
+};
+
 export const subscriptionStatusDictionary = {
   trialing: { label: "Prueba", tone: "neutral" },
   active: { label: "Al día", tone: "success" },

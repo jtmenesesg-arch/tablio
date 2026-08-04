@@ -1,8 +1,9 @@
 # Sistema de diseño de Tablio
 
-Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón, Superadmin, Onboarding
-y Crédito**. Sólo falta la PWA del comensal. Las demás pantallas conservan temporalmente sus
-estilos anteriores hasta que se migren una por una.
+Estado: **piloto validado en Dueño y Mesas, extendido a Caja, KDS, Garzón, Superadmin, Onboarding,
+Crédito y la PWA del comensal**. Las 9 pantallas originales del sistema de diseño están migradas;
+Equipo, Configuración, Soporte y Reportes (Tarea 4) se construyeron directamente sobre el sistema
+desde el principio, así que no necesitaron una migración aparte.
 
 ## Fuentes de verdad
 
@@ -56,9 +57,24 @@ blanco porque esa combinación mide 3,66:1.
 
 ## Espaciado y radios
 
-Tailwind sólo expone al sistema piloto los pasos 4, 8, 12, 16, 24, 32, 48 y 64 px. Las
-dimensiones estructurales reciben nombres propios (`sidebar`, `chart`, `touch`) y no se
-disfrazan como espaciado.
+Tailwind sólo expone al sistema piloto los pasos 4, 8, 12, 16, 24, 32, 48 y 64 px — como clases,
+eso es `p-1, p-2, p-3, p-4, p-6, p-8, p-12, p-16` (no `p-24`, `p-32`, etc.: esos números no
+corresponden a ningún token y no generan CSS, exactamente como cualquier otro paso fuera de la
+lista). Las dimensiones estructurales reciben nombres propios (`sidebar`, `chart`, `touch`) y no
+se disfrazan como espaciado. **Trampa recurrente, ya vista en Garzón (`size-5`) y de nuevo once
+veces en la PWA del comensal** (`pb-24`, `space-y-5`, `size-9`, `size-14`, `p-5`, `w-14`, `w-5`,
+`h-56`, `h-64`, `min-w-5`, `rounded-md`): escribir el número de Tailwind "de fábrica" que uno
+tiene en la cabeza (`p-5` para 20px, `h-64` para 256px) en vez del número de este proyecto —
+la clase se genera igual en el JSX pero no produce ninguna regla CSS, así que el elemento
+simplemente ignora esa clase en silencio. Un caso llegó a tapar el botón de pago del checkout
+detrás de la barra de navegación (`pb-24` sin efecto). Verificar contra esta lista o usar un
+valor entre corchetes (`h-[240px]`) cuando ninguno de la escala alcanza. **Auditoría de cierre
+del sprint (2026-08-04):** buscando el mismo patrón en el resto del código antes de cerrar,
+aparecieron **28 casos más** — Equipo, Configuración, Soporte, Reportes (de este mismo sprint) y
+Garzón, KDS, Onboarding y el componente compartido `Textarea` (de antes). El de `Textarea` era el
+más silencioso de todos: su `min-h-24` nunca aplicó nada, en cualquier pantalla que lo usara.
+Todos corregidos; la auditoría repetida después da 0 usos fuera de escala en todo el código de
+producto. Detalle completo en `docs/sprints/SPRINT-14-SUMMARY.md`.
 
 - Botón normal: `12 × 24 px`, radio 10 px.
 - Botón pequeño: `8 × 16 px`, radio 7 px.
@@ -358,12 +374,74 @@ el producto — ver abajo) y validación del garzón.
   crédito abierto y con código de verificación generado: **0 fallos** tras los dos arreglos
   (`docs/evidence/SPRINT-14-CREDIT-A11Y.json`).
 
+## PWA del comensal (2026-08-03)
+
+`/mesa/[qr]` vuelve al tema claro estándar (no es KDS/Garzón: la usa el cliente del bar, no el
+equipo). Es la pantalla más grande migrada hasta ahora — 9 pantallas internas (entrada, carta,
+detalle de producto, carrito, checkout con propina, pago, estado en vivo, ayuda, sellos/saldo) en
+un solo componente de ~2000 líneas, antes con su propio CSS histórico en `globals.css`
+(~3200 líneas, ahora reemplazadas por clases de Tailwind — el CSS viejo se dejó sin usar en el
+archivo, igual que el resto de pantallas ya migradas). Contexto de diseño explícito del fundador:
+celular, una mano, bar oscuro y ruidoso, cliente apurado — legibilidad por sobre estética.
+
+- **Ninguna superficie usa `backdrop-filter` ni fondos translúcidos.** El diseño anterior sí
+  tenía una (la barra superior, `backdrop-filter: blur(14px)`) — se eliminó en la migración, no
+  se trasladó. Es la única pantalla del producto que llegó a tener glass alguna vez; ahora
+  ninguna lo tiene.
+- **Las superficies de dinero (`financialTotal`, `paymentTotal`, `confirmationCard`,
+  `cartSummary`) usan el mismo patrón ya validado en Crédito**: `bg-foreground` opaco (nunca con
+  modificador de opacidad) + `text-background`/`text-background/70` explícito en cada elemento de
+  texto, nunca heredado del contenedor. Estas cuatro clases se conservaron como marcadores
+  literales en el `className` (además de las clases de Tailwind) porque
+  `tests/e2e/sprint-10-hardening.spec.ts` y `tests/e2e/checkout-engagement.spec.ts` las
+  seleccionan por nombre de clase directamente — no se podían renombrar sin tocar esos tests.
+- **Bug real encontrado y corregido antes de reportar, mismo patrón que el de Garzón** (`<button>`
+  sin `bg-*` explícito muestra el botón por defecto del navegador, ya que este proyecto no carga
+  el preflight de Tailwind): el botón "Ahora no" (ignorar una sugerencia de upsell) quedó texto
+  gris claro sobre el gris por defecto del navegador — casi invisible sobre la tarjeta negra de
+  "¿Le sumas algo?". Encontrado mirando la captura de esa pantalla, no por ningún test. Se
+  auditaron los 14 `<button>` nativos del archivo uno por uno; 6 no tenían `bg-*` explícito y se
+  corrigieron.
+- **Segundo bug real, mismo mirar-la-captura:** los botones primarios deshabilitados (`Enviar
+  código`, `Recuperar mis sellos`, y otros dentro de tarjetas oscuras) combinaban el
+  `disabled:opacity-50` genérico de `Button` con un fondo ya oscuro (`bg-foreground`) — el
+  resultado era un marrón apagado casi ilegible, distinto del mismo botón deshabilitado sobre el
+  fondo claro de página (donde se ve bien). Corregido con una clase de override específica para
+  botones primarios dentro de tarjetas oscuras
+  (`disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100`), en los 7 sitios
+  donde aplica.
+- **La escala de espaciado restringida (ver más abajo) atrapó varios usos por asumir Tailwind de
+  fábrica**: `pb-24`, `space-y-5`, `size-9`, `size-14`, `p-5`, `w-14`, `w-5`, `h-56`, `h-64`,
+  `min-w-5` y `rounded-md` no generan nada en este proyecto (mismo bug de fondo que el `size-5` de
+  Garzón). El más grave: `pb-24` en el contenedor principal no generaba ningún padding inferior,
+  así que el botón "Preparar pago" del checkout quedaba tapado por la barra de navegación inferior
+  fija — hallado porque las pruebas E2E no podían hacer clic ahí, no por la captura. Corregidos a
+  valores de la escala aprobada (`size-touch`, `size-8`, `p-6`, etc.) o a valores arbitrarios entre
+  corchetes cuando ninguno de la escala se ajustaba (`pb-[112px]`, `h-[224px]`).
+- El indicador de desarrollo de Next.js (la insignia "N") se reposicionó de `bottom-left`
+  (default) a `top-left` vía `devIndicators` en `next.config.ts`: se superponía con el botón
+  "Carta" del menú inferior fijo y bloqueaba los clics en las pruebas E2E. `top-left` es la única
+  esquina que ninguna prueba usa (el botón "Volver a la carta" de esa esquina no está enganchado a
+  ningún test).
+- El ícono de "Volver" (`ScreenHeading`) apuntaba a la derecha (`›`) en vez de a la izquierda —
+  arrastrado del componente original, donde el mismo ícono servía para "avanzar" y "retroceder".
+  Se corrigió con `rotate-180` sólo en el uso de retroceso; el ícono de avance no cambió.
+- Se mantiene el flujo completo del comensal exactamente como estaba (invitaciones, sellos,
+  saldo guardado, upsell, happy hour, boleta electrónica) — la migración fue sólo de presentación,
+  ninguna regla de negocio cambió. Verificado con las 18 pruebas E2E que ejercitan `/mesa/[qr]`
+  (`diner-pwa`, `sprint-10-hardening`, `loyalty`, `stored-value`, `checkout-engagement`), todas en
+  verde antes y después, más revisión manual por captura de las 9 pantallas internas —
+  específicamente buscando texto invisible, dado el antecedente de Crédito.
+- Esta pantalla **sigue sobre `diner-demo-store.ts`**, no sobre la base real — la migración fue
+  puramente visual, igual que las 8 anteriores. Ver OI-033 para el trabajo de datos reales
+  pendiente.
+
 ## Límite de la migración
 
-`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin`, `/onboarding` y `/credito` ya
-están en el sistema de diseño (KDS y Garzón con su tratamiento propio documentado arriba). Las
-tarjetas de impresión son un asset de la pantalla de Mesas, no otro panel migrado. Los colores
-literales del CSS histórico siguen presentes en el resto de las pantallas para no alterarlas sin
-validación. Sólo falta la PWA del comensal, que queda para el final con revisión aparte. El
-siguiente incremento después de eso debe construir las pantallas nuevas de Tarea 4, no superponer
-una tercera familia de estilos.
+`/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin`, `/onboarding`, `/credito` y
+`/mesa/[qr]` (PWA del comensal) ya están en el sistema de diseño (KDS y Garzón con su tratamiento
+propio documentado arriba). Las tarjetas de impresión son un asset de la pantalla de Mesas, no
+otro panel migrado. Equipo, Configuración, Soporte y Reportes (Tarea 4) nacieron ya sobre el
+sistema, así que nunca tuvieron un "antes" que migrar. **Las 13 pantallas de producto están
+migradas.** Lo que sigue es OI-033: conectar a la base real las 9 pantallas que siguen sobre
+*stores* en memoria (las 8 originales más la PWA).

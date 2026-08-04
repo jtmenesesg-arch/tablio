@@ -38,14 +38,14 @@ function pendingText(pending: PendingTaskSummary) {
 }
 
 const darkButton =
-  "min-h-[4.5rem] rounded-button border-2 border-[#3a3a37] bg-[#242422] px-5 text-body font-extrabold transition-colors duration-[var(--motion-feedback)] hover:bg-[#2f2f2c] motion-reduce:transition-none disabled:opacity-45";
+  "min-h-[4.5rem] rounded-button border-2 border-[#3a3a37] bg-[#242422] px-6 text-body font-extrabold transition-colors duration-[var(--motion-feedback)] hover:bg-[#2f2f2c] motion-reduce:transition-none disabled:opacity-45";
 const darkButtonText = "text-[#fefefe]";
 const darkPrimaryButton =
-  "min-h-[4.5rem] rounded-button border-2 border-primary-hover bg-brand px-5 text-body font-extrabold text-foreground transition-opacity duration-[var(--motion-feedback)] hover:opacity-90 disabled:opacity-45 motion-reduce:transition-none";
+  "min-h-[4.5rem] rounded-button border-2 border-primary-hover bg-brand px-6 text-body font-extrabold text-foreground transition-opacity duration-[var(--motion-feedback)] hover:opacity-90 disabled:opacity-45 motion-reduce:transition-none";
 const darkDangerButton =
-  "min-h-[4.5rem] rounded-button border-2 border-[#8f1d0c] bg-destructive px-5 text-body font-extrabold text-destructive-foreground transition-opacity duration-[var(--motion-feedback)] hover:opacity-90 disabled:opacity-45 motion-reduce:transition-none";
+  "min-h-[4.5rem] rounded-button border-2 border-[#8f1d0c] bg-destructive px-6 text-body font-extrabold text-destructive-foreground transition-opacity duration-[var(--motion-feedback)] hover:opacity-90 disabled:opacity-45 motion-reduce:transition-none";
 const lightOutlineButton =
-  "min-h-[4.5rem] rounded-button border border-border bg-card px-5 text-body font-bold text-card-foreground transition-colors duration-[var(--motion-feedback)] hover:bg-muted disabled:opacity-45 motion-reduce:transition-none";
+  "min-h-[4.5rem] rounded-button border border-border bg-card px-6 text-body font-bold text-card-foreground transition-colors duration-[var(--motion-feedback)] hover:bg-muted disabled:opacity-45 motion-reduce:transition-none";
 
 function ConnectionBadge({
   now,
@@ -227,7 +227,7 @@ export function WaiterPanel() {
   if (!data.authenticated) {
     return (
       <main className="grid min-h-dvh place-items-center bg-[#090909] p-4 font-sans text-[#fefefe]">
-        <section className="w-full max-w-md space-y-5 rounded-surface-xl border-2 border-[#2b2b29] bg-[#111110] p-6">
+        <section className="w-full max-w-md space-y-6 rounded-surface-xl border-2 border-[#2b2b29] bg-[#111110] p-6">
           <span className="w-fit rounded-surface-sm bg-warning px-2 py-1 text-[0.58rem] font-black uppercase tracking-wide text-foreground">
             Modo demo · no mueve dinero
           </span>
@@ -336,7 +336,7 @@ export function WaiterPanel() {
   if (!hasZones) {
     return (
       <main className="min-h-dvh bg-[#090909] p-4 pb-8 font-sans text-[#fefefe]">
-        <header className="mb-5">
+        <header className="mb-6">
           <p className="text-body text-[#c9c9c5]">Hola, {data.employee?.name}</p>
           <h1 className="text-h1">¿Qué zona cubres?</h1>
         </header>
@@ -421,7 +421,7 @@ export function WaiterPanel() {
         </p>
       ) : null}
 
-      <div className="flex-1 space-y-4 p-4 pb-28">
+      <div className="flex-1 space-y-4 p-4 pb-[7rem]">
         {tab === "tasks" ? (
           <section aria-label="Tareas pendientes" className="space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-surface-md bg-[#111110] px-4 py-3">
@@ -537,7 +537,7 @@ export function WaiterPanel() {
         ) : null}
 
         {tab === "shift" ? (
-          <section className="space-y-5">
+          <section className="space-y-6">
             <div>
               <h2 className="mb-3 text-h2">Zonas activas</h2>
               <div className="grid grid-cols-2 gap-3">

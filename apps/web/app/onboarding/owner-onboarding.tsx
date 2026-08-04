@@ -216,7 +216,7 @@ export function OwnerOnboarding() {
               Puedes cerrar esta página y continuar después.
             </p>
           </div>
-          <Card aria-label="Progreso del onboarding" className="w-full lg:w-64">
+          <Card aria-label="Progreso del onboarding" className="w-full lg:w-[16rem]">
             <CardContent className="space-y-2 py-6">
               <div className="flex items-baseline justify-between">
                 <strong className="text-h1">{data.progressPercent}%</strong>

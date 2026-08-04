@@ -113,6 +113,18 @@ export const RefreshIcon: IconComponent = (props) => (
   </IconFrame>
 );
 
+export const ReportsIcon: IconComponent = (props) => (
+  <IconFrame {...props}>
+    <path d="M4 20V10M10 20V4M16 20v-7M20 20H4" />
+  </IconFrame>
+);
+
+export const SupportIcon: IconComponent = (props) => (
+  <IconFrame {...props}>
+    <path d="M12 3a8 8 0 0 0-8 8v6.5a2.5 2.5 0 0 0 2.5 2.5H8v-6H5v-3a7 7 0 0 1 14 0v3h-3v6h1.5a2.5 2.5 0 0 0 2.5-2.5V11a8 8 0 0 0-8-8Z" />
+  </IconFrame>
+);
+
 export const WarningIcon: IconComponent = (props) => (
   <IconFrame {...props}>
     <path d="M12 3.5 21.5 20h-19z" />

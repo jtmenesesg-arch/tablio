@@ -2,6 +2,234 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-04 — Cierre formal del Sprint 14: auditoría final y 28 bugs silenciosos más
+
+**Qué se hizo:** al preparar `docs/sprints/SPRINT-14-SUMMARY.md`, el fundador pidió el conteo
+final de colores/tamaños/radios/espaciados fuera de escala contra el inventario inicial. No se
+encontró ningún registro de ese inventario en el repositorio (buscado en `docs/`,
+`docs/evidence/` y todo el historial de commits de Sprint 14) — en vez de inventar la
+comparación, se le preguntó al fundador cómo seguir; eligió una auditoría verificada contra el
+código actual en vez de la comparación histórica.
+
+Esa auditoría (grep sistemático de clases `bg-[#...]`/`text-[...]`/`rounded-[...]` y de la
+escala de espaciado restringida del proyecto) encontró **28 usos más** del mismo bug de espaciado
+silencioso ya cerrado en la PWA del comensal (clases como `p-5`/`pb-28`/`w-64` que no generan
+ningún CSS en la escala de este proyecto, que sólo expone los pasos 4/8/12/16/24/32/48/64 px) —
+repartidos en Equipo, Configuración, Soporte, Reportes (introducidos en este mismo sprint) y
+Garzón, KDS, Onboarding y el componente compartido `Textarea` (pre-existentes, de antes de este
+incremento). El más notable: `Textarea` (usado por Soporte y potencialmente cualquier pantalla
+futura) tenía `min-h-24` sin efecto — el alto mínimo nunca se aplicaba. Todos corregidos al valor
+de escala más cercano o a un valor entre corchetes cuando ninguno alcanzaba.
+
+**Cómo se verificó:** auditoría de espaciado repetida tras corregir — 0 usos fuera de escala en
+todo `apps/web/app` y `apps/web/components`. `pnpm typecheck`, `pnpm lint`, `pnpm test`
+(149/149) en verde. Playwright completo: 45/46 (única falla, OI-035, no relacionada). Revisión
+visual por captura de Onboarding (escritorio), KDS y Garzón (login) tras los cambios — sin
+regresiones de layout.
+
+## 2026-08-03 — Tarea 3: migración visual de la PWA del comensal
+
+**Qué se hizo:** `apps/web/app/mesa/[qr]/diner-pwa.tsx` reescrito completo (~2000 líneas, 9
+pantallas internas) al sistema de diseño — mismo alcance que las 8 migraciones anteriores: sólo
+presentación, cero cambios de lógica de negocio, mismo estado y handlers. Detalle completo,
+incluidos los tres bugs reales encontrados y corregidos antes de reportar (botón sin fondo
+explícito casi invisible, botones deshabilitados ilegibles sobre tarjetas oscuras, y once clases
+de espaciado que no generaban CSS por la escala restringida de este proyecto — una de ellas
+tapaba el botón de pago detrás del menú inferior), en `docs/DESIGN_SYSTEM.md` (sección "PWA del
+comensal").
+
+**Prioridad de diseño explícita del fundador:** celular, una mano, bar oscuro y ruidoso, cliente
+apurado — legibilidad sobre estética. Ninguna superficie usa `backdrop-filter` (la única que
+existía en el diseño anterior, la barra superior, se quitó). Las superficies de dinero (total del
+carrito, total del checkout, total a pagar, confirmación de pago) usan el mismo patrón ya
+validado en Crédito: fondo opaco sin modificador de opacidad + color de texto explícito en cada
+elemento, nunca heredado del contenedor.
+
+**Cómo se verificó:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (149 tests) en verde. Las 18
+pruebas E2E que ejercitan `/mesa/[qr]` (`diner-pwa.spec.ts`, `sprint-10-hardening.spec.ts`
+—incluye el test dedicado a que las superficies de dinero sean sólidas—, `loyalty.spec.ts`,
+`stored-value.spec.ts`, `checkout-engagement.spec.ts`) en verde antes y después de la migración.
+Además, por instrucción explícita del fundador dado el antecedente de Crédito (código de
+verificación invisible), revisión manual por captura de pantalla de las 9 pantallas internas
+(entrada, carta, detalle de producto, carrito, checkout con propina, pago, estado en vivo, ayuda,
+sellos/saldo guardado) buscando específicamente texto ilegible — encontró los tres bugs reales
+listados arriba, todos corregidos y reverificados con nuevas capturas antes de reportar terminado.
+La suite completa de Playwright (46 tests) corrida al final: 45 en verde, 1 falla pre-existente y
+no relacionada (`credit-owner.spec.ts`, sensible a la fecha real del sistema, no toca nada de
+esta pantalla — confirmado corriendo el mismo test contra el código sin estos cambios, con el
+mismo resultado).
+
+**Qué NO cambió:** la pantalla sigue sobre `diner-demo-store.ts`, no sobre la base real — ver
+OI-033. Con esto, las 13 pantallas de producto planeadas (9 del sistema de diseño original + las
+4 de la Tarea 4, que nacieron ya migradas) están completas visualmente.
+
+## 2026-08-03 — Tarea 4: Reportes del dueño (última pantalla de la Tarea 4)
+
+**Qué se hizo:** pantalla `/reportes`, sin migración nueva — se apoya enteramente en
+`public.owner_dashboard_summary(p_venue_id, p_from, p_to)`, una RPC que ya existía desde el
+Sprint 9 (`20260729172848_sprint_09_table_credit_owner.sql:1161`) y que `/dueno-real` ya usaba
+como prueba de humo. Selector de rango (Hoy / últimos 7 días / últimos 30 días / fechas
+personalizadas) y tarjetas: ventas totales, pedidos, ticket promedio, ventas prepago vs. crédito
+de mesa, pérdida por crédito del mes, excepciones de conciliación sin resolver, y un gráfico de
+barras de ventas por hora (mismo patrón visual que el gráfico de `/dueno`, adaptado a los campos
+reales de la RPC en vez del *store* de demo). Se agregó "Reportes" al menú lateral del dueño
+(ícono nuevo `ReportsIcon`).
+
+**Honestidad de datos:** como ningún flujo de toma de pedidos escribe todavía en la base real
+(OI-033), `history_starts_at` viene `null` y todos los números están en `$0`. La pantalla lo dice
+explícitamente con una alerta, en vez de mostrar ceros sin explicación como si el reporte
+estuviera roto.
+
+**Cómo se verificó:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (149 tests) en verde.
+Verificación real con navegador contra el proyecto real: login → `/reportes` → tarjetas muestran
+los valores reales devueltos por la RPC (todos en $0, como se espera) → aviso de "sin pedidos
+reales todavía" visible → cambiar el rango a "últimos 7 días" vuelve a llamar la RPC con el nuevo
+rango sin errores. No se creó ningún dato de prueba esta vez — es una pantalla de sólo lectura,
+no había nada que limpiar después.
+
+**Fuente de datos de esta pantalla:**
+
+| Pantalla tocada este incremento | Fuente | Nota |
+| --- | --- | --- |
+| `/reportes` | **Real** (Supabase, RPC `owner_dashboard_summary`) | Cuarta y última pantalla de la Tarea 4 sobre la base real. Cierra la Tarea 4. |
+
+**Tarea 4 completa.** Las cuatro pantallas pedidas (Equipo, Configuración del local, Soporte,
+Reportes) están construidas sobre Supabase real, verificadas con navegador contra el proyecto
+real, no contra *stores* en memoria. Sigue la migración visual de la PWA del comensal (Tarea 3),
+y después el trabajo de fondo de OI-033 (las 8 pantallas ya migradas visualmente que todavía
+corren sobre *stores* en memoria).
+
+## 2026-08-03 — Tarea 4: pantalla Soporte, dominio de tickets nuevo desde cero
+
+**Qué se hizo:** dominio nuevo, no reutiliza nada existente — decisión explícita del fundador,
+porque `tickets`/`ticket_state_events` del Sprint 2 son comandas de cocina/barra, un concepto de
+negocio distinto que sólo comparte el nombre. Migración
+`supabase/migrations/20260803190000_sprint_14_support_tickets.sql`: tablas
+`support_tickets`/`support_ticket_messages`, RLS propia (permisos nuevos `support.read`/
+`support.manage`, otorgados sólo a `owner` por ahora), sin RPC — igual que zonas/estaciones,
+estas tablas no tienen la política restrictiva de `commercial_admin_*_gate`, así que el insert
+directo autenticado funciona sin necesidad de una función `security definer`. El modelo ya
+contempla `author_type = 'platform'` para cuando exista una identidad de soporte de Tablio que
+responda desde Superadmin — no implementado todavía, fuera de alcance de este incremento.
+
+Pantalla `/soporte`: lista de tickets propios, crear ticket nuevo (asunto + categoría + mensaje),
+ver el hilo completo, responder, marcar resuelto/cerrado, reabrir. Se agregó "Soporte" al menú
+lateral del dueño (antes sólo tenía 5 ítems, ahora 6) con un ícono nuevo (`SupportIcon`,
+`apps/web/components/ui/icons.tsx`).
+
+**Cómo se verificó:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (149 tests) en verde. Verificación
+real con navegador contra el proyecto real: login → crear ticket → verlo en la lista → abrir el
+detalle → responder → marcar resuelto → confirmar que el estado se refleja en la lista. Al
+intentar borrar ese ticket de prueba después de verificar (mismo criterio que con la zona de
+prueba de Configuración), la base lo rechazó silenciosamente — no hay política RLS de `delete`
+en `support_tickets`, a propósito, mismo criterio que en Equipo (el dominio no borra, cambia de
+estado). No tenía a mano una credencial con privilegios para forzar el borrado fuera de RLS, así
+que **el ticket de prueba "No puedo revelar el QR de una mesa" quedó real y resuelto en la base**
+— documentado en `DEMO_ACCESS.md` para que no sea una sorpresa, igual que se hizo con la
+empleada Camila Torres en el incremento de Equipo.
+
+**Fuente de datos de esta pantalla:**
+
+| Pantalla tocada este incremento | Fuente | Nota |
+| --- | --- | --- |
+| `/soporte` | **Real** (Supabase, RLS) | Dominio nuevo desde cero, tercera pantalla de producto sobre la base real |
+
+**Qué NO se hizo (fuera de alcance):** ninguna identidad de "Soporte Tablio" que responda desde
+el otro lado — hoy sólo el dueño escribe y se responde a sí mismo o cierra su propio ticket; no
+hay notificación por correo de tickets nuevos; no hay adjuntar archivos.
+
+## 2026-08-03 — Tarea 4: pantalla Configuración del local, sobre datos reales
+
+**Qué se hizo:** pantalla nueva en `/configuracion` (Zonas, Estaciones, Mesas, Carta), construida
+directamente sobre Supabase real, sobre el tenant piloto ya poblado. Reutiliza el mismo mecanismo
+de autenticación/autorización de Equipo (`requireAuthenticatedTenantClient`), sin RPC nuevas más
+allá de las dos agregadas en el incremento anterior (`create_menu_category`, `create_product`) y
+las ya existentes (`create_tables_with_assets`, `reveal_table_qr_token`,
+`reveal_table_presence_code`, `set_product_availability`). Rutas nuevas bajo
+`apps/web/app/api/configuracion/**` (zonas, estaciones, mesas, mesas/[id]/qr, categorias,
+productos, productos/[id]/disponibilidad). Se corrigió también el enlace "Configurar" del menú
+lateral del dueño, que hasta ahora apuntaba a `/onboarding` (demo) — ahora apunta a `/configuracion`
+(real); ver la nota nueva en OI-032 sobre por qué los otros enlaces del menú siguen sin corregir.
+
+**Cómo se verificó:** `pnpm typecheck`, `pnpm lint` y `pnpm test` (149 tests) en verde. Además,
+verificación real con navegador (Playwright, script ad-hoc, no parte de la suite) contra el
+servidor de desarrollo apuntando al proyecto real: login real → `/configuracion` → las 3 zonas,
+2 estaciones y 18 mesas reales se ven correctamente → "Ver QR y código" en Mesa 1 reveló
+exactamente el código de presencia y token QR ya documentados en `DEMO_ACCESS.md` (8447 /
+`e6Q9x3aD...`) → la carta muestra las 6 categorías y 20 productos, incluido el badge "Agotado" en
+Negroni → creación de una zona nueva de principio a fin contra la base real (después borrada, era
+sólo para la verificación). `pnpm test` corrido después de la limpieza para confirmar que no
+quedó nada roto.
+
+**Fuente de datos de esta pantalla:**
+
+| Pantalla tocada este incremento | Fuente | Nota |
+| --- | --- | --- |
+| `/configuracion` | **Real** (Supabase, RLS) | Segunda pantalla de producto sobre la base real, junto a Equipo |
+
+**Qué NO se hizo (fuera de alcance de este incremento):** editar/eliminar zonas, estaciones o
+categorías ya creadas; editar precios de productos existentes; segunda zona/venue por tenant
+(fuera del alcance congelado de un venue por tenant). Se agregará si se necesita, no antes.
+
+## 2026-08-03 — Carga del tenant piloto "Bar La Virgen" con datos reales
+
+**Qué se hizo:** por instrucción explícita del fundador, antes de seguir con Configuración del
+local/Soporte/Reportes se cargó el tenant piloto real con datos completos, usando los flujos
+reales de la aplicación siempre que existían:
+
+- 3 zonas (Terraza, Salón, Barra) — insert directo, RLS gated por `configuration.manage`, sin RPC
+  dedicada porque no la necesita (mismo patrón ya verificado para Tarea 4).
+- 2 estaciones (Barra, Cocina) — igual que zonas.
+- 18 mesas (8 Terraza, 6 Salón, 4 Barra) vía `create_tables_with_assets`, la RPC real que genera
+  QR (Vault) y código de presencia atómicamente, exactamente el mismo mecanismo que usará
+  Configuración del local cuando exista.
+- Carta: 6 categorías y 20 productos (cervezas, cócteles, vinos, para picar, sándwiches, sin
+  alcohol) con precios reales de mercado chileno, descripciones y alérgenos; 2 productos con
+  stock limitado vía `inventory_levels` y 1 marcado agotado vía la RPC real
+  `set_product_availability`.
+- Personal: 3 garzones activos (Camila Torres, Matías Rojas, Fernanda Soto) + 1 cajero (Valentina
+  Reyes), vía la RPC real `create_employee` (la misma que ya usa la pantalla Equipo). Se creó una
+  cuarta persona (Ignacio Muñoz) por error de conteo — Camila ya existía de la verificación
+  anterior de Equipo y se contó dos veces — y se corrigió suspendiéndola con el flujo real de
+  "Suspender" en vez de borrarla (no existe un delete real, es una decisión de diseño del
+  dominio: el personal no se borra, se suspende).
+
+**Hallazgo real en el camino — RPCs de carta que no existían:** insertar directo en
+`menu_categories`/`products` como `authenticated` falla con "permission denied for function
+tenant_admin_writes_allowed". Investigando: esas 4 tablas (`products`, `product_variants`,
+`menu_categories`, `tables`) tienen una política RLS restrictiva
+(`commercial_admin_*_gate`, `20260729163957_sprint_08_onboarding_billing_superadmin.sql:1057-1078`)
+que exige `private.tenant_admin_writes_allowed(tenant_id)` — y esa función tiene un
+`revoke execute ... from public, anon, authenticated` explícito e intencional en la misma
+migración (línea ~1154). No es un bug de grant faltante como el de `set_active_tenant` (OI-030):
+es una decisión de diseño — esas 4 tablas sólo se pueden escribir a través de una función
+`security definer` (que corre con los privilegios de su dueño, no del rol `authenticated`),
+nunca con un insert directo desde la app. `tables` ya tenía esa función
+(`create_table_with_assets`); `products`/`menu_categories` no tenían ninguna todavía porque
+Configuración del local nunca se construyó. Se agregaron `create_menu_category`/`create_product`
+en `supabase/migrations/20260803174500_sprint_14_catalog_management.sql`, mismo patrón que
+`create_employee` (valida `catalog.manage`, security definer, wrapper público security invoker,
+audit_log). Aplicado vía `supabase db push`, verificado con `supabase migration list` (local y
+remoto sincronizados). Esto no fue una corrección de un bug en producción — fue construir, por
+primera vez, la capacidad que Configuración del local necesitará de todos modos.
+
+**Cómo se verificó:** todo el script (`load-pilot.js`, documentado y repetible, guardado en el
+scratchpad de esta sesión) corre autenticado como el dueño real (login → `set_active_tenant` →
+`refreshSession`), exactamente como lo haría la app — no se usó `service_role` ni SQL directo
+contra las tablas de negocio. Se confirmó el estado final leyendo la base con el mismo cliente
+autenticado: 3 zonas, 2 estaciones, 18 mesas, 6 categorías, 20 productos, 4 personas activas (3
+garzones + 1 cajero) + el dueño.
+
+**Qué NO cambió:** `/dueno`, `/dueno/mesas`, `/caja`, `/kds`, `/garzon`, `/superadmin`,
+`/onboarding`, `/credito` y la PWA del comensal siguen sobre *stores* en memoria (OI-033) — el
+dato real que se acaba de cargar todavía no tiene pantalla que lo muestre, salvo `/equipo`. La
+mesa de muestra documentada en `DEMO_ACCESS.md` tiene un código de presencia y un QR reales, pero
+la PWA del comensal no los puede leer todavía porque sigue en el demo simulado.
+
+**Docs actualizados:** `DEMO_ACCESS.md` reescrito completo; `docs/OPEN_ISSUES.md` (OI-032, nueva
+nota sobre el menú lateral del dueño mal enlazado, encontrada al navegar entre `/dueno-real` y
+`/equipo`).
+
 ## 2026-08-03 — Tarea 4: pantalla Equipo, primera pantalla de producto sobre datos reales
 
 ### Qué cambió

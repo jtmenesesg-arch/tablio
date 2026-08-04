@@ -654,6 +654,15 @@ ahí antes del piloto.
   que ya se anotó como pendiente para OI-031 (Opción A) resolvería esto también.
 - **No bloquea:** la Tarea 4 puede construirse ya sobre este mecanismo. Estos son ajustes de
   higiene, no riesgos activos.
+- **Menú lateral del dueño parcialmente mal enlazado (encontrado 2026-08-03, al cargar el
+  piloto; "Configurar" corregido el mismo día al construir Configuración del local):**
+  `ownerNavigation()` (`apps/web/components/operational/owner-navigation.ts`), usado por
+  `/dueno-real`, `/equipo` y `/configuracion`, todavía tiene "Resumen" → `/dueno`, "Mesas" →
+  `/dueno/mesas` y "Caja" → `/caja` apuntando al demo simulado, no a sus contrapartes reales
+  (que todavía no existen). "Equipo" → `/equipo` y "Configurar" → `/configuracion` ya son
+  correctos. No es un bug nuevo introducido esta sesión, es que el menú se escribió antes de que
+  existiera ninguna pantalla real y nadie lo actualizó. Los tres que faltan se corrigen a medida
+  que Reportes (Resumen) y el resto existan — no antes.
 
 ## OI-033 — La aplicación entera opera sobre datos simulados, no sobre la base real
 
@@ -678,6 +687,46 @@ ahí antes del piloto.
 - **No bloquea:** seguir construyendo pantallas nuevas (Tarea 4) o terminando la migración visual
   de la PWA — ambas pueden avanzar sabiendo que después hay que reconectarlas. Sí bloquea
   cualquier promesa de que el producto está listo para procesar actividad real de un bar.
+
+## OI-034 — Las tablas del pedido/pago no tienen ninguna política RLS ni RPC pública
+
+- **Estado:** hallazgo técnico que explica el tamaño real de OI-033 para la toma de pedidos;
+  bloqueante antes del piloto igual que OI-033, no es un asunto aparte con calendario propio.
+- **Qué se encontró (2026-08-03), investigando qué falta para que la toma de pedidos escriba en
+  la base real:** `cart_items`, `checkout_quotes`, `payment_intents`, `orders`, `order_items`,
+  `tickets` y las tablas asociadas tienen RLS activado y forzado, pero **cero políticas** — ni una
+  sola, para ningún rol. La única función pública relacionada con pago,
+  `worker_confirm_provider_payment_event`, está otorgada exclusivamente a `service_role` (nunca al
+  navegador). El único acceso público real es `diner_ordering_availability` (sólo lectura, sólo
+  dice si el local está recibiendo pedidos) y `verify_table_presence` (valida el código de la
+  mesa). Confirmado con `20260728212726_sprint_03_diner_pwa.sql:3`: *"The Data API remains closed
+  to anon; user routes use narrow server operations."* — es una decisión de diseño explícita, no
+  un olvido.
+- **Qué significa en la práctica:** reconectar la toma de pedidos a la base real no es "cambiar
+  las pantallas para llamar a Supabase en vez del store" como fue Equipo o Configuración —
+  requiere diseñar y construir toda una superficie de operaciones acotadas del lado servidor (RPC
+  `security definer` o rutas de API con `service_role`, cada una validando exactamente lo que le
+  corresponde) para: crear/editar carrito, generar `CheckoutQuote`, iniciar intención de pago,
+  recibir la confirmación del proveedor (probablemente vía webhook, no desde el navegador), y
+  exponer el pedido resultante a KDS/Garzón/Caja/Dueño (que tampoco tienen políticas RLS propias
+  sobre estas tablas todavía). Es, en tamaño, comparable a repetir gran parte del trabajo de
+  autenticación real de este sprint, pero para el dinero en vez de para la identidad.
+- **Por qué no se cerró en este incremento:** no fue lo que se pidió — se pidió el mapa de
+  alcance, no construir la pieza. Queda documentado para que el próximo incremento que ataque
+  OI-033 en la toma de pedidos no tenga que redescubrir esto.
+
+## OI-035 — `credit-owner.spec.ts` tiene una prueba sensible a la fecha real del sistema
+
+- **Estado:** no bloqueante; higiene de pruebas.
+- **Qué se encontró (2026-08-03), sin relación con el trabajo de este incremento:** el test "una
+  fuga alimenta el costo mensual y su tendencia para el dueño" espera `$54.500` de fuga acumulada
+  del mes, pero el mes real ya avanzó y el dato semilla que asumía "julio" quedó fuera del mes
+  calendario actual, así que la comparación mes-a-mes ahora sólo ve la fuga nueva ($18.500) y
+  falla. Confirmado que no tiene relación con la PWA ni con ningún cambio de este incremento:
+  falla exactamente igual (`git stash` de todos los cambios de esta sesión, mismo error) contra
+  el código sin tocar.
+- **No bloquea:** los otros 3 tests de ese archivo pasan; es un test aislado, sensible a la fecha
+  real de ejecución, no una regresión de ningún incremento reciente.
 
 ## Clasificación final de asuntos
 
@@ -715,3 +764,5 @@ ahí antes del piloto.
 | OI-031 | Mínimo inmediato en verde (verificación programada); cierre completo ligado al piloto |
 | OI-032 | No bloqueante; limpieza de seguimiento tras ADR-015                  |
 | OI-033 | Bloqueante antes del piloto; la aplicación entera opera sobre datos simulados |
+| OI-034 | Bloqueante antes del piloto, parte de OI-033; sin RPC/RLS pública para pedidos/pagos |
+| OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |

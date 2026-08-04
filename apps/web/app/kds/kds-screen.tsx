@@ -212,7 +212,7 @@ function TicketCard({
 }
 
 const kdsButton =
-  "min-h-[4rem] rounded-button border-2 border-[#3a3a37] bg-[#242422] px-5 text-body font-extrabold transition-colors duration-[var(--motion-feedback)] hover:bg-[#2f2f2c] motion-reduce:transition-none";
+  "min-h-[4rem] rounded-button border-2 border-[#3a3a37] bg-[#242422] px-6 text-body font-extrabold transition-colors duration-[var(--motion-feedback)] hover:bg-[#2f2f2c] motion-reduce:transition-none";
 const kdsButtonIdleText = "text-[#fefefe]";
 
 export function KdsScreen() {
@@ -477,7 +477,7 @@ export function KdsScreen() {
     >
       {stale ? (
         <section
-          className="sticky top-0 z-30 flex flex-wrap items-center gap-5 border-b-4 border-[#fefefe] bg-destructive px-6 py-4 text-destructive-foreground"
+          className="sticky top-0 z-30 flex flex-wrap items-center gap-6 border-b-4 border-[#fefefe] bg-destructive px-6 py-4 text-destructive-foreground"
           role="alert"
         >
           <strong className="text-h2">PANTALLA POSIBLEMENTE DESACTUALIZADA</strong>
@@ -486,7 +486,7 @@ export function KdsScreen() {
             de asumir que no hay pedidos.
           </span>
           <button
-            className="ml-auto min-h-[3.75rem] rounded-button border-2 border-[#fefefe] bg-[#fefefe] px-5 text-body font-extrabold text-[#111110]"
+            className="ml-auto min-h-[3.75rem] rounded-button border-2 border-[#fefefe] bg-[#fefefe] px-6 text-body font-extrabold text-[#111110]"
             onClick={() => void refresh("reconnect")}
             type="button"
           >
@@ -503,7 +503,7 @@ export function KdsScreen() {
         </section>
       ) : null}
 
-      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-5 border-b-[3px] border-[#2b2b29] bg-[#111110] px-6 py-4">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-6 border-b-[3px] border-[#2b2b29] bg-[#111110] px-6 py-4">
         <div className="flex items-center gap-3">
           <span className="grid size-[3.25rem] shrink-0 place-items-center rounded-surface-md bg-brand text-[1.75rem] font-extrabold text-foreground">
             T
@@ -632,7 +632,7 @@ export function KdsScreen() {
 
       {error ? (
         <div
-          className="mx-6 mt-4 flex items-center justify-between gap-5 rounded-surface-md border-2 border-destructive bg-[#3a100a] px-4 py-3 font-extrabold"
+          className="mx-6 mt-4 flex items-center justify-between gap-6 rounded-surface-md border-2 border-destructive bg-[#3a100a] px-4 py-3 font-extrabold"
           role="alert"
         >
           {error}
@@ -648,7 +648,7 @@ export function KdsScreen() {
 
       <section
         aria-label="Comandas pendientes"
-        className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] items-start gap-4 px-6 py-5"
+        className="grid flex-1 grid-cols-[repeat(auto-fill,minmax(22rem,1fr))] items-start gap-4 px-6 py-6"
       >
         {data?.tickets.length ? (
           data.tickets.map((ticket) => (
@@ -678,7 +678,7 @@ export function KdsScreen() {
 
       <aside
         aria-label="Control de agotados"
-        className="grid gap-4 border-y-[3px] border-[#2d2d2b] bg-[#151514] px-6 py-5 md:grid-cols-[14rem_1fr]"
+        className="grid gap-4 border-y-[3px] border-[#2d2d2b] bg-[#151514] px-6 py-6 md:grid-cols-[14rem_1fr]"
       >
         <div>
           <p className="text-label uppercase tracking-wide text-[#c9c9c5]">
@@ -711,7 +711,7 @@ export function KdsScreen() {
         </div>
       </aside>
 
-      <footer className="flex flex-wrap justify-between gap-5 bg-[#090909] px-6 py-4 text-small font-bold text-[#a7a7a2]">
+      <footer className="flex flex-wrap justify-between gap-6 bg-[#090909] px-6 py-4 text-small font-bold text-[#a7a7a2]">
         <span>Demo sin dinero real</span>
         <span>
           Realtime avisa · PostgreSQL manda · respaldo cada{" "}

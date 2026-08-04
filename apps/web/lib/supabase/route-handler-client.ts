@@ -29,3 +29,42 @@ export function statusForPostgrestError(error: { code?: string } | null): number
   if (error.code === "42501") return 403;
   return 500;
 }
+
+// Every tenant has exactly one venue today (frozen decision, single-venue
+// beachhead) — the Configuración routes all need its id to scope zones,
+// stations, tables, and catalog writes.
+export async function requirePrimaryVenueId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<{ venueId: string | null; status: number | null }> {
+  const { data, error } = await supabase
+    .from("venues")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+  if (error) return { venueId: null, status: statusForPostgrestError(error) };
+  if (!data) return { venueId: null, status: 404 };
+  return { venueId: data.id as string, status: null };
+}
+
+// Plain inserts (zones, stations — no RPC needed for these) require
+// tenant_id explicitly; there's no column default. The value
+// only exists as the `tenant_id` JWT claim custom_access_token_hook injects,
+// same decode approach already used in app/login/page.tsx's hasTenantClaim.
+export async function requireTenantId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<{ tenantId: string | null; status: number | null }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const payload = session?.access_token.split(".")[1];
+  if (!payload) return { tenantId: null, status: 401 };
+  try {
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      tenant_id?: string;
+    };
+    if (!claims.tenant_id) return { tenantId: null, status: 403 };
+    return { tenantId: claims.tenant_id, status: null };
+  } catch {
+    return { tenantId: null, status: 401 };
+  }
+}

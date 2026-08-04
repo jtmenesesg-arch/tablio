@@ -2,7 +2,9 @@ import type { AppShellNavItem } from "./app-shell";
 import {
   LayoutIcon,
   MoneyIcon,
+  ReportsIcon,
   SettingsIcon,
+  SupportIcon,
   TableIcon,
   TeamIcon,
 } from "@/components/ui/icons";
@@ -12,7 +14,9 @@ export type OwnerNavigationKey =
   | "tables"
   | "cashier"
   | "team"
-  | "configure";
+  | "configure"
+  | "support"
+  | "reports";
 
 export function ownerNavigation(
   active: OwnerNavigationKey,
@@ -44,9 +48,21 @@ export function ownerNavigation(
     },
     {
       active: active === "configure",
-      href: "/onboarding",
+      href: "/configuracion",
       icon: SettingsIcon,
       label: "Configurar",
+    },
+    {
+      active: active === "reports",
+      href: "/reportes",
+      icon: ReportsIcon,
+      label: "Reportes",
+    },
+    {
+      active: active === "support",
+      href: "/soporte",
+      icon: SupportIcon,
+      label: "Soporte",
     },
   ];
 }

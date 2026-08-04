@@ -9,6 +9,12 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/cn";
+import { formatClp as money } from "@/lib/format";
 import type {
   DinerBootstrap,
   DinerMutation,
@@ -19,20 +25,12 @@ import type {
 type Screen =
   "entry" | "menu" | "cart" | "checkout" | "status" | "actions" | "loyalty";
 
-const formatClp = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
-
-function money(amount: number): string {
-  return formatClp.format(amount).replace("CLP", "$");
-}
-
 function Icon({
+  className,
   name,
   size = 22,
 }: {
+  className?: string;
   name:
     | "arrow"
     | "bag"
@@ -115,6 +113,7 @@ function Icon({
   return (
     <svg
       aria-hidden="true"
+      className={className}
       fill="none"
       height={size}
       viewBox="0 0 24 24"
@@ -126,6 +125,74 @@ function Icon({
     >
       {paths[name]}
     </svg>
+  );
+}
+
+// Fila de opciones con scroll horizontal propio, mismo patrón que las
+// pestañas de Caja y el carril de pasos de Onboarding — no existe un
+// componente Tabs dedicado todavía.
+function OptionRail({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1" role="group">
+      {children}
+    </div>
+  );
+}
+
+function RailButton({
+  active,
+  children,
+  onClick,
+  type = "button",
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+  type?: "button";
+}) {
+  return (
+    <Button
+      className="shrink-0"
+      onClick={onClick}
+      size="small"
+      type={type}
+      variant={active ? "primary" : "outline"}
+    >
+      {children}
+    </Button>
+  );
+}
+
+// Icono redondo mínimo 56px — volver, carrito, sellos en la barra superior.
+function IconButton({
+  "aria-label": ariaLabel,
+  badge,
+  children,
+  onClick,
+}: {
+  "aria-label": string;
+  badge?: ReactNode;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-label={ariaLabel}
+      className="relative flex size-touch items-center justify-center rounded-full bg-transparent text-foreground hover:bg-muted"
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+      {badge ? (
+        <b className="absolute -right-1 -top-1 flex min-w-icon items-center justify-center rounded-full bg-brand px-1 text-label font-extrabold text-primary-foreground">
+          {badge}
+        </b>
+      ) : null}
+    </button>
   );
 }
 
@@ -385,169 +452,210 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
 
   if (loading && !data) {
     return (
-      <main className="dinerLoading">
-        <span className="brandMark">t</span>
-        <p>Abriendo tu mesa…</p>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background">
+        <span className="flex size-touch items-center justify-center rounded-full bg-brand text-h2 font-extrabold text-primary-foreground">
+          t
+        </span>
+        <p className="text-body text-muted-foreground">Abriendo tu mesa…</p>
       </main>
     );
   }
 
   if (!data) {
     return (
-      <main className="dinerLoading">
-        <span className="brandMark">t</span>
-        <p>{error ?? "No pudimos abrir este QR."}</p>
-        <button className="solidButton" onClick={() => void refresh()}>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <span className="flex size-touch items-center justify-center rounded-full bg-brand text-h2 font-extrabold text-primary-foreground">
+          t
+        </span>
+        <p className="text-body text-foreground">
+          {error ?? "No pudimos abrir este QR."}
+        </p>
+        <Button onClick={() => void refresh()} type="button">
           Intentar otra vez
-        </button>
+        </Button>
       </main>
     );
   }
 
   return (
-    <main className="dinerApp">
-      <div className="demoMode" role="status">
-        <span />
-        MODO DEMO · NO MUEVE DINERO REAL
+    <main className="mx-auto min-h-dvh w-full max-w-[720px] overflow-x-hidden bg-background pb-[112px] shadow-[0_0_60px_rgba(17,17,16,0.12)]">
+      <div
+        className="relative z-30 flex min-h-[31px] items-center justify-center gap-2 bg-foreground px-4 py-2 text-label font-extrabold uppercase tracking-wide text-background"
+        role="status"
+      >
+        <span className="size-2 shrink-0 rounded-full bg-brand" />
+        Modo demo · no mueve dinero real
       </div>
 
       {screen !== "entry" && (
-        <header className="dinerTopbar">
-          <button
-            aria-label="Volver a la carta"
-            className="iconButton"
-            onClick={() => setScreen("menu")}
-            type="button"
-          >
-            <span className="miniBrand">t</span>
-          </button>
-          <button
-            aria-label="Mis sellos"
-            className="loyaltyHeaderButton"
-            onClick={() => setScreen("loyalty")}
-            type="button"
-          >
-            <Icon name="spark" size={18} />
-            {data.loyalty.profile?.stamps ?? 0}
-          </button>
-          <div>
-            <strong>{data.venue.name}</strong>
-            <span>
+        <header className="sticky top-0 z-20 grid min-h-[70px] grid-cols-[56px_1fr_56px] items-center gap-2 border-b border-border bg-card px-3 py-2">
+          <IconButton aria-label="Volver a la carta" onClick={() => setScreen("menu")}>
+            <span className="flex size-8 items-center justify-center rounded-full bg-brand text-body font-extrabold text-primary-foreground">
+              t
+            </span>
+          </IconButton>
+          <div className="min-w-0 text-center">
+            <strong className="block truncate text-body font-extrabold text-foreground">
+              {data.venue.name}
+            </strong>
+            <span className="block truncate text-small text-muted-foreground">
               {data.venue.tableName} ·{" "}
               {data.session?.displayName || data.session?.alias}
             </span>
           </div>
-          <button
+          <IconButton
             aria-label={`Mi pedido, ${cartCount} ${
               cartCount === 1 ? "producto" : "productos"
             }`}
-            className="cartButton"
+            badge={cartCount > 0 ? cartCount : undefined}
             onClick={() => setScreen("cart")}
-            type="button"
           >
             <Icon name="bag" />
-            {cartCount > 0 && <b>{cartCount}</b>}
-          </button>
+          </IconButton>
         </header>
       )}
 
       {error && (
-        <div className="inlineError" role="alert">
+        <div
+          className="inlineError mx-4 mt-3 flex items-center gap-2 rounded-surface-md border border-destructive bg-destructive-soft p-3 text-small text-foreground"
+          role="alert"
+        >
           <Icon name="warning" size={19} />
-          <span>{error}</span>
-          <button aria-label="Cerrar error" onClick={() => setError(undefined)}>
+          <span className="flex-1">{error}</span>
+          <button
+            aria-label="Cerrar error"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-transparent text-foreground"
+            onClick={() => setError(undefined)}
+            type="button"
+          >
             <Icon name="close" size={18} />
           </button>
         </div>
       )}
 
       {!data.ordering.available && data.orders.length === 0 && (
-        <section className="entryScreen neutralUnavailable">
-          <div className="entryCard">
-            <p className="sectionKicker">Pedidos no disponibles</p>
-            <h1>Habla con el equipo del local</h1>
-            <p>{data.ordering.message}</p>
-          </div>
+        <section className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+          <p className="text-label uppercase tracking-wide text-muted-foreground">
+            Pedidos no disponibles
+          </p>
+          <h1 className="text-h2 text-foreground">
+            Habla con el equipo del local
+          </h1>
+          <p className="text-body text-muted-foreground">
+            {data.ordering.message}
+          </p>
         </section>
       )}
 
       {data.ordering.available && screen === "entry" && (
-        <section className="entryScreen">
-          <div className="entryPhoto" aria-hidden="true">
+        <section>
+          <div className="relative h-[240px] w-full" aria-hidden="true">
             <Image alt="" fill priority sizes="100vw" src="/menu/beer.jpg" />
-            <span className="entryBrand">tablio</span>
+            <span className="absolute left-4 top-4 rounded-full bg-foreground px-3 py-1 text-body font-extrabold text-background">
+              tablio
+            </span>
           </div>
-          <div className="entryCard">
-            <p className="sectionKicker">Ya casi estás</p>
-            <h1>
-              {data.venue.name} <span>·</span> {data.venue.tableName}
-            </h1>
-            <p>Escribe el código corto que está impreso en tu mesa.</p>
-            <form onSubmit={join}>
-              <label htmlFor="presence-code">Código de la mesa</label>
-              <input
-                autoComplete="one-time-code"
-                autoFocus
-                id="presence-code"
-                inputMode="numeric"
-                maxLength={4}
-                onChange={(event) =>
-                  setPresenceCode(event.target.value.replaceAll(/\D/g, ""))
-                }
-                placeholder="0000"
-                value={presenceCode}
-              />
-              <button
-                className="solidButton"
+          <div className="space-y-6 rounded-t-[24px] bg-card px-6 py-8 shadow-[0_-8px_24px_rgba(17,17,16,0.08)]">
+            <div className="space-y-1">
+              <p className="text-label uppercase tracking-wide text-muted-foreground">
+                Ya casi estás
+              </p>
+              <h1 className="text-h1 text-foreground">
+                {data.venue.name} <span className="text-brand">·</span>{" "}
+                {data.venue.tableName}
+              </h1>
+              <p className="text-body text-muted-foreground">
+                Escribe el código corto que está impreso en tu mesa.
+              </p>
+            </div>
+            <form className="space-y-4" onSubmit={join}>
+              <label
+                className="block space-y-2 text-small font-bold text-foreground"
+                htmlFor="presence-code"
+              >
+                Código de la mesa
+                <Input
+                  autoComplete="one-time-code"
+                  autoFocus
+                  className="text-center text-h2 tracking-[0.3em]"
+                  id="presence-code"
+                  inputMode="numeric"
+                  maxLength={4}
+                  onChange={(event) =>
+                    setPresenceCode(event.target.value.replaceAll(/\D/g, ""))
+                  }
+                  placeholder="0000"
+                  value={presenceCode}
+                />
+              </label>
+              <Button
+                className="w-full"
                 disabled={presenceCode.length !== 4 || working}
                 type="submit"
               >
                 {working ? "Confirmando…" : "Entrar a la carta"}
                 <Icon name="arrow" />
-              </button>
+              </Button>
             </form>
-            <p className="demoHint">
-              Para esta demo usa <strong>4826</strong>
+            <p className="text-center text-small text-muted-foreground">
+              Para esta demo usa <strong className="text-foreground">4826</strong>
             </p>
           </div>
         </section>
       )}
 
       {data.ordering.available && screen === "menu" && (
-        <section className="contentScreen menuScreen">
-          <div className="menuHero">
-            <div>
-              <p className="sectionKicker">Buenas noches</p>
-              <h1>¿Qué te tinca?</h1>
-              <p>Pide a tu ritmo. Cada persona tiene su propio carrito.</p>
+        <section className="space-y-6 px-4 py-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-label uppercase tracking-wide text-muted-foreground">
+                Buenas noches
+              </p>
+              <h1 className="text-h1 text-foreground">¿Qué te tinca?</h1>
+              <p className="text-body text-muted-foreground">
+                Pide a tu ritmo. Cada persona tiene su propio carrito.
+              </p>
             </div>
-            <span className="aliasPill">
+            <span className="flex shrink-0 items-center gap-1 rounded-full border border-border bg-card px-3 py-2 text-small font-bold text-foreground">
               <Icon name="user" size={17} />
               {data.session?.alias}
             </span>
           </div>
 
           {data.engagement.promotion ? (
-            <section className="promotionBanner solidSurface" role="status">
-              <div>
-                <p className="sectionKicker">Happy hour activo</p>
-                <strong>{data.engagement.promotion.name}</strong>
-                <span>{data.engagement.promotion.description}</span>
+            <section
+              className="flex items-center justify-between gap-3 rounded-surface-lg bg-foreground p-4"
+              role="status"
+            >
+              <div className="space-y-1">
+                <p className="text-label uppercase tracking-wide text-background/70">
+                  Happy hour activo
+                </p>
+                <strong className="block text-body font-extrabold text-background">
+                  {data.engagement.promotion.name}
+                </strong>
+                <span className="block text-small text-background/70">
+                  {data.engagement.promotion.description}
+                </span>
               </div>
-              <b>v{data.engagement.promotion.version}</b>
+              <b className="text-small text-background/70">
+                v{data.engagement.promotion.version}
+              </b>
             </section>
           ) : null}
 
           {latestOrder && latestOrder.state !== "delivered" && (
             <button
-              className="liveOrderCard"
+              className="flex w-full items-center gap-3 rounded-surface-lg border border-brand bg-accent px-4 py-3 text-left"
               onClick={() => setScreen("status")}
               type="button"
             >
-              <span className="pulseDot" />
-              <span>
-                <b>Pedido #{latestOrder.number}</b>
-                <small>
+              <span className="size-2 shrink-0 animate-pulse rounded-full bg-brand" />
+              <span className="flex-1">
+                <b className="block text-body font-extrabold text-foreground">
+                  Pedido #{latestOrder.number}
+                </b>
+                <small className="block text-small text-muted-foreground">
                   {latestOrder.state === "ready"
                     ? "Hay algo listo"
                     : "Lo están preparando"}
@@ -560,28 +668,40 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
           {data.engagement.receivedInvitations.some(
             (invitation) => invitation.state === "pending_claim",
           ) ? (
-            <section className="receivedInvitation solidSurface" role="status">
-              <p className="sectionKicker">Te invitaron</p>
+            <section
+              className="space-y-3 rounded-surface-lg bg-foreground p-4"
+              role="status"
+            >
+              <p className="text-label uppercase tracking-wide text-background/70">
+                Te invitaron
+              </p>
               {data.engagement.receivedInvitations
                 .filter((invitation) => invitation.state === "pending_claim")
                 .map((invitation) => (
-                  <article key={invitation.id}>
-                    <div>
-                      <h2>{invitation.productName}</h2>
-                      <p>
+                  <article
+                    className="space-y-2 border-t border-background/20 pt-3 first:border-t-0 first:pt-0"
+                    key={invitation.id}
+                  >
+                    <div className="space-y-1">
+                      <h2 className="text-h3 text-background">
+                        {invitation.productName}
+                      </h2>
+                      <p className="text-small text-background/70">
                         Te lo invita {invitation.inviterAlias}. Mostramos su
                         alias, no su nombre completo.
                       </p>
                       {invitation.expiringSoon ? (
-                        <strong>
+                        <strong className="block text-small font-bold text-background">
                           Está por vencer. Reclámalo para enviarlo a la barra.
                         </strong>
                       ) : (
-                        <span>Se prepara solo después de que lo reclames.</span>
+                        <span className="block text-small text-background/70">
+                          Se prepara solo después de que lo reclames.
+                        </span>
                       )}
                     </div>
-                    <button
-                      className="solidButton"
+                    <Button
+                      className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                       disabled={working}
                       onClick={() =>
                         void mutate({
@@ -592,71 +712,85 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       type="button"
                     >
                       Reclamar invitación
-                    </button>
+                    </Button>
                   </article>
                 ))}
             </section>
           ) : null}
 
           {data.loyalty.recognition ? (
-            <section className="loyaltyRecognition solidSurface">
-              <div>
-                <p className="sectionKicker">Perfil del programa encontrado</p>
-                <h2>¿Este perfil es tuyo?</h2>
-                <strong>{data.loyalty.recognition.maskedIdentity}</strong>
-                <p>
+            <section className="space-y-3 rounded-surface-lg bg-foreground p-4">
+              <div className="space-y-1">
+                <p className="text-label uppercase tracking-wide text-background/70">
+                  Perfil del programa encontrado
+                </p>
+                <h2 className="text-h3 text-background">
+                  ¿Este perfil es tuyo?
+                </h2>
+                <strong className="block text-body font-extrabold text-background">
+                  {data.loyalty.recognition.maskedIdentity}
+                </strong>
+                <p className="text-small text-background/70">
                   No mostramos nombres completos porque este teléfono puede
                   circular por la mesa.
                 </p>
               </div>
-              <div>
-                <button
-                  className="solidButton"
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                   disabled={working}
                   onClick={() =>
                     void mutate({ action: "loyalty.recognition.confirm" })
                   }
                 >
                   Sí, usar mis sellos
-                </button>
-                <button
-                  className="textButton"
+                </Button>
+                <Button
+                  className="border-background/40 bg-transparent text-background hover:bg-background/10"
                   disabled={working}
                   onClick={() =>
                     void mutate({ action: "loyalty.recognition.reject" })
                   }
+                  variant="outline"
                 >
                   No soy yo
-                </button>
+                </Button>
               </div>
             </section>
           ) : data.loyalty.profile ? (
-            <section className="loyaltyProgressCard">
-              <div>
-                <p className="sectionKicker">Tus sellos en este local</p>
-                <h2>
+            <section className="flex items-center justify-between gap-3 rounded-surface-lg border border-border bg-card p-4">
+              <div className="space-y-1">
+                <p className="text-label uppercase tracking-wide text-muted-foreground">
+                  Tus sellos en este local
+                </p>
+                <h2 className="text-h3 text-foreground">
                   {data.loyalty.profile.stamps} de {data.loyalty.visitsRequired}
                 </h2>
-                <p>
+                <p className="text-small text-muted-foreground">
                   Recuperación activa en {data.loyalty.profile.contactMasked}
                 </p>
               </div>
               {data.loyalty.profile.rewardAvailable ? (
-                <button
+                <Button
                   disabled={working}
                   onClick={() => void mutate({ action: "loyalty.reward.add" })}
+                  size="small"
                 >
                   Usar premio
-                </button>
+                </Button>
               ) : (
-                <button onClick={() => setScreen("loyalty")}>
+                <Button
+                  onClick={() => setScreen("loyalty")}
+                  size="small"
+                  variant="outline"
+                >
                   Ver programa
-                </button>
+                </Button>
               )}
             </section>
           ) : (
             <button
-              className="loyaltyRecoveryLink"
+              className="w-full bg-transparent text-left text-small font-bold text-brand underline"
               onClick={() => {
                 setLoyaltyPurpose("recover");
                 setScreen("loyalty");
@@ -668,54 +802,66 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
           )}
 
           {data.loyalty.favorite ? (
-            <section className="favoriteCard">
-              <div>
-                <p className="sectionKicker">Tu de siempre</p>
-                <strong>{data.loyalty.favorite.productName}</strong>
-                <small>Basado en tus pedidos reales en este local.</small>
+            <section className="flex items-center justify-between gap-3 rounded-surface-lg border border-border bg-card p-4">
+              <div className="space-y-1">
+                <p className="text-label uppercase tracking-wide text-muted-foreground">
+                  Tu de siempre
+                </p>
+                <strong className="block text-body font-extrabold text-foreground">
+                  {data.loyalty.favorite.productName}
+                </strong>
+                <small className="block text-small text-muted-foreground">
+                  Basado en tus pedidos reales en este local.
+                </small>
               </div>
-              <button
+              <Button
                 disabled={working}
                 onClick={() => void mutate({ action: "loyalty.favorite.add" })}
+                size="small"
+                variant="outline"
               >
                 Agregar
-              </button>
+              </Button>
             </section>
           ) : null}
 
-          <nav className="categoryRail" aria-label="Categorías">
-            <button
-              className={category === "all" ? "active" : ""}
-              onClick={() => setCategory("all")}
-              type="button"
-            >
-              Todo
-            </button>
-            {data.categories.map((item) => (
-              <button
-                className={category === item.id ? "active" : ""}
-                key={item.id}
-                onClick={() => setCategory(item.id)}
-                type="button"
+          <nav aria-label="Categorías">
+            <OptionRail>
+              <RailButton
+                active={category === "all"}
+                onClick={() => setCategory("all")}
               >
-                {item.name}
-              </button>
-            ))}
+                Todo
+              </RailButton>
+              {data.categories.map((item) => (
+                <RailButton
+                  active={category === item.id}
+                  key={item.id}
+                  onClick={() => setCategory(item.id)}
+                >
+                  {item.name}
+                </RailButton>
+              ))}
+            </OptionRail>
           </nav>
 
-          <div className="productGrid">
+          <div className="grid grid-cols-2 gap-3">
             {visibleProducts.map((product) => (
               <article
-                className={`productCard ${!product.available ? "soldOut" : ""}`}
+                className={cn(
+                  "overflow-hidden rounded-surface-lg border border-border bg-card",
+                  !product.available && "opacity-60",
+                )}
                 key={product.id}
               >
                 <button
                   aria-label={`Ver ${product.name}`}
+                  className="block w-full bg-transparent text-left disabled:cursor-not-allowed"
                   disabled={!product.available}
                   onClick={() => openProduct(product)}
                   type="button"
                 >
-                  <span className="productPhoto">
+                  <span className="relative block aspect-square w-full bg-muted">
                     <Image
                       alt={product.imageAlt}
                       fill
@@ -723,18 +869,30 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       sizes="(max-width: 600px) 48vw, 280px"
                       src={product.imageUrl}
                     />
-                    {!product.available && <b>Agotado</b>}
-                  </span>
-                  <span className="productCopy">
-                    <strong>{product.name}</strong>
-                    <small>{product.description}</small>
-                    {product.allergens.length > 0 && (
-                      <em>Contiene: {product.allergens.join(", ")}</em>
+                    {!product.available && (
+                      <b className="absolute inset-0 flex items-center justify-center bg-foreground/70 text-body font-extrabold text-background">
+                        Agotado
+                      </b>
                     )}
-                    <span>
-                      {money(product.priceClp)}
+                  </span>
+                  <span className="block space-y-1 p-3">
+                    <strong className="block text-body font-bold text-foreground">
+                      {product.name}
+                    </strong>
+                    <small className="block text-small text-muted-foreground">
+                      {product.description}
+                    </small>
+                    {product.allergens.length > 0 && (
+                      <em className="block text-small not-italic text-muted-foreground">
+                        Contiene: {product.allergens.join(", ")}
+                      </em>
+                    )}
+                    <span className="flex items-center justify-between pt-1">
+                      <span className="text-body font-extrabold text-foreground">
+                        {money(product.priceClp)}
+                      </span>
                       {product.available && (
-                        <i>
+                        <i className="flex size-8 items-center justify-center rounded-full bg-brand not-italic text-primary-foreground">
                           <Icon name="plus" size={18} />
                         </i>
                       )}
@@ -748,130 +906,136 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       )}
 
       {screen === "cart" && (
-        <section className="contentScreen cartScreen">
-          <div className="screenHeading">
-            <button
-              aria-label="Volver"
-              className="roundBack"
-              onClick={() => setScreen("menu")}
-              type="button"
-            >
-              <Icon name="arrow" />
-            </button>
-            <div>
-              <p className="sectionKicker">Tu carrito</p>
-              <h1>Mi pedido</h1>
-            </div>
-          </div>
+        <section className="space-y-6 px-4 py-6">
+          <ScreenHeading
+            eyebrow="Tu carrito"
+            onBack={() => setScreen("menu")}
+            title="Mi pedido"
+          />
 
           {data.cart.lines.length === 0 ? (
-            <div className="emptyCart">
-              <span>
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <span className="flex size-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <Icon name="bag" size={32} />
               </span>
-              <h2>Aún no agregas nada</h2>
-              <p>La carta sigue a un toque.</p>
-              <button className="solidButton" onClick={() => setScreen("menu")}>
-                Ver la carta
-              </button>
+              <h2 className="text-h2 text-foreground">
+                Aún no agregas nada
+              </h2>
+              <p className="text-body text-muted-foreground">
+                La carta sigue a un toque.
+              </p>
+              <Button onClick={() => setScreen("menu")}>Ver la carta</Button>
             </div>
           ) : (
             <>
-              <div className="cartLines">
+              <div className="space-y-3">
                 {data.cart.lines.map((line) => (
-                  <article key={line.id}>
-                    <div>
-                      <strong>{line.productName}</strong>
-                      {line.variantName && <small>{line.variantName}</small>}
-                      {line.note && <em>“{line.note}”</em>}
+                  <article
+                    className="flex items-center justify-between gap-3 rounded-surface-lg border border-border bg-card p-4"
+                    key={line.id}
+                  >
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <strong className="block text-body font-bold text-foreground">
+                        {line.productName}
+                      </strong>
+                      {line.variantName && (
+                        <small className="block text-small text-muted-foreground">
+                          {line.variantName}
+                        </small>
+                      )}
+                      {line.note && (
+                        <em className="block text-small not-italic text-muted-foreground">
+                          &ldquo;{line.note}&rdquo;
+                        </em>
+                      )}
                       {line.invitationTargetTableName ? (
-                        <span className="invitationBadge">
+                        <Badge variant="warning">
                           INVITACIÓN · entregar en{" "}
                           {line.invitationTargetTableName}
-                        </span>
+                        </Badge>
                       ) : null}
                       {line.isUpsell ? (
-                        <span className="upsellBadge">SUGERENCIA ACEPTADA</span>
+                        <Badge variant="neutral">SUGERENCIA ACEPTADA</Badge>
                       ) : null}
                       {line.promotionLabel ? (
-                        <span className="promotionBadge">
+                        <Badge variant="success">
                           {line.promotionLabel} · −
                           {money((line.unitDiscountClp ?? 0) * line.quantity)}
-                        </span>
+                        </Badge>
                       ) : null}
                       {line.isLoyaltyReward ? (
-                        <span className="rewardBadge">PREMIO · $0</span>
+                        <Badge variant="success">PREMIO · $0</Badge>
                       ) : (
-                        <b>{money(line.lineTotalClp)}</b>
+                        <b className="block text-body font-extrabold text-foreground">
+                          {money(line.lineTotalClp)}
+                        </b>
                       )}
                     </div>
-                    <div className="quantityControl">
-                      <button
-                        aria-label={`Quitar una unidad de ${line.productName}`}
-                        disabled={working}
-                        onClick={() =>
-                          void mutate({
-                            action: "cart.update",
-                            lineId: line.id,
-                            quantity: line.quantity - 1,
-                          })
-                        }
-                        type="button"
-                      >
-                        <Icon name="minus" size={16} />
-                      </button>
-                      <span>{line.quantity}</span>
-                      <button
-                        aria-label={`Agregar una unidad de ${line.productName}`}
-                        disabled={working}
-                        onClick={() =>
-                          void mutate({
-                            action: "cart.update",
-                            lineId: line.id,
-                            quantity: line.quantity + 1,
-                          })
-                        }
-                        type="button"
-                      >
-                        <Icon name="plus" size={16} />
-                      </button>
-                    </div>
+                    <QuantityControl
+                      label={line.productName}
+                      onDecrement={() =>
+                        void mutate({
+                          action: "cart.update",
+                          lineId: line.id,
+                          quantity: line.quantity - 1,
+                        })
+                      }
+                      onIncrement={() =>
+                        void mutate({
+                          action: "cart.update",
+                          lineId: line.id,
+                          quantity: line.quantity + 1,
+                        })
+                      }
+                      quantity={line.quantity}
+                      working={working}
+                    />
                   </article>
                 ))}
               </div>
 
               {data.waiterPaymentRequest && (
-                <div className="waiterPending" role="status">
+                <div
+                  className="flex items-start gap-3 rounded-surface-lg border border-warning bg-warning-soft p-4"
+                  role="status"
+                >
                   <Icon name="clock" />
                   <div>
-                    <strong>Pendiente de pago con el garzón</strong>
-                    <p>Tu pedido aún no fue enviado a la barra.</p>
+                    <strong className="block text-body font-bold text-foreground">
+                      Pendiente de pago con el garzón
+                    </strong>
+                    <p className="text-small text-foreground">
+                      Tu pedido aún no fue enviado a la barra.
+                    </p>
                   </div>
                 </div>
               )}
 
-              <div className="cartSummary solidSurface">
-                <span>Subtotal</span>
-                <strong>{money(subtotal)}</strong>
+              <div className="cartSummary solidSurface flex items-center justify-between rounded-surface-lg bg-foreground p-4">
+                <span className="text-small text-background/70">Subtotal</span>
+                <strong className="text-h3 text-background">
+                  {money(subtotal)}
+                </strong>
               </div>
-              <button
-                className="solidButton payButton"
+              <Button
+                className="w-full justify-between"
                 disabled={working}
                 onClick={() => setScreen("checkout")}
                 type="button"
               >
                 Ir al pago
                 <span>{money(subtotal)}</span>
-              </button>
-              <button
-                className="textButton"
+              </Button>
+              <Button
+                className="w-full"
                 disabled={working}
                 onClick={() => void mutate({ action: "waiter.pay" })}
                 type="button"
+                variant="ghost"
               >
                 Prefiero pagar con el garzón
-              </button>
-              <p className="waiterClarification">
+              </Button>
+              <p className="text-center text-small text-muted-foreground">
                 Esta opción solo avisa al equipo. No crea un pedido ni envía
                 comandas hasta que el pago sea confirmado.
               </p>
@@ -881,90 +1045,111 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       )}
 
       {screen === "checkout" && (
-        <section className="contentScreen checkoutScreen">
-          <div className="screenHeading">
-            <button
-              aria-label="Volver"
-              className="roundBack"
-              onClick={() => setScreen("cart")}
-              type="button"
-            >
-              <Icon name="arrow" />
-            </button>
-            <div>
-              <p className="sectionKicker">Pago seguro</p>
-              <h1>Checkout</h1>
-            </div>
-          </div>
+        <section className="space-y-6 px-4 py-6">
+          <ScreenHeading
+            eyebrow="Pago seguro"
+            onBack={() => setScreen("cart")}
+            title="Checkout"
+          />
 
-          <div className="checkoutContext">
-            <div>
-              <span>{data.venue.name}</span>
-              <strong>{data.venue.tableName}</strong>
+          <div className="flex items-center justify-between rounded-surface-lg border border-border bg-card p-4">
+            <div className="space-y-1">
+              <span className="block text-small text-muted-foreground">
+                {data.venue.name}
+              </span>
+              <strong className="block text-body font-bold text-foreground">
+                {data.venue.tableName}
+              </strong>
             </div>
-            <div>
-              <span>Tu alias</span>
-              <strong>{data.session?.alias}</strong>
+            <div className="space-y-1 text-right">
+              <span className="block text-small text-muted-foreground">
+                Tu alias
+              </span>
+              <strong className="block text-body font-bold text-foreground">
+                {data.session?.alias}
+              </strong>
             </div>
           </div>
 
           {!data.quote ? (
             <>
               {data.engagement.upsellSuggestions.length > 0 ? (
-                <section className="upsellBlock solidSurface">
-                  <div>
-                    <p className="sectionKicker">Por si te tinca</p>
-                    <h2>¿Le sumas algo?</h2>
-                    <small>
+                <section className="space-y-3 rounded-surface-lg bg-foreground p-4">
+                  <div className="space-y-1">
+                    <p className="text-label uppercase tracking-wide text-background/70">
+                      Por si te tinca
+                    </p>
+                    <h2 className="text-h3 text-background">
+                      ¿Le sumas algo?
+                    </h2>
+                    <small className="block text-small text-background/70">
                       Opcional. Ignorarlo no cambia tu pedido ni agrega pasos.
                     </small>
                   </div>
                   {data.engagement.upsellSuggestions.map((suggestion) => (
-                    <article key={suggestion.ruleId}>
-                      <span>
-                        <strong>{suggestion.productName}</strong>
-                        <small>{money(suggestion.priceClp)}</small>
+                    <article
+                      className="flex items-center justify-between gap-2 border-t border-background/20 pt-3 first:border-t-0 first:pt-0"
+                      key={suggestion.ruleId}
+                    >
+                      <span className="space-y-1">
+                        <strong className="block text-body font-bold text-background">
+                          {suggestion.productName}
+                        </strong>
+                        <small className="block text-small text-background/70">
+                          {money(suggestion.priceClp)}
+                        </small>
                       </span>
-                      <button
-                        disabled={working}
-                        onClick={() =>
-                          void mutate({
-                            action: "upsell.accept",
-                            ruleId: suggestion.ruleId,
-                            productId: suggestion.productId,
-                          })
-                        }
-                        type="button"
-                      >
-                        Sumar
-                      </button>
-                      <button
-                        aria-label={`Ignorar ${suggestion.productName}`}
-                        className="textButton"
-                        disabled={working}
-                        onClick={() =>
-                          void mutate({
-                            action: "upsell.dismiss",
-                            ruleId: suggestion.ruleId,
-                          })
-                        }
-                        type="button"
-                      >
-                        Ahora no
-                      </button>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <Button
+                          className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
+                          disabled={working}
+                          onClick={() =>
+                            void mutate({
+                              action: "upsell.accept",
+                              ruleId: suggestion.ruleId,
+                              productId: suggestion.productId,
+                            })
+                          }
+                          size="small"
+                          type="button"
+                        >
+                          Sumar
+                        </Button>
+                        <button
+                          aria-label={`Ignorar ${suggestion.productName}`}
+                          className="bg-transparent text-small font-bold text-background/70 underline"
+                          disabled={working}
+                          onClick={() =>
+                            void mutate({
+                              action: "upsell.dismiss",
+                              ruleId: suggestion.ruleId,
+                            })
+                          }
+                          type="button"
+                        >
+                          Ahora no
+                        </button>
+                      </span>
                     </article>
                   ))}
                 </section>
               ) : null}
 
-              <section className="checkoutBlock">
-                <label htmlFor="display-name">
-                  Tu nombre o apodo <span>opcional</span>
-                </label>
-                <p>Para que el garzón te encuentre en una mesa grande.</p>
-                <div className="inputWithIcon">
-                  <Icon name="user" size={19} />
-                  <input
+              <section className="space-y-4 rounded-surface-lg border border-border bg-card p-4">
+                <div className="space-y-2">
+                  <label
+                    className="block text-small font-bold text-foreground"
+                    htmlFor="display-name"
+                  >
+                    Tu nombre o apodo{" "}
+                    <span className="font-normal text-muted-foreground">
+                      opcional
+                    </span>
+                  </label>
+                  <p className="text-small text-muted-foreground">
+                    Para que el garzón te encuentre en una mesa grande.
+                  </p>
+                  <Input
                     autoComplete="nickname"
                     id="display-name"
                     maxLength={60}
@@ -973,13 +1158,20 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     value={displayName}
                   />
                 </div>
-                <label htmlFor="receipt-email">
-                  Correo para tu boleta <span>opcional</span>
-                </label>
-                <p>También podrás verla aquí cuando esté emitida.</p>
-                <div className="inputWithIcon">
-                  <Icon name="user" size={19} />
-                  <input
+                <div className="space-y-2">
+                  <label
+                    className="block text-small font-bold text-foreground"
+                    htmlFor="receipt-email"
+                  >
+                    Correo para tu boleta{" "}
+                    <span className="font-normal text-muted-foreground">
+                      opcional
+                    </span>
+                  </label>
+                  <p className="text-small text-muted-foreground">
+                    También podrás verla aquí cuando esté emitida.
+                  </p>
+                  <Input
                     autoComplete="email"
                     id="receipt-email"
                     inputMode="email"
@@ -993,79 +1185,89 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               </section>
 
               {data.storedValue.consented ? (
-                <section className="checkoutBlock storedValueTender">
-                  <div className="labelRow">
-                    <div>
-                      <strong>Saldo de este local</strong>
-                      <p>
-                        Disponible: {money(data.storedValue.balanceClp)}. Puedes
-                        usar una parte y pagar el resto con tarjeta.
+                <section className="space-y-3 rounded-surface-lg border border-border bg-card p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <strong className="block text-body font-bold text-foreground">
+                        Saldo de este local
+                      </strong>
+                      <p className="text-small text-muted-foreground">
+                        Disponible: {money(data.storedValue.balanceClp)}.
+                        Puedes usar una parte y pagar el resto con tarjeta.
                       </p>
                     </div>
                   </div>
-                  <label htmlFor="stored-value-amount">
+                  <label
+                    className="block space-y-2 text-small font-bold text-foreground"
+                    htmlFor="stored-value-amount"
+                  >
                     Usar saldo en este pedido
-                  </label>
-                  <input
-                    id="stored-value-amount"
-                    inputMode="numeric"
-                    max={Math.min(
-                      data.storedValue.balanceClp,
-                      subtotal + tipClp,
-                    )}
-                    min="0"
-                    onChange={(event) =>
-                      setStoredValueClp(
-                        String(
-                          Math.min(
-                            Number(event.target.value.replaceAll(/\D/g, "")) ||
-                              0,
-                            data.storedValue.balanceClp,
-                            subtotal + tipClp,
+                    <Input
+                      id="stored-value-amount"
+                      inputMode="numeric"
+                      max={Math.min(
+                        data.storedValue.balanceClp,
+                        subtotal + tipClp,
+                      )}
+                      min="0"
+                      onChange={(event) =>
+                        setStoredValueClp(
+                          String(
+                            Math.min(
+                              Number(
+                                event.target.value.replaceAll(/\D/g, ""),
+                              ) || 0,
+                              data.storedValue.balanceClp,
+                              subtotal + tipClp,
+                            ),
                           ),
-                        ),
-                      )
-                    }
-                    value={storedValueClp}
-                  />
-                  <small>
+                        )
+                      }
+                      value={storedValueClp}
+                    />
+                  </label>
+                  <small className="block text-small text-muted-foreground">
                     Bono primero y luego dinero cargado; dentro de cada uno,
                     vence primero lo que se usa primero.
                   </small>
                 </section>
               ) : null}
 
-              <section className="checkoutBlock">
-                <div className="labelRow">
+              <section className="space-y-3 rounded-surface-lg border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <strong>Propina</strong>
-                    <p>La puedes cambiar o dejar en $0.</p>
+                    <strong className="block text-body font-bold text-foreground">
+                      Propina
+                    </strong>
+                    <p className="text-small text-muted-foreground">
+                      La puedes cambiar o dejar en $0.
+                    </p>
                   </div>
-                  <b>{money(tipClp)}</b>
+                  <b className="text-body font-extrabold text-foreground">
+                    {money(tipClp)}
+                  </b>
                 </div>
-                <div className="tipOptions">
+                <OptionRail>
                   {data.venue.tipSuggestions.map((suggestion) => (
-                    <button
-                      className={tipPercent === suggestion ? "selected" : ""}
+                    <RailButton
+                      active={tipPercent === suggestion}
                       key={suggestion}
                       onClick={() => setTipPercent(suggestion)}
-                      type="button"
                     >
                       {suggestion === 0 ? "Sin propina" : `${suggestion}%`}
-                    </button>
+                    </RailButton>
                   ))}
-                  <button
-                    className={tipPercent === -1 ? "selected" : ""}
+                  <RailButton
+                    active={tipPercent === -1}
                     onClick={() => setTipPercent(-1)}
-                    type="button"
                   >
                     Otro
-                  </button>
-                </div>
+                  </RailButton>
+                </OptionRail>
                 {tipPercent === -1 && (
-                  <label className="customTip">
+                  <label className="block space-y-2 text-small font-bold text-foreground">
                     Monto en pesos
-                    <input
+                    <Input
                       inputMode="numeric"
                       min="0"
                       onChange={(event) =>
@@ -1077,15 +1279,18 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </label>
                 )}
                 {tipClp > 0 && data.engagement.settings.waiterTipEnabled ? (
-                  <fieldset className="tipRecipient">
-                    <legend>¿Para quién es la propina?</legend>
-                    <p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-small font-bold text-foreground">
+                      ¿Para quién es la propina?
+                    </legend>
+                    <p className="text-small text-muted-foreground">
                       Tablio informa la distribución; el dinero lo entrega el
                       local.
                     </p>
-                    <label>
+                    <label className="flex items-center gap-2 text-body text-foreground">
                       <input
                         checked={tipRecipientEmployeeId === ""}
+                        className="size-icon shrink-0"
                         name="tip-recipient"
                         onChange={() => setTipRecipientEmployeeId("")}
                         type="radio"
@@ -1093,9 +1298,13 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       Equipo
                     </label>
                     {data.engagement.tipRecipients.map((waiter) => (
-                      <label key={waiter.employeeId}>
+                      <label
+                        className="flex items-center gap-2 text-body text-foreground"
+                        key={waiter.employeeId}
+                      >
                         <input
                           checked={tipRecipientEmployeeId === waiter.employeeId}
+                          className="size-icon shrink-0"
                           name="tip-recipient"
                           onChange={() =>
                             setTipRecipientEmployeeId(waiter.employeeId)
@@ -1109,73 +1318,91 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 ) : null}
               </section>
 
-              <div className="financialTotal">
-                <div>
+              <div className="financialTotal space-y-2 rounded-surface-lg bg-foreground p-6">
+                <div className="flex items-center justify-between text-small text-background/70">
                   <span>Total de productos</span>
-                  <b>{money(subtotal)}</b>
+                  <b className="text-background">{money(subtotal)}</b>
                 </div>
-                <div>
+                <div className="flex items-center justify-between text-small text-background/70">
                   <span>Propina</span>
-                  <b>{money(tipClp)}</b>
+                  <b className="text-background">{money(tipClp)}</b>
                 </div>
-                <small>Precios con impuestos incluidos</small>
-                <div className="grandTotal">
-                  <strong>Total</strong>
-                  <strong>{money(subtotal + tipClp)}</strong>
+                <small className="block text-small text-background/70">
+                  Precios con impuestos incluidos
+                </small>
+                <div className="grandTotal flex items-center justify-between border-t border-background/20 pt-3">
+                  <strong className="text-body font-extrabold text-background">
+                    Total
+                  </strong>
+                  <strong className="text-h2 text-background">
+                    {money(subtotal + tipClp)}
+                  </strong>
                 </div>
               </div>
-              <button
-                className="solidButton payButton"
+              <Button
+                className="w-full"
                 disabled={working}
                 onClick={() => void createQuote()}
                 type="button"
               >
                 {working ? "Verificando stock…" : "Preparar pago"}
                 <Icon name="arrow" />
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <div className="financialTotal paymentTotal">
-                <span>Total a pagar</span>
-                <strong>{money(data.quote.totalClp)}</strong>
-                <small>
+              <div className="paymentTotal space-y-2 rounded-surface-lg bg-foreground p-6">
+                <span className="block text-small text-background/70">
+                  Total a pagar
+                </span>
+                <strong className="block text-[clamp(2rem,9vw,3.1rem)] leading-none tracking-tight text-background">
+                  {money(data.quote.totalClp)}
+                </strong>
+                <small className="block text-small text-background/70">
                   {data.venue.name} · {data.venue.tableName} ·{" "}
                   {data.session?.displayName || data.session?.alias}
                 </small>
                 {data.quote.promotionDiscountClp > 0 ? (
-                  <small>
+                  <small className="block text-small text-background/70">
                     Happy hour: −{money(data.quote.promotionDiscountClp)} ·
                     precio congelado
                   </small>
                 ) : null}
-                <small>Propina para {data.quote.tipRecipient.label}</small>
+                <small className="block text-small text-background/70">
+                  Propina para {data.quote.tipRecipient.label}
+                </small>
                 {data.quote.storedValueAppliedClp > 0 ? (
                   <>
-                    <small>
+                    <small className="block text-small text-background/70">
                       Saldo congelado: −
                       {money(data.quote.storedValueAppliedClp)}
                     </small>
-                    <span>Resta pagar</span>
-                    <strong>{money(data.quote.externalPaymentDueClp)}</strong>
+                    <span className="block text-small text-background/70">
+                      Resta pagar
+                    </span>
+                    <strong className="block text-h2 text-background">
+                      {money(data.quote.externalPaymentDueClp)}
+                    </strong>
                   </>
                 ) : null}
               </div>
 
-              <section className="paymentMethods">
-                <p className="sectionKicker">Método de pago</p>
-                <label className="methodSelected">
-                  <input defaultChecked name="payment" type="radio" />
-                  <span className="demoCard">
+              <section className="space-y-3">
+                <p className="text-label uppercase tracking-wide text-muted-foreground">
+                  Método de pago
+                </p>
+                <label className="flex items-center gap-3 rounded-surface-lg border-2 border-brand bg-accent p-4">
+                  <input defaultChecked className="sr-only" name="payment" type="radio" />
+                  <span className="flex h-8 w-16 shrink-0 items-center justify-center rounded-surface-sm bg-foreground text-label font-extrabold text-background">
                     {data.quote.externalPaymentDueClp === 0 ? "SALDO" : "DEMO"}
                   </span>
-                  <span>
-                    <strong>
+                  <span className="flex-1">
+                    <strong className="block text-body font-bold text-foreground">
                       {data.quote.externalPaymentDueClp === 0
                         ? "Saldo del local"
                         : "Tarjeta simulada"}
                     </strong>
-                    <small>
+                    <small className="block text-small text-muted-foreground">
                       {data.quote.externalPaymentDueClp === 0
                         ? "No se inicia un cobro externo"
                         : "No se cobrará dinero real"}
@@ -1183,24 +1410,28 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </span>
                   <Icon name="check" size={19} />
                 </label>
-                <label className="methodDisabled">
-                  <input disabled name="payment" type="radio" />
-                  <span className="appleMark"></span>
-                  <span>
-                    <strong>Apple Pay</strong>
-                    <small>Pendiente de validar con pasarela real</small>
+                <label className="flex items-center gap-3 rounded-surface-lg border border-border bg-card p-4 opacity-50">
+                  <input disabled className="sr-only" name="payment" type="radio" />
+                  <span className="h-8 w-16 shrink-0 rounded-surface-sm border border-border" />
+                  <span className="flex-1">
+                    <strong className="block text-body font-bold text-foreground">
+                      Apple Pay
+                    </strong>
+                    <small className="block text-small text-muted-foreground">
+                      Pendiente de validar con pasarela real
+                    </small>
                   </span>
                 </label>
               </section>
 
-              <div className="securityNote">
+              <div className="flex items-start gap-2 rounded-surface-md border border-border bg-card p-3">
                 <Icon name="shield" size={20} />
-                <span>
+                <span className="text-small text-muted-foreground">
                   El pedido nace solo cuando el servidor confirma el pago.
                 </span>
               </div>
-              <button
-                className="solidButton payButton"
+              <Button
+                className="w-full justify-between"
                 disabled={working}
                 onClick={() => void startPayment()}
                 type="button"
@@ -1213,53 +1444,67 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       ? "Pagar diferencia en demo"
                       : "Pagar en modo demo"}
                 <span>{money(data.quote.externalPaymentDueClp)}</span>
-              </button>
+              </Button>
             </>
           )}
         </section>
       )}
 
       {screen === "status" && (
-        <section className="contentScreen statusScreen">
+        <section className="space-y-6 px-4 py-6">
           {data.payment?.status === "pending" && !latestOrder ? (
-            <div className="pendingPayment solidSurface">
-              <span className="paymentSpinner" />
-              <p className="sectionKicker">Confirmación server-side</p>
-              <h1>Estamos confirmando tu pago</h1>
-              <p>
+            <div className="pendingPayment solidSurface flex flex-col items-center gap-3 rounded-surface-lg bg-foreground p-8 text-center">
+              <span className="size-12 animate-spin rounded-full border-4 border-background/30 border-t-background" />
+              <p className="text-label uppercase tracking-wide text-background/70">
+                Confirmación server-side
+              </p>
+              <h1 className="text-h2 text-background">
+                Estamos confirmando tu pago
+              </h1>
+              <p className="text-body text-background/70">
                 No cierres esta pantalla. Si cambia tu red, recuperaremos el
                 estado sin crear otro intento.
               </p>
-              <div>
+              <div className="flex items-center gap-2 text-small text-background/70">
                 <Icon name="shield" />
                 El navegador no puede aprobar este pago.
               </div>
             </div>
           ) : latestOrder ? (
             <>
-              <div className="confirmationCard solidSurface">
-                <span className="successSeal">
+              <div className="confirmationCard solidSurface space-y-3 rounded-surface-lg bg-foreground p-6 text-center">
+                <span className="mx-auto flex size-touch items-center justify-center rounded-full bg-success text-success-foreground">
                   <Icon name="check" size={30} />
                 </span>
-                <p className="sectionKicker">Pago confirmado</p>
-                <h1>Tu pedido ya está en la barra</h1>
-                <div className="orderIdentity">
+                <p className="text-label uppercase tracking-wide text-background/70">
+                  Pago confirmado
+                </p>
+                <h1 className="text-h2 text-background">
+                  Tu pedido ya está en la barra
+                </h1>
+                <div className="orderIdentity flex items-center justify-center gap-6">
                   <div>
-                    <span>Pedido</span>
-                    <strong>#{latestOrder.number}</strong>
+                    <span className="block text-small text-background/70">
+                      Pedido
+                    </span>
+                    <strong className="block text-body font-extrabold text-background">
+                      #{latestOrder.number}
+                    </strong>
                   </div>
                   <div>
-                    <span>Entrega</span>
-                    <strong>
+                    <span className="block text-small text-background/70">
+                      Entrega
+                    </span>
+                    <strong className="block text-body font-extrabold text-background">
                       {latestOrder.displayName || latestOrder.alias}
                     </strong>
                   </div>
                 </div>
-                <strong className="confirmedAmount">
+                <strong className="confirmedAmount block text-h1 text-background">
                   {money(latestOrder.totalClp)}
                 </strong>
                 {(latestOrder.storedValueAppliedClp ?? 0) > 0 ? (
-                  <p>
+                  <p className="text-small text-background/70">
                     {money(latestOrder.storedValueAppliedClp ?? 0)} desde saldo
                     · {money(latestOrder.externalPaidClp ?? 0)} por tarjeta
                     simulada
@@ -1268,16 +1513,24 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               </div>
 
               {data.engagement.sentInvitations.length > 0 ? (
-                <section className="invitationStatus solidSurface">
-                  <p className="sectionKicker">Tus invitaciones</p>
+                <section
+                  className="space-y-3 rounded-surface-lg bg-foreground p-4"
+                  role="status"
+                >
+                  <p className="text-label uppercase tracking-wide text-background/70">
+                    Tus invitaciones
+                  </p>
                   {data.engagement.sentInvitations.map((invitation) => (
-                    <article key={invitation.id}>
-                      <div>
-                        <strong>
+                    <article
+                      className="flex items-center justify-between gap-3 border-t border-background/20 pt-3 first:border-t-0 first:pt-0"
+                      key={invitation.id}
+                    >
+                      <div className="space-y-1">
+                        <strong className="block text-body font-bold text-background">
                           {invitation.productName} ·{" "}
                           {invitation.destinationTableName}
                         </strong>
-                        <span>
+                        <span className="block text-small text-background/70">
                           {invitation.state === "pending_claim"
                             ? "Pagado · aún no lo reclaman · nada se prepara todavía"
                             : invitation.state === "claimed"
@@ -1287,11 +1540,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                                 : "Venció · reembolso iniciado"}
                         </span>
                         {invitation.expiringSoon ? (
-                          <b>Aún no lo reclaman y está por vencer.</b>
+                          <b className="block text-small font-bold text-background">
+                            Aún no lo reclaman y está por vencer.
+                          </b>
                         ) : null}
                       </div>
                       {invitation.canCancel ? (
-                        <button
+                        <Button
+                          className="shrink-0 border-background/40 bg-transparent text-background hover:bg-background/10"
                           disabled={working}
                           onClick={() =>
                             void mutate({
@@ -1299,10 +1555,12 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                               invitationId: invitation.id,
                             })
                           }
+                          size="small"
                           type="button"
+                          variant="outline"
                         >
                           Cancelar y recuperar {money(invitation.amountClp)}
-                        </button>
+                        </Button>
                       ) : null}
                     </article>
                   ))}
@@ -1310,22 +1568,27 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               ) : null}
 
               <section
-                className={`taxDocumentCard taxDocument-${latestOrder.taxDocument.status}`}
                 aria-live="polite"
+                className="flex items-center justify-between gap-3 rounded-surface-lg border border-border bg-card p-4"
               >
-                <div>
-                  <p className="sectionKicker">Boleta electrónica</p>
-                  <strong>
+                <div className="space-y-1">
+                  <p className="text-label uppercase tracking-wide text-muted-foreground">
+                    Boleta electrónica
+                  </p>
+                  <strong className="block text-body font-bold text-foreground">
                     {latestOrder.taxDocument.status === "issued"
                       ? `Emitida · folio ${latestOrder.taxDocument.folio}`
                       : latestOrder.taxDocument.status === "failed"
                         ? "Emisión pendiente"
                         : "Emitiendo…"}
                   </strong>
-                  <span>{latestOrder.taxDocument.message}</span>
+                  <span className="block text-small text-muted-foreground">
+                    {latestOrder.taxDocument.message}
+                  </span>
                 </div>
                 {latestOrder.taxDocument.representationUrl ? (
                   <a
+                    className="shrink-0 text-small font-bold text-brand underline"
                     href={latestOrder.taxDocument.representationUrl}
                     rel="noreferrer"
                     target="_blank"
@@ -1335,45 +1598,42 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 ) : null}
               </section>
 
-              <section className="orderProgress">
-                <div className="statusSteps" aria-label="Estado general">
-                  <span className="done">
-                    <i>
-                      <Icon name="check" size={14} />
-                    </i>
-                    Pagado
-                  </span>
-                  <b />
-                  <span
-                    className={
-                      latestOrder.state !== "confirmed" ? "done" : "active"
-                    }
-                  >
-                    <i>
-                      <Icon name="spark" size={14} />
-                    </i>
-                    Preparando
-                  </span>
-                  <b />
-                  <span className={latestOrder.state === "ready" ? "done" : ""}>
-                    <i>
-                      <Icon name="check" size={14} />
-                    </i>
-                    Listo
-                  </span>
+              <section className="space-y-6">
+                <div
+                  aria-label="Estado general"
+                  className="flex items-center gap-2"
+                >
+                  <OrderStep done label="Pagado" />
+                  <span className="h-px flex-1 bg-border" />
+                  <OrderStep
+                    active={latestOrder.state === "confirmed"}
+                    done={latestOrder.state !== "confirmed"}
+                    label="Preparando"
+                  />
+                  <span className="h-px flex-1 bg-border" />
+                  <OrderStep done={latestOrder.state === "ready"} label="Listo" />
                 </div>
 
-                <div className="ticketList">
-                  <p className="sectionKicker">Cada estación por separado</p>
+                <div className="space-y-2">
+                  <p className="text-label uppercase tracking-wide text-muted-foreground">
+                    Cada estación por separado
+                  </p>
                   {latestOrder.tickets.map((ticket) => (
-                    <article key={ticket.id}>
-                      <div>
-                        <span className={`stationIcon ${ticket.status}`}>
+                    <article
+                      className="flex items-center justify-between gap-3 rounded-surface-md border border-border bg-card p-3"
+                      key={ticket.id}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-body font-extrabold text-foreground">
                           {ticket.stationName === "Barra" ? "B" : "C"}
                         </span>
                         <div>
-                          <strong>{ticket.stationName}</strong>
-                          <small>{ticket.itemNames.join(" · ")}</small>
+                          <strong className="block text-body font-bold text-foreground">
+                            {ticket.stationName}
+                          </strong>
+                          <small className="block text-small text-muted-foreground">
+                            {ticket.itemNames.join(" · ")}
+                          </small>
                         </div>
                       </div>
                       <TicketBadge status={ticket.status} />
@@ -1383,39 +1643,42 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               </section>
 
               {data.loyalty.enrollmentAvailable ? (
-                <section className="loyaltyPostPayment solidSurface">
-                  <p className="sectionKicker">Una decisión aparte del pago</p>
-                  <h2>Guarda un sello por esta visita</h2>
-                  <p>
+                <section className="space-y-3 rounded-surface-lg bg-foreground p-4">
+                  <p className="text-label uppercase tracking-wide text-background/70">
+                    Una decisión aparte del pago
+                  </p>
+                  <h2 className="text-h3 text-background">
+                    Guarda un sello por esta visita
+                  </h2>
+                  <p className="text-small text-background/70">
                     Ya pagaste. Si aceptas, este local recordará tus visitas y
                     podrás recuperar los sellos con teléfono o correo aunque
                     este navegador borre sus datos.
                   </p>
-                  <button
-                    className="solidButton"
+                  <Button
                     onClick={() => {
                       setLoyaltyPurpose("enroll");
                       setScreen("loyalty");
                     }}
                   >
                     Quiero mis sellos
-                  </button>
-                  <small>
+                  </Button>
+                  <small className="block text-small text-background/70">
                     No es necesario para pedir ni pagar. No se comparte entre
                     bares.
                   </small>
                 </section>
               ) : data.loyalty.profile ? (
-                <section className="loyaltyPostPayment">
-                  <strong>
+                <section className="rounded-surface-lg border border-border bg-card p-4">
+                  <strong className="text-body font-bold text-foreground">
                     Sello registrado · {data.loyalty.profile.stamps} de{" "}
                     {data.loyalty.visitsRequired}
                   </strong>
                 </section>
               ) : null}
 
-              <button
-                className="solidButton"
+              <Button
+                className="w-full"
                 onClick={() => {
                   setStoredValueClp("0");
                   setScreen("menu");
@@ -1424,43 +1687,36 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               >
                 Pedir otra ronda
                 <Icon name="arrow" />
-              </button>
+              </Button>
             </>
           ) : (
-            <div className="pendingPayment solidSurface">
+            <div className="pendingPayment solidSurface flex flex-col items-center gap-3 rounded-surface-lg bg-foreground p-8 text-center">
               <Icon name="warning" size={34} />
-              <h1>Este pago no se confirmó</h1>
-              <p>
+              <h1 className="text-h2 text-background">
+                Este pago no se confirmó
+              </h1>
+              <p className="text-body text-background/70">
                 No enviamos nada a la barra. Vuelve a tu carrito para revisar.
               </p>
-              <button className="solidButton" onClick={() => setScreen("cart")}>
+              <Button onClick={() => setScreen("cart")}>
                 Volver al carrito
-              </button>
+              </Button>
             </div>
           )}
         </section>
       )}
 
       {screen === "actions" && (
-        <section className="contentScreen actionsScreen">
-          <div className="screenHeading">
-            <button
-              aria-label="Volver"
-              className="roundBack"
-              onClick={() => setScreen("menu")}
-              type="button"
-            >
-              <Icon name="arrow" />
-            </button>
-            <div>
-              <p className="sectionKicker">{data.venue.tableName}</p>
-              <h1>¿Necesitas algo?</h1>
-            </div>
-          </div>
-          <p className="actionsIntro">
+        <section className="space-y-6 px-4 py-6">
+          <ScreenHeading
+            eyebrow={data.venue.tableName}
+            onBack={() => setScreen("menu")}
+            title="¿Necesitas algo?"
+          />
+          <p className="text-body text-muted-foreground">
             Avisamos una vez al equipo y te mostramos cuándo lo hiciste.
           </p>
-          <div className="actionGrid">
+          <div className="grid grid-cols-2 gap-3">
             {data.actions.map((action) => {
               const elapsed = action.lastRequestedAt
                 ? Date.parse(data.serverTime) -
@@ -1469,7 +1725,10 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
               const cooling = elapsed < action.cooldownSeconds * 1000;
               return (
                 <button
-                  className={cooling ? "requested" : ""}
+                  className={cn(
+                    "relative flex flex-col items-center gap-2 rounded-surface-lg border border-border bg-card p-4 text-center disabled:cursor-not-allowed",
+                    cooling && "border-success bg-success-soft",
+                  )}
                   disabled={working || cooling}
                   key={action.id}
                   onClick={() =>
@@ -1480,15 +1739,17 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   }
                   type="button"
                 >
-                  <span>
+                  <span className="flex size-12 items-center justify-center rounded-full bg-muted text-foreground">
                     <Icon name={action.icon} size={25} />
                   </span>
-                  <strong>{action.label}</strong>
-                  <small>
+                  <strong className="text-body font-bold text-foreground">
+                    {action.label}
+                  </strong>
+                  <small className="text-small text-muted-foreground">
                     {cooling ? "Avisado hace un momento" : action.description}
                   </small>
                   {cooling && (
-                    <i>
+                    <i className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-full bg-success not-italic text-success-foreground">
                       <Icon name="check" size={15} />
                     </i>
                   )}
@@ -1500,51 +1761,50 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       )}
 
       {screen === "loyalty" && (
-        <section className="contentScreen loyaltyScreen">
-          <div className="screenHeading">
-            <button
-              aria-label="Volver"
-              className="roundBack"
-              onClick={() => setScreen("menu")}
-              type="button"
-            >
-              <Icon name="arrow" />
-            </button>
-            <div>
-              <p className="sectionKicker">Programa de este local</p>
-              <h1>Mis sellos</h1>
-            </div>
-          </div>
+        <section className="space-y-6 px-4 py-6">
+          <ScreenHeading
+            eyebrow="Programa de este local"
+            onBack={() => setScreen("menu")}
+            title="Mis sellos"
+          />
 
           {data.storedValue.recoveryReference ? (
-            <section className="storedValueWallet solidSurface">
-              <p className="sectionKicker">Saldo protegido</p>
-              <h2>{data.storedValue.recoveryReference}</h2>
-              <p>
-                Tu identidad fue eliminada, pero el saldo no desapareció. Guarda
-                esta referencia y preséntala en caja para recuperarlo.
+            <section className="solidSurface space-y-2 rounded-surface-lg bg-foreground p-4">
+              <p className="text-label uppercase tracking-wide text-background/70">
+                Saldo protegido
+              </p>
+              <h2 className="text-h3 text-background">
+                {data.storedValue.recoveryReference}
+              </h2>
+              <p className="text-small text-background/70">
+                Tu identidad fue eliminada, pero el saldo no desapareció.
+                Guarda esta referencia y preséntala en caja para recuperarlo.
               </p>
             </section>
           ) : null}
 
           {data.loyalty.profile ? (
             <>
-              <section className="loyaltyWallet solidSurface">
-                <span className="successSeal">
+              <section className="solidSurface space-y-3 rounded-surface-lg bg-foreground p-6 text-center">
+                <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand text-primary-foreground">
                   <Icon name="spark" size={28} />
                 </span>
-                <p>{data.loyalty.profile.maskedIdentity}</p>
-                <h2>
+                <p className="text-small text-background/70">
+                  {data.loyalty.profile.maskedIdentity}
+                </p>
+                <h2 className="text-h2 text-background">
                   {data.loyalty.profile.stamps} / {data.loyalty.visitsRequired}{" "}
                   sellos
                 </h2>
-                <div className="stampRail">
+                <div className="flex flex-wrap justify-center gap-2">
                   {Array.from({ length: data.loyalty.visitsRequired }).map(
                     (_, index) => (
                       <i
-                        className={
-                          index < data.loyalty.profile!.stamps ? "earned" : ""
-                        }
+                        className={cn(
+                          "flex size-8 items-center justify-center rounded-full border border-background/30 text-small font-bold not-italic text-background/70",
+                          index < data.loyalty.profile!.stamps &&
+                            "border-brand bg-brand text-primary-foreground",
+                        )}
                         key={index}
                       >
                         {index < data.loyalty.profile!.stamps ? "✓" : index + 1}
@@ -1552,14 +1812,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     ),
                   )}
                 </div>
-                <p>
+                <p className="text-small text-background/70">
                   Continuidad: {data.loyalty.profile.contactMasked}. Si el
                   navegador pierde su token, recuperas aquí sin pedir ayuda al
                   bar.
                 </p>
                 {data.loyalty.profile.rewardAvailable ? (
-                  <button
-                    className="solidButton"
+                  <Button
+                    className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                     disabled={working}
                     onClick={() =>
                       void mutate(
@@ -1569,76 +1829,91 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     }
                   >
                     Agregar {data.loyalty.profile.rewardProductName} · premio
-                  </button>
+                  </Button>
                 ) : null}
               </section>
-              <section className="storedValueWallet solidSurface">
-                <p className="sectionKicker">Saldo de este local</p>
+              <section className="solidSurface space-y-3 rounded-surface-lg bg-foreground p-4">
+                <p className="text-label uppercase tracking-wide text-background/70">
+                  Saldo de este local
+                </p>
                 {!data.storedValue.consented ? (
                   <>
-                    <h2>Activa tu saldo recuperable</h2>
-                    <p>
-                      Es independiente por bar. La recarga es una obligación del
-                      local, no dinero de Tablio.
+                    <h2 className="text-h3 text-background">
+                      Activa tu saldo recuperable
+                    </h2>
+                    <p className="text-small text-background/70">
+                      Es independiente por bar. La recarga es una obligación
+                      del local, no dinero de Tablio.
                     </p>
-                    <button
-                      className="solidButton"
+                    <Button
                       disabled={working}
                       onClick={() =>
                         void mutate({ action: "stored_value.consent" })
                       }
                     >
                       Aceptar y activar
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
-                    <h2>{money(data.storedValue.balanceClp)}</h2>
-                    <p>
+                    <h2 className="text-h1 text-background">
+                      {money(data.storedValue.balanceClp)}
+                    </h2>
+                    <p className="text-small text-background/70">
                       {money(data.storedValue.loadedMoneyClp)} cargados ·{" "}
                       {money(data.storedValue.bonusClp)} de bono
                     </p>
-                    <small>
+                    <small className="block text-small text-background/70">
                       Máximo acumulado:{" "}
                       {money(data.storedValue.maxConsumerBalanceClp)}. Las
-                      recargas reales siguen bloqueadas por revisión legal; esta
-                      es una demo.
+                      recargas reales siguen bloqueadas por revisión legal;
+                      esta es una demo.
                     </small>
                     {data.storedValue.status === "wind_down" ? (
-                      <div className="platformAlert warning">
-                        Nuevas recargas pausadas. Tu saldo no desaparece y puede
-                        devolverse.
+                      <div
+                        className="rounded-surface-md border border-warning bg-warning-soft p-3 text-small text-foreground"
+                        role="alert"
+                      >
+                        Nuevas recargas pausadas. Tu saldo no desaparece y
+                        puede devolverse.
                       </div>
                     ) : (
-                      <div className="storedValueTopUp">
-                        <label htmlFor="stored-value-topup">
-                          Cargar dinero en demo
-                        </label>
-                        <select
-                          id="stored-value-topup"
-                          onChange={(event) => setTopUpClp(event.target.value)}
-                          value={topUpClp}
+                      <div className="space-y-3">
+                        <label
+                          className="block space-y-2 text-small font-bold text-background"
+                          htmlFor="stored-value-topup"
                         >
-                          <option value="10000">$10.000</option>
-                          <option value="20000">$20.000</option>
-                          <option value="30000">$30.000</option>
-                        </select>
-                        <button
-                          className="solidButton"
+                          Cargar dinero en demo
+                          <Select
+                            className="border-background/30 bg-background text-foreground"
+                            id="stored-value-topup"
+                            onChange={(event) =>
+                              setTopUpClp(event.target.value)
+                            }
+                            value={topUpClp}
+                          >
+                            <option value="10000">$10.000</option>
+                            <option value="20000">$20.000</option>
+                            <option value="30000">$30.000</option>
+                          </Select>
+                        </label>
+                        <Button
+                          className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                           disabled={working}
                           onClick={() => void topUpStoredValue()}
                         >
                           Cargar en modo demo
-                        </button>
-                        <small>
+                        </Button>
+                        <small className="block text-small text-background/70">
                           Bono demo: {data.storedValue.bonusBps / 100}%.
                         </small>
                       </div>
                     )}
                     {data.storedValue.expiring.map((item) => (
                       <div
-                        className="platformAlert warning"
+                        className="rounded-surface-md border border-warning bg-warning-soft p-3 text-small text-foreground"
                         key={item.expiresAt}
+                        role="alert"
                       >
                         {money(item.amountClp)} de{" "}
                         {item.bucket === "bonus" ? "bono" : "dinero cargado"}{" "}
@@ -1647,7 +1922,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       </div>
                     ))}
                     {data.storedValue.latestReceipt ? (
-                      <p>
+                      <p className="text-small text-background/70">
                         Comprobante:{" "}
                         {money(data.storedValue.latestReceipt.loadedMoneyClp)}{" "}
                         cargados +{" "}
@@ -1656,12 +1931,17 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       </p>
                     ) : null}
                     {data.storedValue.history.length ? (
-                      <div className="storedValueHistory">
-                        <strong>Últimos movimientos</strong>
+                      <div className="space-y-1 border-t border-background/20 pt-3">
+                        <strong className="block text-small font-bold text-background">
+                          Últimos movimientos
+                        </strong>
                         {data.storedValue.history.slice(0, 5).map((entry) => (
-                          <p key={entry.id}>
+                          <p
+                            className="flex items-center justify-between text-small text-background/70"
+                            key={entry.id}
+                          >
                             <span>{entry.type.replaceAll("_", " ")}</span>
-                            <b>
+                            <b className="text-background">
                               {entry.amountClp > 0 ? "+" : ""}
                               {money(entry.amountClp)}
                             </b>
@@ -1673,7 +1953,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 )}
               </section>
               <button
-                className="dangerTextButton"
+                className="w-full bg-transparent text-center text-small font-bold text-destructive underline"
                 disabled={working}
                 onClick={() => {
                   if (
@@ -1686,86 +1966,103 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     void mutate({ action: "loyalty.revoke" });
                   }
                 }}
+                type="button"
               >
                 Salir del programa y eliminar mis datos
               </button>
             </>
           ) : data.loyalty.challenge ? (
-            <section className="loyaltyForm solidSurface">
-              <p className="sectionKicker">Verifica que eres tú</p>
-              <h2>
+            <section className="space-y-4 rounded-surface-lg bg-foreground p-4">
+              <p className="text-label uppercase tracking-wide text-background/70">
+                Verifica que eres tú
+              </p>
+              <h2 className="text-h3 text-background">
                 Código enviado a {data.loyalty.challenge.maskedDestination}
               </h2>
-              <label htmlFor="loyalty-code">Código de 6 dígitos</label>
-              <input
-                id="loyalty-code"
-                inputMode="numeric"
-                maxLength={6}
-                onChange={(event) =>
-                  setLoyaltyCode(event.target.value.replaceAll(/\D/g, ""))
-                }
-                value={loyaltyCode}
-              />
-              <p className="demoHint">
-                En demo usa <strong>{data.loyalty.challenge.demoCode}</strong>
+              <label
+                className="block space-y-2 text-small font-bold text-background"
+                htmlFor="loyalty-code"
+              >
+                Código de 6 dígitos
+                <Input
+                  className="border-background/30 bg-background text-center text-h3 tracking-[0.3em] text-foreground"
+                  id="loyalty-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  onChange={(event) =>
+                    setLoyaltyCode(event.target.value.replaceAll(/\D/g, ""))
+                  }
+                  value={loyaltyCode}
+                />
+              </label>
+              <p className="text-small text-background/70">
+                En demo usa{" "}
+                <strong className="text-background">
+                  {data.loyalty.challenge.demoCode}
+                </strong>
               </p>
-              <button
-                className="solidButton"
+              <Button
+                className="disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                 disabled={working || loyaltyCode.length !== 6}
                 onClick={() => void verifyLoyaltyChallenge()}
               >
                 Recuperar mis sellos
-              </button>
+              </Button>
             </section>
           ) : (
-            <section className="loyaltyForm solidSurface">
-              <p className="sectionKicker">
+            <section className="space-y-4 rounded-surface-lg bg-foreground p-4">
+              <p className="text-label uppercase tracking-wide text-background/70">
                 {loyaltyPurpose === "recover"
                   ? "Continuidad principal"
                   : "Después del primer pago"}
               </p>
-              <h2>
+              <h2 className="text-h3 text-background">
                 {loyaltyPurpose === "recover"
                   ? "Recupera tus sellos"
                   : "Activa tus sellos"}
               </h2>
-              <p>
+              <p className="text-small text-background/70">
                 El token de este navegador puede perderse. Por eso teléfono o
                 correo son la forma principal de volver a entrar.
               </p>
-              <div className="tipOptions">
-                <button
-                  className={loyaltyChannel === "phone" ? "selected" : ""}
+              <OptionRail>
+                <RailButton
+                  active={loyaltyChannel === "phone"}
                   onClick={() => setLoyaltyChannel("phone")}
                 >
                   Teléfono
-                </button>
-                <button
-                  className={loyaltyChannel === "email" ? "selected" : ""}
+                </RailButton>
+                <RailButton
+                  active={loyaltyChannel === "email"}
                   onClick={() => setLoyaltyChannel("email")}
                 >
                   Correo
-                </button>
-              </div>
-              <label htmlFor="loyalty-contact">
+                </RailButton>
+              </OptionRail>
+              <label
+                className="block space-y-2 text-small font-bold text-background"
+                htmlFor="loyalty-contact"
+              >
                 {loyaltyChannel === "phone" ? "Teléfono" : "Correo"}
+                <Input
+                  autoComplete={loyaltyChannel === "phone" ? "tel" : "email"}
+                  className="border-background/30 bg-background text-foreground"
+                  id="loyalty-contact"
+                  onChange={(event) => setLoyaltyContact(event.target.value)}
+                  placeholder={
+                    loyaltyChannel === "phone"
+                      ? "+56 9 1234 5678"
+                      : "tu@correo.cl"
+                  }
+                  value={loyaltyContact}
+                />
               </label>
-              <input
-                autoComplete={loyaltyChannel === "phone" ? "tel" : "email"}
-                id="loyalty-contact"
-                onChange={(event) => setLoyaltyContact(event.target.value)}
-                placeholder={
-                  loyaltyChannel === "phone"
-                    ? "+56 9 1234 5678"
-                    : "tu@correo.cl"
-                }
-                value={loyaltyContact}
-              />
               {loyaltyPurpose === "enroll" ? (
-                <div className="consentChecks">
-                  <label>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-2 text-small text-background">
                     <input
                       checked={identityConsent}
+                      className="mt-1 size-icon shrink-0"
                       onChange={(event) =>
                         setIdentityConsent(event.target.checked)
                       }
@@ -1773,9 +2070,10 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     />
                     Acepto que este local recuerde mis visitas y preferencias.
                   </label>
-                  <label>
+                  <label className="flex items-start gap-2 text-small text-background">
                     <input
                       checked={contactConsent}
+                      className="mt-1 size-icon shrink-0"
                       onChange={(event) =>
                         setContactConsent(event.target.checked)
                       }
@@ -1786,8 +2084,8 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </label>
                 </div>
               ) : null}
-              <button
-                className="solidButton"
+              <Button
+                className="w-full disabled:bg-background/15 disabled:text-background/60 disabled:opacity-100"
                 disabled={
                   working ||
                   !loyaltyContact.trim() ||
@@ -1797,11 +2095,12 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 onClick={() => void startLoyaltyChallenge()}
               >
                 Enviar código
-              </button>
+              </Button>
               {loyaltyPurpose === "recover" && latestOrder ? (
                 <button
-                  className="textButton"
+                  className="w-full bg-transparent text-center text-small font-bold text-background/70 underline"
                   onClick={() => setLoyaltyPurpose("enroll")}
+                  type="button"
                 >
                   Soy nuevo: activar programa
                 </button>
@@ -1812,40 +2111,35 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
       )}
 
       {screen !== "entry" && (
-        <nav className="bottomNav" aria-label="Navegación principal">
-          <button
-            className={screen === "menu" ? "active" : ""}
+        <nav
+          aria-label="Navegación principal"
+          className="fixed inset-x-0 bottom-0 z-20 mx-auto grid w-full max-w-[720px] grid-cols-4 border-t border-border bg-card"
+        >
+          <BottomNavButton
+            active={screen === "menu"}
+            icon="cutlery"
+            label="Carta"
             onClick={() => setScreen("menu")}
-            type="button"
-          >
-            <Icon name="cutlery" size={21} />
-            Carta
-          </button>
-          <button
-            className={screen === "status" ? "active" : ""}
+          />
+          <BottomNavButton
+            active={screen === "status"}
             disabled={!latestOrder && data.payment?.status !== "pending"}
+            icon="clock"
+            label="Estado"
             onClick={() => setScreen("status")}
-            type="button"
-          >
-            <Icon name="clock" size={21} />
-            Estado
-          </button>
-          <button
-            className={screen === "actions" ? "active" : ""}
+          />
+          <BottomNavButton
+            active={screen === "actions"}
+            icon="hand"
+            label="Ayuda"
             onClick={() => setScreen("actions")}
-            type="button"
-          >
-            <Icon name="hand" size={21} />
-            Ayuda
-          </button>
-          <button
-            className={screen === "loyalty" ? "active" : ""}
+          />
+          <BottomNavButton
+            active={screen === "loyalty"}
+            icon="spark"
+            label="Sellos"
             onClick={() => setScreen("loyalty")}
-            type="button"
-          >
-            <Icon name="spark" size={21} />
-            Sellos
-          </button>
+          />
         </nav>
       )}
 
@@ -1853,19 +2147,19 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
         <div
           aria-labelledby="product-title"
           aria-modal="true"
-          className="modalBackdrop"
+          className="fixed inset-0 z-40 flex items-end bg-foreground/60"
           role="dialog"
         >
-          <article className="productModal">
+          <article className="relative max-h-[90dvh] w-full overflow-y-auto rounded-t-[24px] bg-card">
             <button
               aria-label="Cerrar detalle"
-              className="modalClose"
+              className="absolute right-4 top-4 z-10 flex size-touch items-center justify-center rounded-full bg-card text-foreground shadow-[0_2px_8px_rgba(17,17,16,0.2)]"
               onClick={() => setSelectedProduct(undefined)}
               type="button"
             >
               <Icon name="close" />
             </button>
-            <div className="modalPhoto">
+            <div className="relative h-[224px] w-full bg-muted">
               <Image
                 alt={selectedProduct.imageAlt}
                 fill
@@ -1873,35 +2167,47 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 src={selectedProduct.imageUrl}
               />
             </div>
-            <div className="modalBody">
-              <p className="sectionKicker">
+            <div className="space-y-4 p-6">
+              <p className="text-label uppercase tracking-wide text-muted-foreground">
                 {
                   data.categories.find(
                     (item) => item.id === selectedProduct.categoryId,
                   )?.name
                 }
               </p>
-              <h2 id="product-title">{selectedProduct.name}</h2>
-              <p>{selectedProduct.description}</p>
+              <h2 className="text-h1" id="product-title">
+                {selectedProduct.name}
+              </h2>
+              <p className="text-body text-muted-foreground">
+                {selectedProduct.description}
+              </p>
               {selectedProduct.allergens.length > 0 && (
-                <div className="allergenNote">
+                <div className="flex items-center gap-2 rounded-surface-md border border-warning bg-warning-soft p-3 text-small text-foreground">
                   <Icon name="warning" size={17} />
                   Contiene: {selectedProduct.allergens.join(", ")}
                 </div>
               )}
               {selectedProduct.variants.length > 0 && (
-                <fieldset className="variantList">
-                  <legend>Elige una opción</legend>
+                <fieldset className="space-y-2">
+                  <legend className="text-small font-bold text-foreground">
+                    Elige una opción
+                  </legend>
                   {selectedProduct.variants.map((variant) => (
-                    <label key={variant.id}>
-                      <input
-                        checked={selectedVariant === variant.id}
-                        name="variant"
-                        onChange={() => setSelectedVariant(variant.id)}
-                        type="radio"
-                      />
-                      <span>{variant.name}</span>
-                      <b>
+                    <label
+                      className="flex items-center justify-between gap-2 rounded-surface-md border border-border bg-card p-3 text-body text-foreground"
+                      key={variant.id}
+                    >
+                      <span className="flex items-center gap-2">
+                        <input
+                          checked={selectedVariant === variant.id}
+                          className="size-icon shrink-0"
+                          name="variant"
+                          onChange={() => setSelectedVariant(variant.id)}
+                          type="radio"
+                        />
+                        {variant.name}
+                      </span>
+                      <b className="font-bold">
                         {variant.priceDeltaClp === 0
                           ? "Incluido"
                           : `${variant.priceDeltaClp > 0 ? "+" : "−"}${money(
@@ -1912,9 +2218,13 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   ))}
                 </fieldset>
               )}
-              <label className="noteField">
+              <label
+                className="block space-y-2 text-small font-bold text-foreground"
+                htmlFor="product-note"
+              >
                 Nota para la barra o cocina
-                <input
+                <Input
+                  id="product-note"
                   maxLength={140}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Ej: sin hielo"
@@ -1922,11 +2232,14 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 />
               </label>
               {data.engagement.settings.invitationsEnabled ? (
-                <fieldset className="inviteTarget">
-                  <legend>¿Para quién?</legend>
-                  <label>
+                <fieldset className="space-y-2">
+                  <legend className="text-small font-bold text-foreground">
+                    ¿Para quién?
+                  </legend>
+                  <label className="flex items-center gap-2 text-body text-foreground">
                     <input
                       checked={invitationTargetTableId === ""}
+                      className="size-icon shrink-0"
                       name="invite-target"
                       onChange={() => setInvitationTargetTableId("")}
                       type="radio"
@@ -1934,9 +2247,13 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                     Para mí, en {data.venue.tableName}
                   </label>
                   {data.engagement.invitationTargets.map((target) => (
-                    <label key={target.tableId}>
+                    <label
+                      className="flex items-center gap-2 text-body text-foreground"
+                      key={target.tableId}
+                    >
                       <input
                         checked={invitationTargetTableId === target.tableId}
+                        className="size-icon shrink-0"
                         name="invite-target"
                         onChange={() =>
                           setInvitationTargetTableId(target.tableId)
@@ -1946,35 +2263,27 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                       Invitar a {target.label}
                     </label>
                   ))}
-                  <small>
-                    Esperará hasta 60 minutos o hasta que cierre la mesa. Puedes
-                    cancelarlo antes si aún no lo reclaman.
+                  <small className="block text-small text-muted-foreground">
+                    Esperará hasta 60 minutos o hasta que cierre la mesa.
+                    Puedes cancelarlo antes si aún no lo reclaman.
                   </small>
                 </fieldset>
               ) : null}
-              <div className="modalAction">
-                <div className="quantityControl">
-                  <button
-                    aria-label="Quitar una unidad"
-                    disabled={quantity === 1}
-                    onClick={() =>
-                      setQuantity((current) => Math.max(1, current - 1))
-                    }
-                    type="button"
-                  >
-                    <Icon name="minus" size={16} />
-                  </button>
-                  <span>{quantity}</span>
-                  <button
-                    aria-label="Agregar una unidad"
-                    onClick={() => setQuantity((current) => current + 1)}
-                    type="button"
-                  >
-                    <Icon name="plus" size={16} />
-                  </button>
-                </div>
-                <button
-                  className="solidButton"
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <QuantityControl
+                  label="producto"
+                  onDecrement={() =>
+                    setQuantity((current) => Math.max(1, current - 1))
+                  }
+                  onIncrement={() =>
+                    setQuantity((current) => current + 1)
+                  }
+                  quantity={quantity}
+                  quantityDisabled={quantity === 1}
+                  working={false}
+                />
+                <Button
+                  className="flex-1 justify-between"
                   disabled={working}
                   onClick={() => void addProduct()}
                   type="button"
@@ -1989,7 +2298,7 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                         quantity,
                     )}
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
           </article>
@@ -1999,6 +2308,142 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
   );
 }
 
+function ScreenHeading({
+  eyebrow,
+  onBack,
+  title,
+}: {
+  eyebrow: string;
+  onBack: () => void;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        aria-label="Volver"
+        className="flex size-touch shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground"
+        onClick={onBack}
+        type="button"
+      >
+        <Icon className="rotate-180" name="arrow" />
+      </button>
+      <div>
+        <p className="text-label uppercase tracking-wide text-muted-foreground">
+          {eyebrow}
+        </p>
+        <h1 className="text-h1 text-foreground">{title}</h1>
+      </div>
+    </div>
+  );
+}
+
+function QuantityControl({
+  label,
+  onDecrement,
+  onIncrement,
+  quantity,
+  quantityDisabled,
+  working,
+}: {
+  label: string;
+  onDecrement: () => void;
+  onIncrement: () => void;
+  quantity: number;
+  quantityDisabled?: boolean;
+  working: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1 rounded-full border border-border bg-card p-1">
+      <button
+        aria-label={`Quitar una unidad de ${label}`}
+        className="flex size-8 items-center justify-center rounded-full bg-transparent text-foreground disabled:opacity-40"
+        disabled={working || quantityDisabled}
+        onClick={onDecrement}
+        type="button"
+      >
+        <Icon name="minus" size={16} />
+      </button>
+      <span className="w-6 text-center text-body font-bold text-foreground">
+        {quantity}
+      </span>
+      <button
+        aria-label={`Agregar una unidad de ${label}`}
+        className="flex size-8 items-center justify-center rounded-full bg-transparent text-foreground disabled:opacity-40"
+        disabled={working}
+        onClick={onIncrement}
+        type="button"
+      >
+        <Icon name="plus" size={16} />
+      </button>
+    </div>
+  );
+}
+
+function OrderStep({
+  active,
+  done,
+  label,
+}: {
+  active?: boolean;
+  done?: boolean;
+  label: string;
+}) {
+  return (
+    <span className="flex flex-col items-center gap-1 text-center">
+      <i
+        className={cn(
+          "flex size-8 items-center justify-center rounded-full border-2 border-border bg-card not-italic text-muted-foreground",
+          done && "border-success bg-success text-success-foreground",
+          active && !done && "border-brand bg-accent text-brand",
+        )}
+      >
+        <Icon name={done ? "check" : "spark"} size={14} />
+      </i>
+      <small className="text-small font-bold text-foreground">{label}</small>
+    </span>
+  );
+}
+
+function BottomNavButton({
+  active,
+  disabled,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  icon: "cutlery" | "clock" | "hand" | "spark";
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        "flex min-h-touch flex-col items-center justify-center gap-1 bg-transparent py-2 text-small font-bold text-muted-foreground disabled:opacity-40",
+        active && "text-brand",
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      <Icon name={icon} size={21} />
+      {label}
+    </button>
+  );
+}
+
+const TICKET_BADGE_TONE: Record<
+  TicketStatus,
+  "neutral" | "warning" | "success"
+> = {
+  queued: "neutral",
+  acknowledged: "neutral",
+  in_preparation: "warning",
+  ready: "success",
+  completed: "success",
+};
+
 function TicketBadge({ status }: { status: TicketStatus }) {
   const labels: Record<TicketStatus, string> = {
     queued: "Recibido",
@@ -2007,5 +2452,5 @@ function TicketBadge({ status }: { status: TicketStatus }) {
     ready: "Listo",
     completed: "Entregado",
   };
-  return <span className={`ticketBadge ${status}`}>{labels[status]}</span>;
+  return <Badge variant={TICKET_BADGE_TONE[status]}>{labels[status]}</Badge>;
 }
