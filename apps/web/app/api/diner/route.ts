@@ -12,6 +12,7 @@ import {
   getRealDinerBootstrap,
   isRealQrToken,
   joinRealDinerSession,
+  mutateRealDiner,
 } from "../../../lib/diner-real-store";
 import type { DinerMutation } from "../../../lib/diner-contract";
 
@@ -129,13 +130,14 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const realDeviceToken = cookieStore.get(REAL_DEVICE_COOKIE)?.value;
     if (realDeviceToken) {
-      // OI-034 Incrementos 3-5 (carrito, quote, pago) todavía no existen.
-      // Rechazo explícito, nunca silencioso ni delegado al store en
-      // memoria — una sesión real nunca debe terminar mutando datos demo.
-      throw new DinerRealError(
-        "Esta acción todavía no está disponible para este local.",
-        501,
-      );
+      // OI-034 Incremento 3: cart.add/update/remove ya tienen RPC real.
+      // Quote/pago/fidelidad/saldo (Incrementos 4-5) todavía no existen —
+      // mutateRealDiner las rechaza explícito con 501, nunca cae en
+      // silencio al store en memoria.
+      const bootstrap = await mutateRealDiner(realDeviceToken, mutation);
+      return NextResponse.json(bootstrap, {
+        headers: { "cache-control": "no-store" },
+      });
     }
 
     const deviceToken = cookieStore.get(DEVICE_COOKIE)?.value;

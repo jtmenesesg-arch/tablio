@@ -2,6 +2,59 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-05 — OI-034 Incremento 3: carrito real del comensal
+
+**Qué se hizo:** tercer incremento del tramo. `carts`/`cart_items` existían completas desde
+Sprint 2 (estado, triggers de transición, FK a `diner_device_sessions` agregada en Sprint 3) pero
+ninguna RPC las tocaba nunca — RLS deja a `authenticated` sólo `SELECT` y a `anon` nada. Se agregó:
+
+- `private.diner_cart_add_item` / `diner_cart_update_item` / `diner_cart_remove_item` (+ wrappers
+  públicos): mismo molde que Incrementos 1-2 — `require_diner_device_session` revalida la sesión
+  en cada una (sin `p_table_id`, igual que `diner_bootstrap_menu`, porque el cliente nunca reclama
+  una mesa distinta a la de su propia sesión). Rechazo de negocio esperado (agotado, sin stock,
+  checkout ya empezado) vuelve como `{ok:false, code}`, nunca excepción — mismo patrón que
+  `enter_table` para no repetir el bug del audit_log del Incremento 1.
+- `private.diner_cart_view` + `private.diner_bootstrap_payload`: se refactorizó
+  `diner_bootstrap_menu` para delegar en un helper común que ahora también arma el carrito real —
+  así una recarga de página ya no muestra un carrito vacío si el comensal había agregado algo.
+- Decisión de diseño: `carts.device_reference_hash` (mecanismo de Sprint 2, previo a
+  `diner_device_sessions`) se sigue poblando, pero derivado con `sha256` del
+  `diner_device_session_id` en vez de un fingerprint aparte — así el UNIQUE ya existente
+  `(tenant_id, table_session_id, device_reference_hash)` sigue dando exactamente un carrito por
+  sesión de comensal por mesa, sin migrar columnas ni relajar el constraint.
+- **Fuera de alcance a propósito:** invitar a otra mesa, premio de fidelidad y upsell en el
+  carrito. Existen columnas/RPCs parciales de sprints anteriores para algo de esto
+  (`add_loyalty_reward_to_cart`, huérfana y revocada), pero apuntan a otro mecanismo y no se
+  conectan aquí — el carrito real de este incremento es sólo producto + variante + cantidad +
+  nota, lo mínimo para que exista un pedido real en el Incremento 4.
+
+**Cómo se verificó — RPC directo y navegador real, con dos sesiones anónimas simultáneas:**
+
+- Negroni (agotado): rechazado con `product_unavailable`, el carrito queda intacto.
+- Agregar 2 Corona con nota, luego 1 más con la misma nota: se fusiona en una sola línea con
+  cantidad 3 (no dos líneas duplicadas) — mismo comportamiento que ya tenía el store demo.
+- Heineken (stock 4) pedido en cantidad 999: rechazado con `insufficient_stock`, sin tocar el
+  carrito.
+- Actualizar cantidad, recargar la página (`diner_bootstrap_menu`): el carrito persiste con la
+  cantidad correcta y el subtotal correcto ($3.200 × 5 = $16.000).
+- **Aislamiento entre comensales de la misma mesa, la garantía central de "cada persona paga lo
+  suyo":** un segundo dispositivo real entrando a la misma mesa ve un carrito vacío, y al intentar
+  actualizar la línea del primero recibe `line_not_found` (nunca la toca) — confirmado que la
+  línea del primero sigue intacta después.
+- Cantidad en 0 elimina la línea; eliminarla de nuevo es idempotente (no falla).
+- **Navegador real (Playwright), no sólo RPC:** agregar Corona desde la carta real deja el badge
+  del carrito en "1"; Negroni sigue sin botón de agregar.
+- Suite completa como puerta de no-regresión: `pnpm typecheck` y `pnpm lint` limpios, 149/149
+  Vitest, 46/47 Playwright e2e (el único que no pasa sigue siendo OI-035, ajeno a este cambio).
+
+**Qué no se pudo correr esta vez:** los *security advisors* de Supabase — la cuenta del MCP
+conectado en este entorno no tiene acceso al proyecto real de Tablio (lista otros proyectos, no
+éste). Sustituido por una verificación manual: revisión de cada `grant`/`revoke` del archivo
+contra el patrón ya establecido, y una prueba en vivo de que `private.diner_cart_view` y
+`private.diner_bootstrap_payload` no son alcanzables por PostgREST bajo ningún nombre público.
+
+**Docs actualizados:** este incremento.
+
 ## 2026-08-04 — DEMO_ACCESS.md al día + producción de Vercel sin Supabase configurado
 
 **Qué se hizo:** al pedir el fundador que `DEMO_ACCESS.md` reflejara el Incremento 2 y agregara

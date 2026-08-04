@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { aliasCandidates } from "./diner-alias";
 import { createDinerClient } from "./supabase/diner-client";
-import type { DinerBootstrap } from "./diner-contract";
+import type { CartLine, DinerBootstrap, DinerMutation } from "./diner-contract";
 
-// OI-034 Incremento 2: carta real de solo lectura. Sólo lo que ya está
-// conectado (sesión + carta) viene de la base real; el resto del bootstrap
-// (carrito, quote, pago, pedidos, fidelidad, saldo, upsell/invitaciones)
-// todavía no tiene ninguna RPC real detrás — se devuelve en su estado
-// vacío/deshabilitado explícito, nunca simulado, para que la pantalla no
-// muestre datos falsos mientras esos incrementos no existan.
+// OI-034 Incrementos 2-3: carta real de solo lectura y carrito real. Sesión,
+// carta y carrito vienen de la base real; el resto del bootstrap (quote,
+// pago, pedidos, fidelidad, saldo, upsell/invitaciones) todavía no tiene
+// ninguna RPC real detrás — se devuelve en su estado vacío/deshabilitado
+// explícito, nunca simulado, para que la pantalla no muestre datos falsos
+// mientras esos incrementos no existan.
 
 export class DinerRealError extends Error {
   status: number;
@@ -32,13 +32,20 @@ function statusForRpcError(error: { code?: string; message?: string }): number {
   return 500;
 }
 
-// enter_table nunca lanza excepción para un rechazo esperado (ver ADR del
-// Incremento 1: raise exception deshacía el insert en audit_log dentro de la
-// misma transacción) — devuelve {ok:false, code} en su lugar. El status HTTP
-// para cada code sigue el mismo contrato que ya usaba diner-demo-store.
+// enter_table/diner_cart_* nunca lanzan excepción para un rechazo esperado
+// (ver ADR del Incremento 1: raise exception deshacía el insert en
+// audit_log dentro de la misma transacción) — devuelven {ok:false, code} en
+// su lugar. El status HTTP para cada code sigue el mismo contrato que ya
+// usaba diner-demo-store para las mismas situaciones.
 function statusForResultCode(code: string | undefined): number {
   if (code === "invalid") return 404;
-  if (code === "table_session_limit_reached" || code === "no_alias_available") {
+  if (
+    code === "table_session_limit_reached" ||
+    code === "no_alias_available" ||
+    code === "product_unavailable" ||
+    code === "insufficient_stock" ||
+    code === "cart_not_open"
+  ) {
     return 409;
   }
   return 400;
@@ -56,6 +63,12 @@ function messageForRpcError(error: { message?: string }): string {
       return "Esta mesa ya tiene muchos celulares conectados. Pide ayuda al equipo del local.";
     case "no_alias_available":
       return "Esta mesa está muy concurrida ahora mismo. Intenta de nuevo en un momento.";
+    case "product_unavailable":
+      return "Este producto se acaba de agotar.";
+    case "insufficient_stock":
+      return "No queda esa cantidad disponible.";
+    case "cart_not_open":
+      return "Termina o cancela el checkout actual.";
     case "invalid session":
     case "session expired":
     case "table session is no longer open":
@@ -66,9 +79,10 @@ function messageForRpcError(error: { message?: string }): string {
   }
 }
 
+const EMPTY_CART = { id: "real-cart-pending", lines: [], subtotalClp: 0 } as const;
+
 function emptyBootstrapExtras() {
   return {
-    cart: { id: "real-cart-pending", lines: [], subtotalClp: 0 },
     orders: [],
     actions: [],
     loyalty: {
@@ -129,6 +143,21 @@ type MenuPayload = {
   tableId: string;
   tableName: string;
   tipSuggestions: readonly number[];
+  cart: {
+    id: string;
+    lines: readonly {
+      id: string;
+      productId: string;
+      productName: string;
+      variantId: string | null;
+      variantName: string | null;
+      quantity: number;
+      note: string | null;
+      unitPriceClp: number;
+      lineTotalClp: number;
+    }[];
+    subtotalClp: number;
+  };
 };
 
 // Ningún producto de Bar La Virgen tiene foto todavía — Configuración no
@@ -170,6 +199,23 @@ function buildBootstrapFromMenu(menu: MenuPayload): DinerBootstrap {
       trackStock: product.trackStock,
       variants: product.variants,
     })),
+    cart: {
+      id: menu.cart.id,
+      lines: menu.cart.lines.map(
+        (line): CartLine => ({
+          id: line.id,
+          productId: line.productId,
+          productName: line.productName,
+          variantId: line.variantId ?? undefined,
+          variantName: line.variantName ?? undefined,
+          quantity: line.quantity,
+          note: line.note ?? undefined,
+          unitPriceClp: line.unitPriceClp,
+          lineTotalClp: line.lineTotalClp,
+        }),
+      ),
+      subtotalClp: menu.cart.subtotalClp,
+    },
     ...emptyBootstrapExtras(),
     serverTime: new Date().toISOString(),
   } as DinerBootstrap;
@@ -206,6 +252,7 @@ function unauthenticatedBootstrap(): DinerBootstrap {
     },
     categories: [],
     products: [],
+    cart: EMPTY_CART,
     ...emptyBootstrapExtras(),
     serverTime: new Date().toISOString(),
   } as DinerBootstrap;
@@ -247,3 +294,58 @@ export async function joinRealDinerSession(
   };
 }
 
+async function callCartRpc(
+  fnName: "diner_cart_add_item" | "diner_cart_update_item" | "diner_cart_remove_item",
+  deviceToken: string,
+  params: Record<string, unknown>,
+): Promise<DinerBootstrap> {
+  const supabase = createDinerClient();
+  const { data, error } = await supabase.rpc(fnName, {
+    p_session_token: deviceToken,
+    ...params,
+  });
+  if (error) {
+    throw new DinerRealError(messageForRpcError(error), statusForRpcError(error));
+  }
+  const result = data as { ok: boolean; code?: string } & Partial<MenuPayload>;
+  if (!result.ok) {
+    throw new DinerRealError(
+      messageForRpcError({ message: result.code }),
+      statusForResultCode(result.code),
+    );
+  }
+  return buildBootstrapFromMenu(result as MenuPayload);
+}
+
+// OI-034 Incremento 3: carrito real. Sólo cart.add/update/remove tienen RPC
+// real detrás — cualquier otra mutación (quote, pago, fidelidad, saldo,
+// upsell, invitaciones) todavía no existe para una sesión real y se rechaza
+// explícitamente en vez de caer en silencio al store en memoria.
+export async function mutateRealDiner(
+  deviceToken: string,
+  mutation: DinerMutation,
+): Promise<DinerBootstrap> {
+  switch (mutation.action) {
+    case "cart.add":
+      return callCartRpc("diner_cart_add_item", deviceToken, {
+        p_product_id: mutation.productId,
+        p_quantity: mutation.quantity,
+        p_variant_id: mutation.variantId ?? null,
+        p_note: mutation.note ?? null,
+      });
+    case "cart.update":
+      return callCartRpc("diner_cart_update_item", deviceToken, {
+        p_line_id: mutation.lineId,
+        p_quantity: mutation.quantity,
+      });
+    case "cart.remove":
+      return callCartRpc("diner_cart_remove_item", deviceToken, {
+        p_line_id: mutation.lineId,
+      });
+    default:
+      throw new DinerRealError(
+        "Esta acción todavía no está disponible para este local.",
+        501,
+      );
+  }
+}

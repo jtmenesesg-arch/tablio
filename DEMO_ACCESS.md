@@ -1,12 +1,13 @@
 # Accesos para demostrar Tablio
 
 **Lee esto primero: hoy siguen existiendo DOS cosas separadas, no una.** No están conectadas
-entre sí todavía. Lo que cambió desde la última vez: la **PWA del comensal ya lee la carta real**
-de "Bar La Virgen" (OI-034 Incremento 2) — puedes escanear una mesa real y ver su carta real,
-con el agotado y el stock limitado funcionando de verdad. Lo que **todavía no existe** es el
-carrito, el pago y el pedido: agregar algo a la carta real, pagarlo o verlo llegar al KDS sigue
-siendo sólo el demo simulado (sección 2). El resto de las pantallas (Dueño, Mesas, Caja, KDS,
-Garzón, Superadmin, Onboarding, Crédito) siguen sin conectar — ver OI-033.
+entre sí todavía. Lo que cambió desde la última vez: la **PWA del comensal ya tiene carrito
+real** (OI-034 Incremento 3) — puedes escanear una mesa real de "Bar La Virgen", ver su carta
+real y agregar productos de verdad al carrito, con el agotado y el límite de stock aplicados en
+el servidor, no sólo en la pantalla. Lo que **todavía no existe** es pagar: no hay `CheckoutQuote`
+ni confirmación de pago real todavía, así que un pedido real no llega a existir ni a verse en el
+KDS — eso sigue siendo sólo el demo simulado (sección 2). El resto de las pantallas (Dueño, Mesas,
+Caja, KDS, Garzón, Superadmin, Onboarding, Crédito) siguen sin conectar — ver OI-033.
 
 Ver `docs/BUILD_LOG.md` (entradas de OI-034) para el detalle técnico de qué se conectó y cómo se
 verificó cada incremento.
@@ -40,7 +41,8 @@ Virgen) — es un cabo suelto conocido, no algo que rompiste tú (ver OI-032). "
 | URL | `/mesa/e6Q9x3aDlJMqQBGwpgg6teAZVn7e7sn826lBrX8ItLc` (local) o el mismo path en `https://tabliocl.vercel.app` |
 | Código de presencia | **8447** (Mesa 1, Terraza) |
 | Qué vas a ver | La carta real de Bar La Virgen — 20 productos, 6 categorías, con el Negroni marcado "Agotado" (sin botón de agregar) y Corona/Heineken con stock limitado mostrados normales. Es la misma pantalla, mismo diseño, que la del demo — la diferencia es que esto lee la base real. |
-| Qué NO vas a poder hacer todavía | Agregar algo al carrito, pagar, o ver un pedido llegar al KDS. Cualquier acción más allá de entrar a la mesa responde explícitamente "Esta acción todavía no está disponible para este local." (nunca cae en silencio al demo simulado) — eso es OI-034 Incrementos 3 a 5, en curso. |
+| Qué SÍ puedes hacer ahora | Agregar productos al carrito de verdad — el badge y el subtotal reflejan filas reales en la base, no memoria del navegador. Recargar la página conserva el carrito. Cada persona que escanea la misma mesa tiene su propio carrito, separado del de las demás (verificado con dos sesiones reales a la vez). El agotado y el stock limitado se validan también en el servidor, no sólo en el botón: no hay forma de forzar un agregado que el botón ya bloquea. |
+| Qué NO vas a poder hacer todavía | Pagar, o ver un pedido llegar al KDS — no hay `CheckoutQuote` ni confirmación de pago real todavía (OI-034 Incrementos 4 y 5, en curso). Cualquier acción más allá de carrito/sesión responde explícitamente "Esta acción todavía no está disponible para este local." (nunca cae en silencio al demo simulado). |
 
 Sin login: cualquiera con este QR/código entra como comensal anónimo, igual que pasará en el
 piloto real. No hace falta la cuenta del dueño para probar esta parte.
@@ -134,9 +136,9 @@ La página de inicio (`/`) tiene enlaces directos a todas estas.
 ## Qué falta para que ambas cosas sean una sola
 
 Lo que sigue, según OI-033 y OI-034 en `docs/OPEN_ISSUES.md`, es terminar de conectar la toma de
-pedidos y pagos real — el Incremento 2 conectó la carta de sólo lectura; faltan el carrito real
-(Incremento 3), el `CheckoutQuote` inmutable (Incremento 4) y el pago confirmado server-side con
+pedidos y pagos real — Incremento 2 conectó la carta de sólo lectura, Incremento 3 conectó el
+carrito; faltan el `CheckoutQuote` inmutable (Incremento 4) y el pago confirmado server-side con
 una vista mínima y provisional de KDS (Incremento 5), cada uno con el mismo estándar de
-verificación contra la base real que ya se usó en los dos primeros. Después de eso queda el resto
+verificación contra la base real que ya se usó en los anteriores. Después de eso queda el resto
 de pantallas que siguen sobre *stores* en memoria (Dueño, Mesas, Caja, KDS completo, Garzón,
 Superadmin, Onboarding, Crédito).
