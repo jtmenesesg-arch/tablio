@@ -170,6 +170,14 @@ específico" (pasarela de pago, DTE, cobro SaaS — ver `docs/REAL_MONEY_BLOCKER
 decisión legítima y acotada; que ese mismo patrón se extienda en silencio a los datos propios del
 tenant (mesas, pedidos, personal) no lo es. Motivo: OI-033.
 
+**`DEMO_ACCESS.md` se actualiza en el mismo incremento en que cambia lo que es real, no al final
+del tramo.** Es el documento que el fundador usa para demostrar el producto frente a otra
+persona; si dice que algo "no lo pruebes hoy" y ese mismo día ya se puede probar, o dice que algo
+funciona y en realidad no, lo deja mal parado. Cuando un incremento conecta una pantalla o un
+flujo a datos reales — o cuando cambia qué URL/credencial/código sirve para probarlo —
+`DEMO_ACCESS.md` se corrige como parte de "terminado" para ese incremento (sección 5.2), igual
+que los demás docs vivos. No se acumula como pendiente para el cierre del sprint.
+
 ### 5.3 Regla de las dos vueltas
 
 Si un mismo error persiste después de **dos intentos de arreglo**, detente. No sigas
@@ -251,6 +259,8 @@ Actualizarlos es parte de la **definición de terminado**, no un extra.
 /docs/adr/ADR-XXX-*.md  ← una decisión técnica por archivo
 /docs/sprints/SPRINT-XX-SUMMARY.md
 /README.md              ← cómo levantar y correr el proyecto, escrito para un no-dev
+/DEMO_ACCESS.md         ← accesos para demostrar el producto; se actualiza en el mismo
+                           incremento que cambia lo que es real (ver 5.2)
 ```
 
 **Formato de ADR:** contexto · decisión · alternativas consideradas · consecuencias · estado · fecha.

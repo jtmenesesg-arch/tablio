@@ -1,32 +1,49 @@
 # Accesos para demostrar Tablio
 
 **Lee esto primero: hoy siguen existiendo DOS cosas separadas, no una.** No están conectadas
-entre sí todavía. Lo que cambió desde la última vez: **el local piloto "Bar La Virgen" ya no
-está vacío** — tiene zonas, mesas con QR real, estaciones, carta completa y personal cargados en
-la base de datos real. Pero la mayoría de las pantallas de la app **todavía no leen esos datos
-reales** — siguen mostrando el demo simulado de siempre. Hoy las pantallas **Equipo**,
-**Configuración del local**, **Soporte** y **Reportes** muestran el dato real — con eso, la
-Tarea 4 está completa. El resto se irá conectando pantalla por pantalla en lo que sigue (la app
-del comensal, y después las 8 pantallas que siguen en el demo simulado — ver OI-033).
+entre sí todavía. Lo que cambió desde la última vez: la **PWA del comensal ya lee la carta real**
+de "Bar La Virgen" (OI-034 Incremento 2) — puedes escanear una mesa real y ver su carta real,
+con el agotado y el stock limitado funcionando de verdad. Lo que **todavía no existe** es el
+carrito, el pago y el pedido: agregar algo a la carta real, pagarlo o verlo llegar al KDS sigue
+siendo sólo el demo simulado (sección 2). El resto de las pantallas (Dueño, Mesas, Caja, KDS,
+Garzón, Superadmin, Onboarding, Crédito) siguen sin conectar — ver OI-033.
 
-Ver `docs/BUILD_LOG.md` (entrada "Tarea 4" y siguientes) para el mapa completo de qué falta por
-conectar.
+Ver `docs/BUILD_LOG.md` (entradas de OI-034) para el detalle técnico de qué se conectó y cómo se
+verificó cada incremento.
+
+## URL pública — para abrir desde el celular sin levantar nada
+
+**`https://tabliocl.vercel.app`**. Es el mismo código, desplegado a producción (`vercel deploy
+--prod`, no es automático al hacer push — hay que acordarse de desplegar). Todos los accesos de
+este documento funcionan ahí igual que en local; donde cambia algo se indica.
 
 ## 1. Piloto real — "Bar La Virgen"
 
-### Cómo entrar
+### Cómo entrar (panel del dueño)
 
 | Qué | Valor |
 | --- | --- |
-| URL | `/login` |
+| URL | `/login` (local) o `https://tabliocl.vercel.app/login` |
 | Correo | `jtmenesesg@gmail.com` |
 | Contraseña | `So7nTcLhI8445RKq` (temporal — no hay pantalla para cambiarla todavía, ver OI-032) |
-| Qué pasa al entrar | Te lleva a `/dueno-real`, un panel mínimo que sólo demuestra que el login funciona. Va a mostrar $0 en ventas — eso es correcto, porque los pedidos y pagos todavía se generan en el demo simulado, no aquí (ver sección 3) |
+| Qué pasa al entrar | Te lleva a `/dueno-real`, un panel mínimo que sólo demuestra que el login funciona. Va a mostrar $0 en ventas — eso es correcto, porque todavía no hay pedidos ni pagos reales (sección "Qué falta" más abajo) |
 
 **Importante sobre el menú lateral de esa pantalla:** los botones "Resumen", "Mesas" y "Caja" del
 menú lateral hoy **todavía apuntan al demo simulado antiguo** (no a los datos reales de Bar La
 Virgen) — es un cabo suelto conocido, no algo que rompiste tú (ver OI-032). "Equipo",
 "Configurar", "Reportes" y "Soporte" sí llevan a pantallas reales.
+
+### Cómo entrar (PWA del comensal, carta real)
+
+| Qué | Valor |
+| --- | --- |
+| URL | `/mesa/e6Q9x3aDlJMqQBGwpgg6teAZVn7e7sn826lBrX8ItLc` (local) o el mismo path en `https://tabliocl.vercel.app` |
+| Código de presencia | **8447** (Mesa 1, Terraza) |
+| Qué vas a ver | La carta real de Bar La Virgen — 20 productos, 6 categorías, con el Negroni marcado "Agotado" (sin botón de agregar) y Corona/Heineken con stock limitado mostrados normales. Es la misma pantalla, mismo diseño, que la del demo — la diferencia es que esto lee la base real. |
+| Qué NO vas a poder hacer todavía | Agregar algo al carrito, pagar, o ver un pedido llegar al KDS. Cualquier acción más allá de entrar a la mesa responde explícitamente "Esta acción todavía no está disponible para este local." (nunca cae en silencio al demo simulado) — eso es OI-034 Incrementos 3 a 5, en curso. |
+
+Sin login: cualquiera con este QR/código entra como comensal anónimo, igual que pasará en el
+piloto real. No hace falta la cuenta del dueño para probar esta parte.
 
 ### Qué tiene cargado Bar La Virgen hoy, en la base real
 
@@ -43,28 +60,15 @@ Virgen) — es un cabo suelto conocido, no algo que rompiste tú (ver OI-032). "
 **Mesas (18):** repartidas 8 en Terraza (mesas 1 a 8), 6 en Salón (mesas 9 a 14) y 4 en Barra
 (mesas 15 a 18). Cada una se creó con el flujo real de la aplicación, que le generó su propio
 código QR y su propio código de presencia (el código de 4 dígitos que la persona en la mesa
-ingresa para confirmar que está físicamente ahí).
-
-Para probar, esta es la mesa de muestra:
-
-| Mesa | Zona | Código de presencia | Token QR (para pruebas técnicas) |
-| --- | --- | --- | --- |
-| Mesa 1 | Terraza | **8447** | `e6Q9x3aDlJMqQBGwpgg6teAZVn7e7sn826lBrX8ItLc` |
-
-**Ojo con esto:** este código y este QR son 100% reales — los generó el mismo mecanismo que
-usará el producto final. Pero **todavía no hay ninguna pantalla que los lea** — la app del
-comensal (donde alguien escanearía este QR para pedir) ya tiene el diseño final (se migró
-visualmente hoy, ver más abajo), pero sigue leyendo del demo simulado, no de la base real
-(sección 2, mesa `demo-mesa-8`, código `4826`). Vas a poder probar *este* código real recién
-cuando se conecte la PWA a la base real (todavía pendiente, es trabajo de datos, no de diseño).
-Por ahora, esta tabla es para que quede documentado que el dato existe y es correcto, no para que
-lo pruebes hoy.
+ingresa para confirmar que está físicamente ahí). Todas están listas para el mismo uso que la
+Mesa 1 de arriba — Mesa 1 es sólo la que queda documentada como muestra.
 
 **Carta (6 categorías, 20 productos):** Cervezas, Cócteles, Vinos, Para picar, Sándwiches, Sin
 alcohol — con precios reales de mercado chileno, descripciones y alérgenos. Dos productos con
 stock limitado (Cerveza Corona, 24 unidades; Cerveza Heineken, 4 unidades) y uno marcado agotado
-a propósito (Negroni), para que cuando construyamos Configuración puedas ver esos tres estados
-funcionando.
+a propósito (Negroni). **Verificado con navegador real (Playwright) contra la PWA real:** el
+Negroni aparece atenuado, con la etiqueta "Agotado", sin botón de agregar, y el click no abre su
+detalle; Corona y Heineken aparecen normales y se pueden agregar al detalle.
 
 **Personal (además del dueño):**
 
@@ -81,8 +85,7 @@ los 3 garzones pedidos — no la vas a ver activa, es intencional, no un error.)
 **Dónde ver esto en la app:** desde `/equipo` (después de iniciar sesión) puedes ver el personal
 real y su estado. Desde `/configuracion` puedes ver y agregar zonas, estaciones, mesas (con su
 QR y código de presencia reales) y la carta completa, incluido marcar productos agotados o
-disponibles otra vez. Es la misma información que se cargó al poblar el piloto — ahora también
-se puede ver y ampliar desde la app, no sólo desde la base de datos.
+disponibles otra vez.
 
 ### Soporte — real, dominio nuevo
 
@@ -91,9 +94,8 @@ responder y marcar un ticket como resuelto o cerrado. Es un dominio construido d
 esto — no reutiliza nada de las comandas de cocina. **Hay un ticket real que quedó ahí de la
 verificación de esta pantalla** ("No puedo revelar el QR de una mesa", ya marcado como
 Resuelto) — no se pudo borrar porque el sistema, a propósito, no permite borrar tickets (igual
-que con el personal, sólo se pueden cambiar de estado), y no había forma de forzarlo sin usar una
-credencial que no estaba a mano en ese momento. Es real pero es residuo de la verificación, no
-algo que tengas que revisar.
+que con el personal, sólo se pueden cambiar de estado). Es real pero es residuo de la
+verificación, no algo que tengas que revisar.
 
 ### Reportes — real, pero en $0 (y eso es correcto)
 
@@ -106,11 +108,14 @@ simulado). No es que el reporte esté roto; es que no hay ventas reales que repo
 
 ## 2. Demo simulado — sin login, datos de ejemplo
 
-Son las pantallas ya migradas visualmente (las 9 originales, incluida la PWA del comensal desde
-hoy), pero corriendo sobre datos de ejemplo en memoria, no sobre `Bar La Virgen` ni sobre la base
-real. Visualmente son la versión final; los datos que muestran no lo son.
+Son las pantallas ya migradas visualmente (las 9 originales, incluida la PWA del comensal), pero
+corriendo sobre datos de ejemplo en memoria, no sobre `Bar La Virgen` ni sobre la base real.
+Visualmente son la versión final; los datos y las acciones (agregar al carrito, pagar, comandar)
+son simuladas. Esta es la parte del producto que sí deja completar el flujo de punta a punta hoy
+— pedido, pago, KDS — aunque no toque la base de datos.
 
 Todas las URLs de abajo se acceden directo, sin credenciales (excepto donde se indica un PIN).
+Funcionan igual en local y en `https://tabliocl.vercel.app`.
 
 | Pantalla | URL | Acceso |
 | --- | --- | --- |
@@ -122,16 +127,16 @@ Todas las URLs de abajo se acceden directo, sin credenciales (excepto donde se i
 | Superadmin | `/superadmin` | Directo, sin login |
 | Onboarding | `/onboarding` | Directo, sin login |
 | Crédito de mesa | `/credito` | Directo, sin login |
-| PWA del comensal | `/mesa/demo-mesa-8` | Código de mesa: **4826** |
+| PWA del comensal (demo) | `/mesa/demo-mesa-8` | Código de mesa: **4826** |
 
 La página de inicio (`/`) tiene enlaces directos a todas estas.
 
 ## Qué falta para que ambas cosas sean una sola
 
-La Tarea 4 (Equipo, Configuración, Soporte, Reportes) y la Tarea 3 (migración visual de la PWA
-del comensal) están completas. Las 13 pantallas de producto tienen ya el diseño final. Lo que
-sigue, según OI-033 y OI-034 en `docs/OPEN_ISSUES.md`, es puramente de datos: conectar a la base
-real las 9 pantallas que siguen sobre *stores* en memoria (Dueño, Mesas, Caja, KDS, Garzón,
-Superadmin, Onboarding, Crédito y la PWA) — la más grande de todas es la toma de pedidos y pagos,
-que necesita construirse desde cero del lado del servidor (hoy no existe ninguna forma segura
-para que el teléfono de un comensal cree un pedido real).
+Lo que sigue, según OI-033 y OI-034 en `docs/OPEN_ISSUES.md`, es terminar de conectar la toma de
+pedidos y pagos real — el Incremento 2 conectó la carta de sólo lectura; faltan el carrito real
+(Incremento 3), el `CheckoutQuote` inmutable (Incremento 4) y el pago confirmado server-side con
+una vista mínima y provisional de KDS (Incremento 5), cada uno con el mismo estándar de
+verificación contra la base real que ya se usó en los dos primeros. Después de eso queda el resto
+de pantallas que siguen sobre *stores* en memoria (Dueño, Mesas, Caja, KDS completo, Garzón,
+Superadmin, Onboarding, Crédito).

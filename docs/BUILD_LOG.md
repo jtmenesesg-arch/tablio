@@ -2,6 +2,41 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-04 — DEMO_ACCESS.md al día + producción de Vercel sin Supabase configurado
+
+**Qué se hizo:** al pedir el fundador que `DEMO_ACCESS.md` reflejara el Incremento 2 y agregara
+la URL pública (`tabliocl.vercel.app`) para probar desde el celular sin levantar nada, verificar
+esa URL antes de documentarla destapó dos problemas reales, no sólo desactualización del texto:
+
+1. El último despliegue a producción tenía 6 días — nada de lo construido desde entonces (Tarea
+   4, migración visual de la PWA, Incrementos 1 y 2 de OI-034) había llegado nunca ahí. Este
+   proyecto despliega con `vercel deploy --prod` manual, no automático al hacer `git push`.
+2. **Más grave:** `vercel env ls` no mostraba ninguna variable `NEXT_PUBLIC_SUPABASE_*` en
+   Production. El proyecto de Vercel nunca tuvo Supabase configurado — `/login` y `/dueno-real`
+   daban 500 ahí desde que se construyó la Tarea 4. Todo el lado real de la app estuvo
+   inalcanzable en la URL pública durante todo ese tiempo; sólo se había verificado contra
+   local. El demo simulado no depende de Supabase, así que nunca lo mostró.
+
+**Corregido con confirmación explícita del fundador antes de cada paso** (desplegar a producción
+y tocar variables de entorno de un proyecto compartido no son acciones que se toman sin avisar):
+se agregaron `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (claves
+públicas/anon, las mismas que ya usa el cliente del navegador — nunca `service_role`) a Vercel
+Production, y se corrió un nuevo `vercel deploy --prod`.
+
+**Cómo se verificó — contra la URL pública real, después del fix:**
+
+- `/login` responde 200 (antes 500); `/dueno-real` redirige correctamente sin sesión (antes 500).
+- La PWA con el QR/código real de Mesa 1 (documentado en `DEMO_ACCESS.md`) entra, muestra la
+  carta real de Bar La Virgen, y una mutación más allá de `join` (ej. `cart.add`) responde 501
+  "todavía no disponible" — mismo comportamiento que en local, nunca cae al demo.
+- El demo simulado (`?qr=demo-mesa-8`) sigue respondiendo igual que antes del deploy.
+
+**Docs actualizados:** `DEMO_ACCESS.md` reescrito para reflejar el estado real de hoy (qué se
+puede probar y qué no, con URLs locales y públicas); `docs/OPEN_ISSUES.md` (nota cerrada en
+OI-032); `AGENTS.md` — nueva regla explícita: `DEMO_ACCESS.md` se actualiza en el mismo
+incremento en que cambia lo que es real, no al cierre del tramo (pedido directo del fundador,
+motivado por este mismo hallazgo).
+
 ## 2026-08-04 — OI-034 Incremento 2: carta real de solo lectura en la PWA
 
 **Qué se hizo:** segundo incremento del tramo. La PWA del comensal (`/mesa/[qr]`) ahora puede

@@ -694,6 +694,20 @@ ahí antes del piloto.
   correctos. No es un bug nuevo introducido esta sesión, es que el menú se escribió antes de que
   existiera ninguna pantalla real y nadie lo actualizó. Los tres que faltan se corrigen a medida
   que Reportes (Resumen) y el resto existan — no antes.
+- **Cerrado (2026-08-04): el proyecto de Vercel nunca tuvo las variables de Supabase
+  configuradas, así que todo el lado real estuvo caído en la URL pública desde que se construyó
+  la Tarea 4.** Encontrado al preparar `DEMO_ACCESS.md` para el Incremento 2: `/login` y
+  `/dueno-real` daban 500 en `tabliocl.vercel.app` (confirmado con `vercel env ls`, que no
+  listaba ninguna variable `NEXT_PUBLIC_SUPABASE_*` en Production). El despliegue tampoco se
+  había vuelto a correr en 6 días — nada de lo construido en esa ventana (Tarea 4, migración
+  visual de la PWA, Incrementos 1 y 2 de OI-034) había llegado nunca a producción. Corregido:
+  `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (claves públicas/anon,
+  seguras para el navegador) agregadas a Vercel Production, y nuevo `vercel deploy --prod`.
+  Reverificado contra la URL pública: login real, Equipo/Configuración/Soporte/Reportes, y la
+  carta real de la PWA (incluida Mesa 1 documentada en `DEMO_ACCESS.md`) responden
+  correctamente; el demo simulado sigue funcionando igual. **Recordatorio:** como el despliegue
+  es manual, cada incremento que deba verse en `tabliocl.vercel.app` necesita su propio
+  `vercel deploy --prod` — no ocurre solo al hacer `git push`.
 
 ## OI-033 — La aplicación entera opera sobre datos simulados, no sobre la base real
 
