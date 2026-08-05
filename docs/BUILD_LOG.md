@@ -2,6 +2,51 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-05 — OI-037: el carrito vuelve a 'open' cuando un quote expira
+
+**Qué se hizo:** decisión explícita del fundador tras el hallazgo del Incremento 4 — un quote
+vencido no debe dejar a un comensal sin poder pedir por el resto de su sesión de dispositivo. Se
+corrigieron dos funciones de Sprint 2 (nunca antes ejercidas por un comensal real):
+
+- `private.release_expired_quote_stock`: el barrido que libera stock de quotes vencidos ahora
+  pone `carts.state = 'open'` en vez de `'expired'` (terminal). Los `cart_items` nunca se tocan,
+  así que el pedido queda armado tal como estaba.
+- `private.release_checkout`: tenía la misma rama a `'expired'` para `p_reason = 'quote_expired'`
+  — confirmado por búsqueda exhaustiva que ningún llamador real pasa esa razón literal (es código
+  muerto desde que se escribió). Simplificada a siempre `'open'`.
+- `private.diner_cart_reopen_notice` (nueva): cuando el carrito reabierto tiene un quote vencido
+  como su intento más reciente, arma el aviso "Se venció el tiempo para pagar. Tu pedido sigue
+  acá, revísalo y vuelve a pagar." — comparando cada línea del carrito contra los valores
+  congelados de ESE quote vencido (nunca otro) para nombrar exactamente qué producto se agotó o
+  cambió de precio. `diner_bootstrap_payload` lo adjunta como `cartReopenedNotice`; la pantalla de
+  carrito de la PWA lo muestra con el mismo estilo ya usado para otros avisos (`border-warning
+  bg-warning-soft`, mismo patrón que `data.waiterPaymentRequest`).
+- El quote vencido nunca se toca ni se reutiliza — sigue inmutable. El nuevo se crea recién
+  cuando el comensal vuelve a pedirlo, con los precios/disponibilidad vigentes en ese momento.
+
+**Cómo se verificó — con una expiración real de 300s, no simulada, contra la base real:**
+
+- Carrito real con Corona ($3.200) + Agua Mineral ($2.000), quote creado ($6.188 total).
+- Mientras se esperaba la expiración real: precio de Corona subido a $7.777 y Agua Mineral
+  marcada agotada con la RPC real (`set_product_availability`).
+- Tras los 300s reales y el barrido: el carrito volvió a `'open'` con ambas líneas intactas; el
+  aviso nombró exactamente "Agua Mineral 500cc" (no disponible) y "Cerveza Corona 355cc" (cambio
+  de precio); se pudo seguir agregando al carrito; un quote nuevo usó el precio vigente ($7.777),
+  nunca el congelado; el quote viejo quedó exactamente igual (`total_clp` $6.188, `tip_clp` 0,
+  `subtotal_clp` $5.200, `tax_clp` $988 — sin cambios, confirmando la inmutabilidad).
+
+**Qué no se verificó esta vez:** el banner de aviso en el navegador real — se confirmó por tipo,
+lint, y por reusar exactamente el mismo patrón visual ya probado en este archivo, pero no se
+repitió la espera real de 5 minutos en Playwright (el dato que consume ya se probó exacto vía
+RPC, y el costo de repetir la espera sólo para la capa visual no se justificaba).
+
+**Suite completa como puerta de no-regresión:** `pnpm typecheck` y `pnpm lint` limpios, 149/149
+Vitest, 46/46 Playwright e2e (incluido el test de OI-035, que esta vez pasó — sigue siendo
+sensible a la fecha, no una garantía permanente).
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (OI-037 cerrado); `DEMO_ACCESS.md`
+(mismo incremento, según la regla de `AGENTS.md`).
+
 ## 2026-08-05 — OI-034 Incremento 4: CheckoutQuote real e inmutable
 
 **Qué se hizo:** cuarto incremento del tramo, el corazón de la garantía financiera. A diferencia

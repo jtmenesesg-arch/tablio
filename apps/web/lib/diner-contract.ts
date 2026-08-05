@@ -139,6 +139,11 @@ export type DinerBootstrap = Readonly<{
     subtotalClp: number;
   };
   quote?: DinerQuote;
+  cartReopenedNotice?: Readonly<{
+    message: string;
+    unavailableProductNames: readonly string[];
+    priceChangedProductNames: readonly string[];
+  }>;
   payment?: {
     id: string;
     status: "pending" | "confirmed" | "rejected";

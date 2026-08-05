@@ -932,6 +932,31 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
             </div>
           ) : (
             <>
+              {data.cartReopenedNotice && (
+                <div
+                  className="flex items-start gap-3 rounded-surface-lg border border-warning bg-warning-soft p-4"
+                  role="status"
+                >
+                  <Icon name="warning" />
+                  <div className="space-y-1">
+                    <strong className="block text-body font-bold text-foreground">
+                      {data.cartReopenedNotice.message}
+                    </strong>
+                    {data.cartReopenedNotice.unavailableProductNames.length > 0 && (
+                      <p className="text-small text-foreground">
+                        Ya no disponible:{" "}
+                        {data.cartReopenedNotice.unavailableProductNames.join(", ")}
+                      </p>
+                    )}
+                    {data.cartReopenedNotice.priceChangedProductNames.length > 0 && (
+                      <p className="text-small text-foreground">
+                        Cambió el precio de:{" "}
+                        {data.cartReopenedNotice.priceChangedProductNames.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="space-y-3">
                 {data.cart.lines.map((line) => (
                   <article

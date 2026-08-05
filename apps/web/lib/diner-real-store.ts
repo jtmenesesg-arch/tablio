@@ -179,6 +179,11 @@ type MenuPayload = {
     expiresAt: string;
     status: "active" | "paid" | "expired";
   };
+  cartReopenedNotice?: {
+    message: string;
+    unavailableProductNames: readonly string[];
+    priceChangedProductNames: readonly string[];
+  };
 };
 
 // Ningún producto de Bar La Virgen tiene foto todavía — Configuración no
@@ -238,6 +243,7 @@ function buildBootstrapFromMenu(menu: MenuPayload): DinerBootstrap {
       subtotalClp: menu.cart.subtotalClp,
     },
     quote: menu.quote,
+    cartReopenedNotice: menu.cartReopenedNotice,
     ...emptyBootstrapExtras(),
     serverTime: new Date().toISOString(),
   } as DinerBootstrap;

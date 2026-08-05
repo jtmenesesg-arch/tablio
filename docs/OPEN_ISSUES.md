@@ -810,43 +810,45 @@ ahí antes del piloto.
 - **Condición de revisión:** cuando el número de locales activos simultáneos empiece a acercarse a
   la centena, o cuando cualquiera de los cuatro produzca una alerta real de saturación.
 
-## OI-037 — Un `CheckoutQuote` expirado deja el carrito en un callejón sin salida
+## OI-037 — Un `CheckoutQuote` expirado dejaba el carrito en un callejón sin salida
 
-- **Estado:** necesita una decisión del fundador antes de que el pago (OI-034 Incremento 5) sea
-  autoservicio real. No bloquea el Incremento 4 en sí (lo que pide verificar — que el quote
-  expira y no se puede pagar — está correcto y confirmado); bloquea la experiencia completa de
-  "un comensal pide y paga solo" si no se resuelve antes del piloto.
+- **Estado: cerrado (2026-08-05).** Decisión explícita del fundador: "el carrito debe volver a
+  'open' cuando el quote expira... dejar a alguien sin poder pedir por el resto de la noche por
+  eso es inaceptable, y en la práctica significa perder la venta."
 - **Qué se encontró (2026-08-05), verificando OI-034 Incremento 4 contra la base real, no en
-  revisión de código:** `private.release_expired_quote_stock` (Sprint 2, sin tocar en este
-  incremento) libera el stock reservado de un quote vencido y pone
-  `carts.state = 'expired'` — **no `'open'`**, aunque el trigger de transición de estados sí
-  permitiría `checkout_started → open`. `'expired'` es terminal: el trigger no permite ninguna
-  transición fuera de ese estado. Como el carrito de un comensal está atado para siempre a su
-  `diner_device_session_id` (`UNIQUE (tenant_id, table_session_id, device_reference_hash)`), una
-  vez que su quote expira, **esa sesión de comensal no puede volver a agregar nada al carrito
-  nunca más** — confirmado en vivo: `diner_cart_add_item` responde `cart_not_open` después del
-  barrido de expiración, igual que si el checkout siguiera activo.
-- **Por qué importa para el piloto:** el dispositivo real (`REAL_DEVICE_COOKIE`) dura hasta 12
-  horas o 4 de inactividad (Sprint 3/Incremento 1). Un comensal que arma un carrito, deja que su
-  cotización expire (el TTL mínimo permitido es 5 minutos) y no vuelve a escanear con un
-  navegador distinto o sin cookies, queda efectivamente sin poder pedir en esa mesa por el resto
-  de esa ventana — sin ningún mensaje que lo explique, porque la pantalla de carrito de este
-  incremento no distingue "vacío porque nunca agregaste nada" de "vacío porque tu intento
-  anterior expiró".
-- **No es un bug de este incremento:** es el comportamiento que Sprint 2 definió para el core
-  financiero en abstracto, nunca antes ejercido por ningún comensal real — es la primera vez que
-  algo en la aplicación crea un `CheckoutQuote` real, así que es la primera vez que esta
-  consecuencia se puede observar.
-- **Decisión pendiente del fundador, no tomada unilateralmente:** ¿`release_expired_quote_stock`
-  debería devolver el carrito a `'open'` en vez de `'expired'`, para que el comensal pueda
-  simplemente reintentar sin pedir ayuda? ¿O `'expired'` es intencional (por ejemplo, para forzar
-  que un garzón intervenga si alguien se demora demasiado) y lo que falta es sólo una pantalla
-  que explique la situación y ofrezca una salida (ej. botón "pedir ayuda" o instrucciones para
-  reescanear)? Cualquiera de las dos es una decisión de producto, no una corrección técnica de
-  este incremento.
-- **Referencia:** `private.release_expired_quote_stock`
-  (`supabase/migrations/20260728064954_sprint_02_financial_core.sql:1214`); verificado contra la
-  base real en `docs/BUILD_LOG.md` (entrada del Incremento 4).
+  revisión de código:** `private.release_expired_quote_stock` (Sprint 2) liberaba el stock
+  reservado de un quote vencido y ponía `carts.state = 'expired'` — terminal, sin salida. Como el
+  carrito de un comensal está atado para siempre a su `diner_device_session_id`, esa sesión no
+  podía volver a agregar nada nunca más (`diner_cart_add_item` respondía `cart_not_open`).
+- **Corregido:**
+  - `private.release_expired_quote_stock` ahora pone el carrito en `'open'`, no `'expired'` — sus
+    `cart_items` nunca se tocaron, así que el pedido queda armado tal como estaba.
+  - `private.release_checkout` (la función general de liberación, usada también en cancelación de
+    pago) tenía una rama muerta idéntica para `p_reason = 'quote_expired'` — nunca alcanzada por
+    ningún llamador real, confirmado por búsqueda exhaustiva — simplificada a siempre `'open'`.
+  - `private.diner_cart_reopen_notice` (nueva): si el carrito reabierto tiene un quote vencido
+    como su intento más reciente, arma el aviso "Se venció el tiempo para pagar. Tu pedido sigue
+    acá, revísalo y vuelve a pagar." — comparando línea por línea contra los valores congelados
+    de ESE quote vencido para nombrar exactamente qué producto se agotó o cambió de precio.
+    Adjuntado por `diner_bootstrap_payload` como `cartReopenedNotice`, mostrado en la pantalla de
+    carrito de la PWA.
+  - El quote vencido en sí nunca se toca ni se reutiliza — sigue inmutable. El quote nuevo se
+    crea recién cuando el comensal vuelve a pedirlo, con los precios/disponibilidad vigentes en
+    ese momento (nunca los del vencido).
+- **Verificado contra la base real, con una expiración real de 300s (no simulada):** carrito con
+  Corona + Agua Mineral, quote creado, precio de Corona subido y Agua Mineral marcada agotada
+  mientras se esperaba, expiración real esperada de verdad. Confirmado: el carrito volvió a
+  `'open'` con ambas líneas intactas; el aviso nombró exactamente "Agua Mineral 500cc" como no
+  disponible y "Cerveza Corona 355cc" como cambio de precio; se pudo agregar más al carrito; el
+  quote nuevo usó el precio vigente ($7.777, no el $3.200 congelado); el quote viejo quedó
+  exactamente igual (`total_clp`, `tip_clp`, `subtotal_clp`, `tax_clp` sin cambios).
+- **No verificado con navegador real esta vez:** el banner de aviso en la PWA (`cartReopenedNotice`
+  en `diner-pwa.tsx`) se confirmó por tipo, lint, y que reusa exactamente el mismo patrón visual
+  ya probado (`data.waiterPaymentRequest`) — no se repitió la espera real de 5 minutos en
+  Playwright por costo de tiempo, dado que el dato que consume ya se probó exacto por RPC.
+- **Referencia:** `private.release_expired_quote_stock`, `private.release_checkout`
+  (`supabase/migrations/20260805130000_sprint_14_diner_cart_reopens_on_expiry.sql`); verificado
+  contra la base real en `docs/BUILD_LOG.md`.
 
 ## Clasificación final de asuntos
 
@@ -887,4 +889,4 @@ ahí antes del piloto.
 | OI-034 | Bloqueante antes del piloto, parte de OI-033; sin RPC/RLS pública para pedidos/pagos |
 | OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |
 | OI-036 | No bloqueante; límites de escala de cientos de locales, revisar con volumen real |
-| OI-037 | Decisión pendiente del fundador antes de que el pago sea autoservicio real |
+| OI-037 | Cerrado 2026-08-05, ver evidencia en `docs/BUILD_LOG.md`                |
