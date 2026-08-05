@@ -1391,64 +1391,79 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                 ) : null}
               </div>
 
-              <section className="space-y-3">
-                <p className="text-label uppercase tracking-wide text-muted-foreground">
-                  Método de pago
-                </p>
-                <label className="flex items-center gap-3 rounded-surface-lg border-2 border-brand bg-accent p-4">
-                  <input defaultChecked className="sr-only" name="payment" type="radio" />
-                  <span className="flex h-8 w-16 shrink-0 items-center justify-center rounded-surface-sm bg-foreground text-label font-extrabold text-background">
-                    {data.quote.externalPaymentDueClp === 0 ? "SALDO" : "DEMO"}
-                  </span>
-                  <span className="flex-1">
-                    <strong className="block text-body font-bold text-foreground">
-                      {data.quote.externalPaymentDueClp === 0
-                        ? "Saldo del local"
-                        : "Tarjeta simulada"}
-                    </strong>
-                    <small className="block text-small text-muted-foreground">
-                      {data.quote.externalPaymentDueClp === 0
-                        ? "No se inicia un cobro externo"
-                        : "No se cobrará dinero real"}
-                    </small>
-                  </span>
-                  <Icon name="check" size={19} />
-                </label>
-                <label className="flex items-center gap-3 rounded-surface-lg border border-border bg-card p-4 opacity-50">
-                  <input disabled className="sr-only" name="payment" type="radio" />
-                  <span className="h-8 w-16 shrink-0 rounded-surface-sm border border-border" />
-                  <span className="flex-1">
-                    <strong className="block text-body font-bold text-foreground">
-                      Apple Pay
-                    </strong>
-                    <small className="block text-small text-muted-foreground">
-                      Pendiente de validar con pasarela real
-                    </small>
-                  </span>
-                </label>
-              </section>
+              {data.demo ? (
+                <>
+                  <section className="space-y-3">
+                    <p className="text-label uppercase tracking-wide text-muted-foreground">
+                      Método de pago
+                    </p>
+                    <label className="flex items-center gap-3 rounded-surface-lg border-2 border-brand bg-accent p-4">
+                      <input defaultChecked className="sr-only" name="payment" type="radio" />
+                      <span className="flex h-8 w-16 shrink-0 items-center justify-center rounded-surface-sm bg-foreground text-label font-extrabold text-background">
+                        {data.quote.externalPaymentDueClp === 0 ? "SALDO" : "DEMO"}
+                      </span>
+                      <span className="flex-1">
+                        <strong className="block text-body font-bold text-foreground">
+                          {data.quote.externalPaymentDueClp === 0
+                            ? "Saldo del local"
+                            : "Tarjeta simulada"}
+                        </strong>
+                        <small className="block text-small text-muted-foreground">
+                          {data.quote.externalPaymentDueClp === 0
+                            ? "No se inicia un cobro externo"
+                            : "No se cobrará dinero real"}
+                        </small>
+                      </span>
+                      <Icon name="check" size={19} />
+                    </label>
+                    <label className="flex items-center gap-3 rounded-surface-lg border border-border bg-card p-4 opacity-50">
+                      <input disabled className="sr-only" name="payment" type="radio" />
+                      <span className="h-8 w-16 shrink-0 rounded-surface-sm border border-border" />
+                      <span className="flex-1">
+                        <strong className="block text-body font-bold text-foreground">
+                          Apple Pay
+                        </strong>
+                        <small className="block text-small text-muted-foreground">
+                          Pendiente de validar con pasarela real
+                        </small>
+                      </span>
+                    </label>
+                  </section>
 
-              <div className="flex items-start gap-2 rounded-surface-md border border-border bg-card p-3">
-                <Icon name="shield" size={20} />
-                <span className="text-small text-muted-foreground">
-                  El pedido nace solo cuando el servidor confirma el pago.
-                </span>
-              </div>
-              <Button
-                className="w-full justify-between"
-                disabled={working}
-                onClick={() => void startPayment()}
-                type="button"
-              >
-                {working
-                  ? "Confirmando en servidor…"
-                  : data.quote.externalPaymentDueClp === 0
-                    ? "Pagar con saldo"
-                    : data.quote.storedValueAppliedClp > 0
-                      ? "Pagar diferencia en demo"
-                      : "Pagar en modo demo"}
-                <span>{money(data.quote.externalPaymentDueClp)}</span>
-              </Button>
+                  <div className="flex items-start gap-2 rounded-surface-md border border-border bg-card p-3">
+                    <Icon name="shield" size={20} />
+                    <span className="text-small text-muted-foreground">
+                      El pedido nace solo cuando el servidor confirma el pago.
+                    </span>
+                  </div>
+                  <Button
+                    className="w-full justify-between"
+                    disabled={working}
+                    onClick={() => void startPayment()}
+                    type="button"
+                  >
+                    {working
+                      ? "Confirmando en servidor…"
+                      : data.quote.externalPaymentDueClp === 0
+                        ? "Pagar con saldo"
+                        : data.quote.storedValueAppliedClp > 0
+                          ? "Pagar diferencia en demo"
+                          : "Pagar en modo demo"}
+                    <span>{money(data.quote.externalPaymentDueClp)}</span>
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-2 rounded-surface-lg border border-border bg-card p-4">
+                  <p className="text-body font-bold text-foreground">
+                    Pago todavía no disponible
+                  </p>
+                  <p className="text-small text-muted-foreground">
+                    Este total ya es real y quedó guardado. Confirmar el pago desde aquí
+                    todavía no está conectado — muy pronto vas a poder pagar directo desde
+                    la mesa.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </section>

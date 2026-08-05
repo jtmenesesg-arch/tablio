@@ -44,7 +44,9 @@ function statusForResultCode(code: string | undefined): number {
     code === "no_alias_available" ||
     code === "product_unavailable" ||
     code === "insufficient_stock" ||
-    code === "cart_not_open"
+    code === "cart_not_open" ||
+    code === "cart_empty" ||
+    code === "cart_unavailable"
   ) {
     return 409;
   }
@@ -69,6 +71,10 @@ function messageForRpcError(error: { message?: string }): string {
       return "No queda esa cantidad disponible.";
     case "cart_not_open":
       return "Termina o cancela el checkout actual.";
+    case "cart_empty":
+      return "Tu pedido está vacío.";
+    case "cart_unavailable":
+      return "Algo en tu carrito ya no está disponible. Revisa tu pedido.";
     case "invalid session":
     case "session expired":
     case "table session is no longer open":
@@ -158,6 +164,21 @@ type MenuPayload = {
     }[];
     subtotalClp: number;
   };
+  quote?: {
+    id: string;
+    subtotalClp: number;
+    discountClp: number;
+    promotionDiscountClp: number;
+    upsellIncrementalClp: number;
+    taxClp: number;
+    tipClp: number;
+    totalClp: number;
+    storedValueAppliedClp: number;
+    externalPaymentDueClp: number;
+    tipRecipient: { type: "team" | "employee"; label: string };
+    expiresAt: string;
+    status: "active" | "paid" | "expired";
+  };
 };
 
 // Ningún producto de Bar La Virgen tiene foto todavía — Configuración no
@@ -216,6 +237,7 @@ function buildBootstrapFromMenu(menu: MenuPayload): DinerBootstrap {
       ),
       subtotalClp: menu.cart.subtotalClp,
     },
+    quote: menu.quote,
     ...emptyBootstrapExtras(),
     serverTime: new Date().toISOString(),
   } as DinerBootstrap;
@@ -294,8 +316,12 @@ export async function joinRealDinerSession(
   };
 }
 
-async function callCartRpc(
-  fnName: "diner_cart_add_item" | "diner_cart_update_item" | "diner_cart_remove_item",
+async function callDinerRpc(
+  fnName:
+    | "diner_cart_add_item"
+    | "diner_cart_update_item"
+    | "diner_cart_remove_item"
+    | "diner_create_checkout_quote",
   deviceToken: string,
   params: Record<string, unknown>,
 ): Promise<DinerBootstrap> {
@@ -327,20 +353,25 @@ export async function mutateRealDiner(
 ): Promise<DinerBootstrap> {
   switch (mutation.action) {
     case "cart.add":
-      return callCartRpc("diner_cart_add_item", deviceToken, {
+      return callDinerRpc("diner_cart_add_item", deviceToken, {
         p_product_id: mutation.productId,
         p_quantity: mutation.quantity,
         p_variant_id: mutation.variantId ?? null,
         p_note: mutation.note ?? null,
       });
     case "cart.update":
-      return callCartRpc("diner_cart_update_item", deviceToken, {
+      return callDinerRpc("diner_cart_update_item", deviceToken, {
         p_line_id: mutation.lineId,
         p_quantity: mutation.quantity,
       });
     case "cart.remove":
-      return callCartRpc("diner_cart_remove_item", deviceToken, {
+      return callDinerRpc("diner_cart_remove_item", deviceToken, {
         p_line_id: mutation.lineId,
+      });
+    case "quote.create":
+      return callDinerRpc("diner_create_checkout_quote", deviceToken, {
+        p_tip_clp: mutation.tipClp,
+        p_idempotency_key: mutation.idempotencyKey,
       });
     default:
       throw new DinerRealError(

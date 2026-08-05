@@ -658,6 +658,21 @@ que "se ve bien" pero nunca se ejecutó contra nada real. No basta con revisión
 incremento en particular, precisamente porque ya hubo un intento de revisión manual acá (esta
 misma prueba) que no reemplaza la ejecución.
 
+**⛔ Bloqueante obligatorio antes de cerrar el tramo de OI-034 (2026-08-05):** el MCP de Supabase
+conectado en este entorno no tiene acceso al proyecto real de Tablio (`list_projects` devuelve
+otros seis proyectos de otra cuenta; `get_advisors` contra `xmwewmukoxdeuilmkahr` responde
+"You do not have permission to perform this action"). Esto ya bloqueó los *security advisors*
+en el Incremento 3 y probablemente los siga bloqueando en los Incrementos 4 y 5, que tocan la
+parte más sensible del esquema (`checkout_quotes` inmutable, pago, stock). Se sustituyó por
+revisión manual de cada `grant`/`revoke` contra el patrón ya establecido — **esa revisión es un
+puente, no un reemplazo**: los *advisors* automáticos son parte del mismo estándar que se viene
+aplicando desde el Sprint 0 (ver `docs/OI-019-SECURITY-EXPLAINED.md`), y detectan clases de
+problema (política RLS faltante, función sin `search_path` fijo, extensión en el esquema
+equivocado) que una revisión manual línea por línea puede pasar por alto. **Antes de dar el
+tramo de OI-034 por cerrado:** reconectar el MCP con la cuenta dueña del proyecto de Tablio y
+correr `get_advisors` (`security` y `performance`) sobre todo lo construido en los cinco
+incrementos, no sólo sobre lo nuevo del último.
+
 ### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
 
 Antes de cualquier piloto con pagos reales, hace falta validar el comportamiento financiero
@@ -795,6 +810,44 @@ ahí antes del piloto.
 - **Condición de revisión:** cuando el número de locales activos simultáneos empiece a acercarse a
   la centena, o cuando cualquiera de los cuatro produzca una alerta real de saturación.
 
+## OI-037 — Un `CheckoutQuote` expirado deja el carrito en un callejón sin salida
+
+- **Estado:** necesita una decisión del fundador antes de que el pago (OI-034 Incremento 5) sea
+  autoservicio real. No bloquea el Incremento 4 en sí (lo que pide verificar — que el quote
+  expira y no se puede pagar — está correcto y confirmado); bloquea la experiencia completa de
+  "un comensal pide y paga solo" si no se resuelve antes del piloto.
+- **Qué se encontró (2026-08-05), verificando OI-034 Incremento 4 contra la base real, no en
+  revisión de código:** `private.release_expired_quote_stock` (Sprint 2, sin tocar en este
+  incremento) libera el stock reservado de un quote vencido y pone
+  `carts.state = 'expired'` — **no `'open'`**, aunque el trigger de transición de estados sí
+  permitiría `checkout_started → open`. `'expired'` es terminal: el trigger no permite ninguna
+  transición fuera de ese estado. Como el carrito de un comensal está atado para siempre a su
+  `diner_device_session_id` (`UNIQUE (tenant_id, table_session_id, device_reference_hash)`), una
+  vez que su quote expira, **esa sesión de comensal no puede volver a agregar nada al carrito
+  nunca más** — confirmado en vivo: `diner_cart_add_item` responde `cart_not_open` después del
+  barrido de expiración, igual que si el checkout siguiera activo.
+- **Por qué importa para el piloto:** el dispositivo real (`REAL_DEVICE_COOKIE`) dura hasta 12
+  horas o 4 de inactividad (Sprint 3/Incremento 1). Un comensal que arma un carrito, deja que su
+  cotización expire (el TTL mínimo permitido es 5 minutos) y no vuelve a escanear con un
+  navegador distinto o sin cookies, queda efectivamente sin poder pedir en esa mesa por el resto
+  de esa ventana — sin ningún mensaje que lo explique, porque la pantalla de carrito de este
+  incremento no distingue "vacío porque nunca agregaste nada" de "vacío porque tu intento
+  anterior expiró".
+- **No es un bug de este incremento:** es el comportamiento que Sprint 2 definió para el core
+  financiero en abstracto, nunca antes ejercido por ningún comensal real — es la primera vez que
+  algo en la aplicación crea un `CheckoutQuote` real, así que es la primera vez que esta
+  consecuencia se puede observar.
+- **Decisión pendiente del fundador, no tomada unilateralmente:** ¿`release_expired_quote_stock`
+  debería devolver el carrito a `'open'` en vez de `'expired'`, para que el comensal pueda
+  simplemente reintentar sin pedir ayuda? ¿O `'expired'` es intencional (por ejemplo, para forzar
+  que un garzón intervenga si alguien se demora demasiado) y lo que falta es sólo una pantalla
+  que explique la situación y ofrezca una salida (ej. botón "pedir ayuda" o instrucciones para
+  reescanear)? Cualquiera de las dos es una decisión de producto, no una corrección técnica de
+  este incremento.
+- **Referencia:** `private.release_expired_quote_stock`
+  (`supabase/migrations/20260728064954_sprint_02_financial_core.sql:1214`); verificado contra la
+  base real en `docs/BUILD_LOG.md` (entrada del Incremento 4).
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -834,3 +887,4 @@ ahí antes del piloto.
 | OI-034 | Bloqueante antes del piloto, parte de OI-033; sin RPC/RLS pública para pedidos/pagos |
 | OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |
 | OI-036 | No bloqueante; límites de escala de cientos de locales, revisar con volumen real |
+| OI-037 | Decisión pendiente del fundador antes de que el pago sea autoservicio real |

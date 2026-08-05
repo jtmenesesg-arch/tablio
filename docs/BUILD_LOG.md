@@ -2,6 +2,76 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-05 — OI-034 Incremento 4: CheckoutQuote real e inmutable
+
+**Qué se hizo:** cuarto incremento del tramo, el corazón de la garantía financiera. A diferencia
+de los tres anteriores, `private.create_checkout_quote` ya existía completa desde Sprint 2 —
+congela precio/cantidad/impuesto/propina/total, reserva stock con locks fila por fila,
+idempotencia real, TTL configurable, y los triggers `checkout_quotes_immutable`/
+`checkout_quote_items_immutable` ya estaban vigentes. **No se tocó esa función.** Se agregó sólo
+el wrapper que un comensal real puede invocar:
+
+- `private.diner_create_checkout_quote`/`public.diner_create_checkout_quote`: resuelve el
+  carrito del comensal desde su propia sesión ya validada (nunca recibe `cart_id` del cliente,
+  igual razón que en el carrito — nadie puede nombrar el carrito de otro) y delega en
+  `create_checkout_quote` sin modificarla. Sus rechazos esperados (carrito vacío/cerrado, ítem
+  cruzado de venue, stock insuficiente) se capturan y devuelven como `{ok:false, code}`.
+- `private.diner_quote_view`: sólo lee columnas ya congeladas de `checkout_quotes` — nunca vuelve
+  a consultar `products`/`product_variants`, así que un cambio de precio posterior no puede
+  filtrarse por diseño de la consulta, no sólo por el trigger de la tabla.
+- `diner_bootstrap_payload` ahora adjunta el quote vigente del comensal (si tiene uno **activo**,
+  no expirado) — mismo criterio que ya usaba el store demo (`status === "active"` o no se
+  muestra), para que la pantalla nunca ofrezca pagar algo que ya no es válido.
+- **Bug de UI encontrado navegando el checkout real, no en revisión de código:** la sección de
+  "Método de pago" de `diner-pwa.tsx` era incondicional — mostraba "DEMO · Tarjeta simulada · No
+  se cobrará dinero real" también sobre un total real y congelado de Bar La Virgen. Corregido:
+  ahora sólo se muestra para `data.demo === true`; una sesión real ve un mensaje honesto ("Pago
+  todavía no disponible... muy pronto vas a poder pagar directo desde la mesa") en su lugar.
+
+**Verificación — los cinco puntos exactos que pidió el fundador, contra la base real, con ayudas
+temporales creadas y eliminadas en el mismo incremento (`__oi034_i4_*`, tres migraciones):**
+
+1. **Inmutabilidad:** una función con privilegios de dueño intentó `update checkout_quotes set
+   tip_clp = tip_clp + 1` sobre un quote real — el trigger lo rechazó (confirmado `true`/bloqueado,
+   no sólo que RLS bloquea a `authenticated`, que ya se sabía).
+2. **Congelamiento:** se creó un quote real (Corona x2 + propina $500 → subtotal $6.400, impuesto
+   $1.216, total $8.116), se subió el precio de Corona a $9.999 con privilegios de dueño, se
+   releyó el quote — exactamente igual. La carta sí mostró $9.999 (confirmando que el cambio
+   ocurrió de verdad). Precio restaurado después.
+3. **Producto agotado después del quote:** se marcó Corona agotada con la RPC real
+   (`set_product_availability`) después de crear el quote — el quote siguió idéntico, sin
+   romperse. Restaurado disponible después.
+4. **Expiración real (no simulada):** se bajó el TTL de Bar La Virgen al mínimo permitido por el
+   esquema (300s, el `check` no deja menos) con una ayuda temporal, se creó un quote real, se
+   esperaron los 300s de verdad, y se confirmó que el bootstrap deja de traer `quote` una vez
+   expirado. TTL restaurado a 600s después.
+5. **Aislamiento entre comensales:** un segundo comensal con el carrito vacío en la misma mesa
+   intentó cotizar — rechazado (`cart_empty`, nunca tocó el carrito ni el quote del primero,
+   confirmado releyendo después que seguían intactos).
+
+**Hallazgo real, no pedido pero encontrado al verificar el punto 4 — registrado en OPEN_ISSUES.md
+como OI-037, no corregido unilateralmente:** el barrido real que libera el stock de un quote
+vencido (`private.release_expired_quote_stock`, Sprint 2, sin tocar) deja el carrito en estado
+`'expired'`, que es terminal — no en `'open'`, aunque el trigger de transición sí lo permitiría.
+Como el carrito de un comensal está atado para siempre a su sesión de dispositivo, un comensal
+cuyo quote expira **no puede volver a agregar nada a su carrito nunca más** en esa sesión
+(confirmado: `diner_cart_add_item` responde `cart_not_open` después del barrido). Esto es
+consecuencia de una decisión de Sprint 2 nunca antes ejercida por un comensal real — no es un bug
+de este incremento, pero si nadie decide qué hacer antes del Incremento 5, un comensal lento para
+pagar queda sin poder pedir en su mesa por el resto de la ventana de su sesión (hasta 12h).
+Registrado para que el fundador decida, no resuelto por mi cuenta.
+
+**Otro hallazgo, de tooling, ya venía anotado desde el Incremento 3:** el MCP de Supabase
+conectado en este entorno sigue sin acceso al proyecto real — no se pudieron correr los
+*security advisors* tampoco en este incremento. Reforzado en OPEN_ISSUES.md (bajo OI-031) como
+bloqueante explícito antes de cerrar el tramo completo.
+
+**Suite completa como puerta de no-regresión:** `pnpm typecheck` y `pnpm lint` limpios, 149/149
+Vitest, 46/47 Playwright e2e (el único que no pasa sigue siendo OI-035, ajeno a este cambio).
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (OI-037 nuevo, refuerzo de la nota
+de OI-031); `DEMO_ACCESS.md` (mismo incremento, según la regla nueva de `AGENTS.md`).
+
 ## 2026-08-05 — OI-034 Incremento 3: carrito real del comensal
 
 **Qué se hizo:** tercer incremento del tramo. `carts`/`cart_items` existían completas desde
