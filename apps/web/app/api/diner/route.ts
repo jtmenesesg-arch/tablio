@@ -130,8 +130,8 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const realDeviceToken = cookieStore.get(REAL_DEVICE_COOKIE)?.value;
     if (realDeviceToken) {
-      // OI-034 Incremento 3: cart.add/update/remove ya tienen RPC real.
-      // Quote/pago/fidelidad/saldo (Incrementos 4-5) todavía no existen —
+      // OI-034: cart.add/update/remove, quote.create y payment.start ya
+      // tienen RPC real. Fidelidad/saldo/upsell/invitaciones todavía no —
       // mutateRealDiner las rechaza explícito con 501, nunca cae en
       // silencio al store en memoria.
       const bootstrap = await mutateRealDiner(realDeviceToken, mutation);

@@ -1478,16 +1478,45 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   </Button>
                 </>
               ) : (
-                <div className="space-y-2 rounded-surface-lg border border-border bg-card p-4">
-                  <p className="text-body font-bold text-foreground">
-                    Pago todavía no disponible
-                  </p>
-                  <p className="text-small text-muted-foreground">
-                    Este total ya es real y quedó guardado. Confirmar el pago desde aquí
-                    todavía no está conectado — muy pronto vas a poder pagar directo desde
-                    la mesa.
-                  </p>
-                </div>
+                <>
+                  <section className="space-y-3">
+                    <p className="text-label uppercase tracking-wide text-muted-foreground">
+                      Método de pago
+                    </p>
+                    <div className="flex items-center gap-3 rounded-surface-lg border-2 border-brand bg-accent p-4">
+                      <span className="flex h-8 w-16 shrink-0 items-center justify-center rounded-surface-sm bg-foreground text-label font-extrabold text-background">
+                        SIM
+                      </span>
+                      <span className="flex-1">
+                        <strong className="block text-body font-bold text-foreground">
+                          Pasarela simulada
+                        </strong>
+                        <small className="block text-small text-muted-foreground">
+                          Este local todavía no conectó una pasarela real — cuando la
+                          conecte, esta pantalla no cambia, sólo el proveedor detrás.
+                        </small>
+                      </span>
+                      <Icon name="check" size={19} />
+                    </div>
+                  </section>
+
+                  <div className="flex items-start gap-2 rounded-surface-md border border-border bg-card p-3">
+                    <Icon name="shield" size={20} />
+                    <span className="text-small text-muted-foreground">
+                      El pedido nace solo cuando el servidor confirma el pago. Puede
+                      tardar hasta un minuto — no es instantáneo.
+                    </span>
+                  </div>
+                  <Button
+                    className="w-full justify-between"
+                    disabled={working}
+                    onClick={() => void startPayment()}
+                    type="button"
+                  >
+                    {working ? "Confirmando en servidor…" : "Pagar"}
+                    <span>{money(data.quote.externalPaymentDueClp)}</span>
+                  </Button>
+                </>
               )}
             </>
           )}

@@ -46,10 +46,13 @@ function statusForResultCode(code: string | undefined): number {
     code === "insufficient_stock" ||
     code === "cart_not_open" ||
     code === "cart_empty" ||
-    code === "cart_unavailable"
+    code === "cart_unavailable" ||
+    code === "quote_missing" ||
+    code === "stock_not_reserved"
   ) {
     return 409;
   }
+  if (code === "merchant_not_configured") return 503;
   return 400;
 }
 
@@ -75,6 +78,12 @@ function messageForRpcError(error: { message?: string }): string {
       return "Tu pedido está vacío.";
     case "cart_unavailable":
       return "Algo en tu carrito ya no está disponible. Revisa tu pedido.";
+    case "quote_missing":
+      return "Tu cotización ya no es válida. Vuelve a prepararla.";
+    case "merchant_not_configured":
+      return "Este local todavía no tiene el pago conectado.";
+    case "stock_not_reserved":
+      return "No pudimos confirmar el stock de tu pedido. Vuelve a intentar.";
     case "invalid session":
     case "session expired":
     case "table session is no longer open":
@@ -184,6 +193,20 @@ type MenuPayload = {
     unavailableProductNames: readonly string[];
     priceChangedProductNames: readonly string[];
   };
+  payment?: { id: string; status: "pending" | "confirmed" };
+  order?: {
+    id: string;
+    number: number;
+    totalClp: number;
+    state: string;
+    confirmedAt: string;
+    tickets: readonly {
+      id: string;
+      stationName: string;
+      status: string;
+      itemNames: readonly string[];
+    }[];
+  };
 };
 
 // Ningún producto de Bar La Virgen tiene foto todavía — Configuración no
@@ -244,7 +267,35 @@ function buildBootstrapFromMenu(menu: MenuPayload): DinerBootstrap {
     },
     quote: menu.quote,
     cartReopenedNotice: menu.cartReopenedNotice,
+    payment: menu.payment,
     ...emptyBootstrapExtras(),
+    orders: menu.order
+      ? [
+          {
+            id: menu.order.id,
+            number: menu.order.number,
+            alias: menu.alias,
+            totalClp: menu.order.totalClp,
+            // OI-034 Incremento 5: estado real de orders.current_state
+            // — sólo "confirmed" es alcanzable por este camino todavía
+            // (nada más adelanta el pedido). No es la máquina de estados
+            // completa del KDS real, sólo lo que confirm_provider_
+            // payment_event ya produce.
+            state: menu.order.state as "confirmed",
+            confirmedAt: menu.order.confirmedAt,
+            tickets: menu.order.tickets.map((ticket) => ({
+              id: ticket.id,
+              stationName: ticket.stationName,
+              status: ticket.status as "queued",
+              itemNames: ticket.itemNames,
+            })),
+            taxDocument: {
+              status: "pending" as const,
+              message: "Comprobante pendiente — todavía no se emite automáticamente.",
+            },
+          },
+        ]
+      : [],
     serverTime: new Date().toISOString(),
   } as DinerBootstrap;
 }
@@ -327,7 +378,8 @@ async function callDinerRpc(
     | "diner_cart_add_item"
     | "diner_cart_update_item"
     | "diner_cart_remove_item"
-    | "diner_create_checkout_quote",
+    | "diner_create_checkout_quote"
+    | "diner_start_payment",
   deviceToken: string,
   params: Record<string, unknown>,
 ): Promise<DinerBootstrap> {
@@ -377,6 +429,16 @@ export async function mutateRealDiner(
     case "quote.create":
       return callDinerRpc("diner_create_checkout_quote", deviceToken, {
         p_tip_clp: mutation.tipClp,
+        p_idempotency_key: mutation.idempotencyKey,
+      });
+    case "payment.start":
+      // OI-034 Incremento 5: esto sólo crea la intención de pago (una
+      // referencia, nunca una aprobación). La confirmación real llega
+      // aparte, por el webhook firmado — nunca desde esta llamada del
+      // navegador. El resultado inmediato siempre es payment.status
+      // "pending"; el bootstrap la actualiza a "confirmed" cuando el
+      // webhook ya escribió el pedido, vía el sondeo que ya hace la PWA.
+      return callDinerRpc("diner_start_payment", deviceToken, {
         p_idempotency_key: mutation.idempotencyKey,
       });
     default:

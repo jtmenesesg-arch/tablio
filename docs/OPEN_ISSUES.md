@@ -775,6 +775,16 @@ ahí antes del piloto.
   alcance, no construir la pieza. Queda documentado para que el próximo incremento que ataque
   OI-033 en la toma de pedidos no tenga que redescubrir esto.
 
+**Actualización (2026-08-05) — el lado del comensal ya está cerrado, el lado del staff no.**
+El tramo de 5 incrementos (ver `docs/BUILD_LOG.md`, 2026-08-04 a 2026-08-05) construyó
+exactamente la superficie descrita arriba para el comensal: sesión real, carrito real, quote
+inmutable, pago confirmado server-side por webhook firmado (nunca desde el navegador, ni con el
+proveedor simulado), y comanda real resultante. Todo verificado de punta a punta contra la base
+real y en navegador real. **Lo que sigue abierto, sin cambios:** KDS/Garzón/Caja/Dueño siguen sin
+ninguna política RLS ni pantalla real sobre estas tablas — `/kds-real` (OI-038) es
+deliberadamente provisional y no cuenta como esa reconexión. El resto de OI-033 (las 8 pantallas
+sobre *stores* en memoria) tampoco cambió.
+
 ## OI-035 — `credit-owner.spec.ts` tiene una prueba sensible a la fecha real del sistema
 
 - **Estado:** no bloqueante; higiene de pruebas.
@@ -850,6 +860,36 @@ ahí antes del piloto.
   (`supabase/migrations/20260805130000_sprint_14_diner_cart_reopens_on_expiry.sql`); verificado
   contra la base real en `docs/BUILD_LOG.md`.
 
+## OI-038 — La vista de KDS en `/kds-real` es PROVISIONAL, no la reconexión real
+
+- **Estado:** deuda reconocida a propósito, a reemplazar cuando llegue el incremento propio
+  del KDS. Condición explícita del fundador al aprobar el desglose del tramo de OI-034: "debe
+  quedar marcada como provisional... para que nadie la dé por definitiva."
+- **Qué es:** `/kds-real` (owner-only, `orders.read`) lista, en sólo lectura, las comandas
+  reales que produce `confirm_provider_payment_event` para Bar La Virgen — estación, mesa,
+  ítems, estado, hora. Se refresca con un `<meta http-equiv="refresh">` cada 5 segundos, no con
+  realtime. Existe únicamente para demostrar que un pago real produce una comanda real de punta
+  a punta — verificado así, con tres pedidos reales de esta sesión visibles ahí.
+- **Qué NO es — explícitamente:** no reemplaza a `/kds` (la pantalla completa ya migrada
+  visualmente sobre el store demo). No tiene columnas por estación, no permite cambiar el
+  estado de una comanda (reconocer/empezar a preparar/marcar lista), no usa Realtime — cuando
+  se reconstruya el KDS real, esa reconstrucción parte de cero sobre este mismo esquema
+  (`tickets`/`ticket_items`/`ticket_state_events`), no extiende esta vista.
+- **Referencia:** `public.owner_kds_tickets_minimal`
+  (`supabase/migrations/20260805143000_sprint_14_kds_minimal_provisional.sql`),
+  `apps/web/app/kds-real/page.tsx`.
+
+### Nota de honestidad sobre la latencia del proveedor simulado (OI-034 Incremento 5)
+
+El "proveedor de pago" simulado (`supabase/functions/simulated-payment-provider`) lo dispara
+`pg_cron` cada 1 minuto — la granularidad más fina que soporta `pg_cron` en este proyecto (sintaxis
+estándar de 5 campos; el proyecto no tiene habilitada la variante de segundos). Esto significa que
+la confirmación real de un pago puede tardar hasta ~60 segundos, no es instantánea. Verificado en
+vivo: 20s y 40s en dos corridas reales. Es una latencia real y documentada, no oculta — y no es
+irrazonable: un proveedor real tampoco confirma siempre al instante. Cuando se conecte una pasarela
+real, este worker completo deja de existir (el proveedor llama al webhook directo) y esta latencia
+deja de aplicar — sólo afecta a la demo/piloto con el simulador.
+
 ## Clasificación final de asuntos
 
 | Asunto | Clasificación actual                                                 |
@@ -890,3 +930,4 @@ ahí antes del piloto.
 | OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |
 | OI-036 | No bloqueante; límites de escala de cientos de locales, revisar con volumen real |
 | OI-037 | Cerrado 2026-08-05, ver evidencia en `docs/BUILD_LOG.md`                |
+| OI-038 | Deuda reconocida a propósito; reemplazar cuando exista el KDS real   |

@@ -2,6 +2,84 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-05 — OI-034 Incremento 5: pago confirmado server-side, de punta a punta
+
+**Qué se hizo:** el incremento más sensible del tramo — cierra el ciclo completo: sesión →
+carta → carrito → quote → **pago confirmado de verdad** → pedido real → comanda real. La regla
+del fundador, aplicada sin atajos: la confirmación nunca se origina en el navegador, ni con
+proveedor simulado — llega por el mismo camino que llegaría de un proveedor real (webhook al
+servidor, firma verificada, dedup por `provider_event_id`).
+
+- `private.diner_start_payment`/`public.diner_start_payment`: lo único que el navegador puede
+  disparar. Crea la **intención** de pago (una referencia local, `create_payment_intent` de
+  Sprint 2, sin tocar) — nunca la aprueba. Exactamente como una pasarela real: pedís un token de
+  transacción de inmediato, la aprobación llega aparte.
+- **`supabase/functions/simulated-payment-provider`** (Edge Function nueva): hace de "el
+  proveedor" — nunca el navegador la invoca. La dispara `pg_cron` cada 1 minuto (mismo patrón que
+  `tax-document-consumer` de Sprint 7), reclama intentos pendientes, decide el resultado (siempre
+  "aprobado" en este incremento — rechazos quedan aparte, el código ya existe y está cubierto por
+  pgTAP), firma el evento con HMAC-SHA256 y lo **POSTea por HTTP real** al webhook.
+- **`apps/web/app/api/payments/webhook/route.ts`** (nueva, el receptor real): nunca la toca el
+  comensal — la autentica la firma HMAC, no una sesión. Verifica la firma con ventana anti-replay
+  de 300s, y sólo si es válida llama a `worker_confirm_provider_payment_event` (Sprint 2, ya
+  probada por pgTAP, nunca antes conectada a ningún caller) con `service_role` — deliberado y
+  permitido por `AGENTS.md` §4 ("service_role fuera de rutas de usuario"): ésta no es una ruta de
+  usuario, es un receptor de webhook, exactamente como funcionaría con Transbank/Flow reales.
+- Infraestructura que faltaba y se construyó porque el incremento no podía avanzar sin ella:
+  `create_merchant_account` (nunca existió forma de conectar una pasarela a un tenant),
+  `payment_worker_runtime` + `configure_payment_worker_schedule` (agenda del cron + tres secretos
+  en Vault: uno para autenticar el cron, otro HMAC compartido con el webhook — desviación
+  documentada del patrón de `tax_worker_runtime`: se dejó alcanzable por el dueño con el permiso
+  `payments.manage`, no revocada hasta de `service_role`, porque hacía falta poder leer el
+  secreto HMAC generado una sola vez para configurarlo también en Vercel).
+- `/kds-real` (provisional a propósito, ver OI-038): demuestra que la comanda real llega a algún
+  lado observable — no es la reconexión real del KDS.
+
+**Un bug real encontrado verificando, no en revisión de código:** `public.worker_claim_pending_
+payment_intents` es `security invoker` (necesario para que corra como `service_role`, el rol del
+Edge Function) pero llama por dentro a `private.claim_pending_payment_intents` — y ese grant a
+`service_role` se me olvidó. El worker fallaba en silencio con "permission denied" cada minuto
+durante casi 8 minutos de pruebas reales hasta diagnosticarlo con una ayuda temporal que invocó
+el worker manualmente y leyó la respuesta real de `pg_net` (`net._http_response`). Corregido con
+un `grant` en una migración nueva — el mismo error de propagación de invoker de un nivel que ya
+se había cometido antes esta sesión, esta vez en el sentido `service_role`, no `anon`.
+
+**Segundo hallazgo menor:** `diner_payment_view` calculaba el número de pedido a mano
+(`count(*)` sobre la sesión de mesa) sin saber que `orders.order_number` ya existe como
+`identity` real por tenant desde Sprint 3. Corregido para leer la columna real, encontrado
+comparando el resultado esperado contra el pedido real de prueba (`order_number: 42`).
+
+**Verificación — de punta a punta, contra la base real y en navegador real, dos veces:**
+
+1. **RPC directo:** carrito real → quote real → `payment.start` (status `pending` inmediato) →
+   esperar el cron real (sin disparo manual) → confirmado en 20s la segunda corrida, orden y
+   ticket reales con `station_name`, `item_names`, `order_number` correctos.
+2. **Navegador real (Playwright), flujo completo:** entrar con QR real, agregar Heineken, ir a
+   pagar, tocar "Preparar pago", ver el total congelado, tocar "Pagar", ver la pantalla
+   "Estamos confirmando tu pago... el navegador no puede aprobar este pago" (texto que ya existía
+   en el diseño, escrito anticipando exactamente esta arquitectura), y **60 segundos después,
+   sin ninguna acción del usuario**, la pantalla cambia sola a "Pago confirmado — Tu pedido ya
+   está en la barra — Pedido #44 — Barra: Cerveza Heineken 355cc — RECIBIDO".
+3. **`/kds-real` en navegador real:** las tres comandas reales creadas durante las pruebas
+   aparecen correctamente, con el banner "VISTA PROVISIONAL" visible.
+4. Rechazo de firma inválida confirmado: un POST sin firma al webhook responde 401 sin tocar la
+   base.
+
+**Nota de honestidad explícita, pedida por el fundador:** el disparador del proveedor simulado es
+`pg_cron` cada 1 minuto — la granularidad más fina disponible en este proyecto (sintaxis estándar
+de 5 campos). La confirmación real puede tardar hasta ~60s, no es instantánea como en el store
+demo (~650ms). Es una latencia real, verificada (20s y 40s en las dos corridas), no oculta — y no
+es irrazonable: un proveedor real tampoco confirma siempre al instante. Cuando se conecte una
+pasarela real, todo este worker deja de existir — el proveedor llama al webhook directo — y sólo
+cambia el adaptador, nunca el receptor ni la verificación.
+
+**Suite completa como puerta de no-regresión:** `pnpm typecheck` y `pnpm lint` limpios, 149/149
+Vitest, 46/46 Playwright e2e.
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (OI-034 actualizado — el lado del
+comensal queda cerrado, el del staff sigue abierto; OI-038 nuevo, vista de KDS provisional);
+`DEMO_ACCESS.md` (mismo incremento, según la regla de `AGENTS.md`).
+
 ## 2026-08-05 — OI-037: el carrito vuelve a 'open' cuando un quote expira
 
 **Qué se hizo:** decisión explícita del fundador tras el hallazgo del Incremento 4 — un quote

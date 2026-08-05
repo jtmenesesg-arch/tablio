@@ -1,14 +1,15 @@
 # Accesos para demostrar Tablio
 
-**Lee esto primero: hoy siguen existiendo DOS cosas separadas, no una.** No están conectadas
-entre sí todavía. Lo que cambió desde la última vez: la **PWA del comensal ya llega a un total
-real y congelado** (OI-034 Incremento 4) — puedes armar un carrito real, tocar "Preparar pago" y
-ver el checkout con el subtotal, impuesto, propina y total ya calculados y guardados en la base,
-igual que se vería el día del pago real. Lo que **todavía no existe** es confirmar ese pago: la
-pantalla lo dice explícitamente ("Pago todavía no disponible") en vez de ofrecer un botón que no
-hace nada real. Sin pago no hay pedido, así que nada de esto llega al KDS todavía — eso sigue
-siendo sólo el demo simulado (sección 2). El resto de las pantallas (Dueño, Mesas, Caja, KDS,
-Garzón, Superadmin, Onboarding, Crédito) siguen sin conectar — ver OI-033.
+**Lee esto primero: el camino del comensal ya es real de punta a punta.** Escaneas una mesa real
+de "Bar La Virgen", pides, pagas, y el pedido nace de verdad en la base y llega a una comanda
+real (OI-034 Incremento 5, 2026-08-05) — es la primera vez que esto es cierto. La confirmación del
+pago **nunca la decide tu teléfono**: llega por un webhook real, firmado, verificado en el
+servidor — el mismo camino que usaría una pasarela de verdad. Como el proveedor todavía es
+simulado (no hay pasarela real conectada), puede tardar **hasta un minuto** en confirmar — la
+pantalla te avisa que eso es normal, no te quedes esperando pensando que se colgó. Lo que sigue
+sin conectar es el lado del **staff**: Dueño, Mesas, Caja, Garzón y el KDS completo siguen sobre
+el demo simulado (sección 2); existe una vista mínima y a propósito provisional de comandas
+reales (`/kds-real`, ver abajo) sólo para comprobar que el pedido real efectivamente llega ahí.
 
 Ver `docs/BUILD_LOG.md` (entradas de OI-034) para el detalle técnico de qué se conectó y cómo se
 verificó cada incremento.
@@ -42,8 +43,9 @@ Virgen) — es un cabo suelto conocido, no algo que rompiste tú (ver OI-032). "
 | URL | `/mesa/e6Q9x3aDlJMqQBGwpgg6teAZVn7e7sn826lBrX8ItLc` (local) o el mismo path en `https://tabliocl.vercel.app` |
 | Código de presencia | **8447** (Mesa 1, Terraza) |
 | Qué vas a ver | La carta real de Bar La Virgen — 20 productos, 6 categorías, con el Negroni marcado "Agotado" (sin botón de agregar) y Corona/Heineken con stock limitado mostrados normales. Es la misma pantalla, mismo diseño, que la del demo — la diferencia es que esto lee la base real. |
-| Qué SÍ puedes hacer ahora | Agregar productos al carrito de verdad (persiste al recargar, cada persona tiene el suyo) y tocar "Preparar pago": la pantalla de checkout muestra el total real, ya congelado en la base — cambiar el precio de un producto o marcarlo agotado después de este paso no altera ese total, y nadie puede modificarlo directo en la base (hay un candado que lo impide). El agotado y el stock limitado se validan en el servidor, no sólo en el botón. |
-| Qué NO vas a poder hacer todavía | Confirmar el pago — la pantalla de checkout lo dice explícitamente ("Pago todavía no disponible") en vez de fingir que funciona (OI-034 Incremento 5, en curso). Sin pago no hay pedido, así que tampoco hay nada que ver en el KDS todavía. |
+| Qué SÍ puedes hacer ahora | El flujo completo: agregar productos al carrito de verdad, "Preparar pago" (total real y congelado), "Pagar" (pasarela simulada — no hay una real conectada todavía, ver más abajo) y ver la pantalla de "Estamos confirmando tu pago" cambiar sola, sin recargar ni hacer nada, a "Pago confirmado" con tu número de pedido real. El agotado y el stock limitado se validan en el servidor, el precio congelado no se puede alterar después (hay un candado real que lo impide), y la confirmación llega por un webhook firmado — nunca la aprueba tu navegador. |
+| Cuánto tarda en confirmar | Hasta 1 minuto — el "proveedor" simulado corre en un trabajo programado cada 1 minuto (no instantáneo como el demo). Es una espera real, no un error: la pantalla lo dice ("puede tardar hasta un minuto — no es instantáneo") y no necesitas hacer nada, se actualiza sola. |
+| Qué NO vas a poder hacer todavía | Ver el pedido avanzar de estado (aceptado → preparando → listo) — eso necesita el KDS real, todavía no conectado (OI-038). Tampoco hay boleta electrónica real todavía; la pantalla de confirmación lo dice ("Comprobante pendiente"). |
 | Si dejas pasar el tiempo sin pagar | Tu cotización vence (el mínimo son 5 minutos) — pero tu carrito **vuelve solo, con todo lo que tenías**, no hay que armarlo de nuevo. La pantalla te avisa: "Se venció el tiempo para pagar. Tu pedido sigue acá, revísalo y vuelve a pagar." — y si algo cambió de precio o se agotó mientras tanto, te dice exactamente qué (OI-037, corregido 2026-08-05). |
 
 Sin login: cualquiera con este QR/código entra como comensal anónimo, igual que pasará en el
@@ -110,13 +112,31 @@ mesa, pérdida por crédito del mes y ventas por hora, para el rango de fechas q
 todavía ningún pedido real se registra en la base (los pedidos siguen haciéndose en el demo
 simulado). No es que el reporte esté roto; es que no hay ventas reales que reportar todavía.
 
+### Comandas reales — provisional, sólo para comprobar que llegan (OI-038)
+
+| Qué | Valor |
+| --- | --- |
+| URL | `/kds-real` (local) o `https://tabliocl.vercel.app/kds-real`, después de iniciar sesión |
+| Qué vas a ver | Cada comanda real que produjo un pago real, agrupada por estación, con la mesa, los productos y la hora. Se refresca sola cada 5 segundos. |
+| Qué NO es | El KDS real. No hay columnas por estación, no se puede reconocer/preparar/marcar lista una comanda, no usa datos en vivo (Realtime) — es deliberadamente el mínimo para demostrar que el pedido pagado llega a una comanda real, registrado así en OI-038 para que nadie lo confunda con la pantalla terminada. |
+
+### Cómo se ve el pago por dentro (para quien quiera mirar, no hace falta para probar)
+
+El comensal nunca aprueba su propio pago. Cuando toca "Pagar", el servidor sólo crea una
+**intención** de pago (una referencia, no una aprobación). Un trabajo separado —hoy hace de
+"proveedor simulado", más adelante será la pasarela real— decide el resultado y llama de vuelta
+al servidor por un webhook firmado con una clave secreta compartida; el servidor verifica esa
+firma antes de confirmar nada. Es el mismo camino que usaría Transbank, Flow o cualquier pasarela
+real — cuando se conecte una, sólo cambia quién firma el webhook, no cómo se recibe ni se
+verifica.
+
 ## 2. Demo simulado — sin login, datos de ejemplo
 
 Son las pantallas ya migradas visualmente (las 9 originales, incluida la PWA del comensal), pero
 corriendo sobre datos de ejemplo en memoria, no sobre `Bar La Virgen` ni sobre la base real.
-Visualmente son la versión final; los datos y las acciones (agregar al carrito, pagar, comandar)
-son simuladas. Esta es la parte del producto que sí deja completar el flujo de punta a punta hoy
-— pedido, pago, KDS — aunque no toque la base de datos.
+Visualmente son la versión final; los datos y las acciones son simuladas. Es la única forma de
+ver hoy el lado del **staff** completo (KDS con columnas y cambio de estado, Garzón, Caja, Dueño)
+— el camino del comensal real ya no necesita esto (sección 1), pero el staff sí.
 
 Todas las URLs de abajo se acceden directo, sin credenciales (excepto donde se indica un PIN).
 Funcionan igual en local y en `https://tabliocl.vercel.app`.
@@ -137,9 +157,10 @@ La página de inicio (`/`) tiene enlaces directos a todas estas.
 
 ## Qué falta para que ambas cosas sean una sola
 
-Lo que sigue, según OI-033 y OI-034 en `docs/OPEN_ISSUES.md`, es terminar de conectar la toma de
-pedidos y pagos real — Incremento 2 conectó la carta de sólo lectura, Incremento 3 el carrito,
-Incremento 4 el total congelado; falta el pago confirmado server-side con una vista mínima y
-provisional de KDS (Incremento 5), con el mismo estándar de verificación contra la base real que
-ya se usó en los anteriores. Después de eso queda el resto de pantallas que siguen sobre *stores*
-en memoria (Dueño, Mesas, Caja, KDS completo, Garzón, Superadmin, Onboarding, Crédito).
+El camino del comensal (OI-034, Incrementos 1 a 5) está completo: sesión, carta, carrito, quote
+inmutable y pago confirmado server-side, todos reales. Lo que sigue, según OI-033 en
+`docs/OPEN_ISSUES.md`, es el lado del **staff**: Dueño, Mesas, Caja, Garzón y el KDS completo
+siguen sobre *stores* en memoria, sin ninguna política RLS propia sobre las tablas de
+pedido/pago todavía. `/kds-real` (OI-038) es un puente mínimo y provisional, no esa reconexión.
+Tampoco hay pasarela de pago real conectada (el "proveedor" sigue siendo simulado) ni boleta
+electrónica automática — ambos quedan fuera de este tramo.
