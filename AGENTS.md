@@ -102,6 +102,17 @@ Aplica a todo lo que toque pagos, pedidos, boletas, reembolsos o datos de tenant
 - **`service_role` no protege datos:** ignora RLS. Ninguna ruta que responda datos de un
   usuario puede usarla. Las requests de usuario propagan su JWT y un tenant activo validado;
   si falta contexto de tenant, la operación falla cerrada.
+- **Toda función nueva revoca `EXECUTE` de `anon` explícitamente, no sólo de `public`.** Este
+  proyecto otorga `EXECUTE` a `anon`/`authenticated` automáticamente a toda función nueva del
+  esquema `public` (regla de privilegios por defecto ya configurada) — `revoke ... from public`
+  no quita ese grant directo, hace falta `revoke ... from anon` (o `authenticated`) por separado.
+  Si el acceso anónimo es intencional (rutas del comensal, que nunca tiene sesión de Supabase
+  Auth), déjalo y dilo en un comentario junto al `grant`; si no lo es, revócalo en la misma
+  migración que crea la función, nunca "para después". Motivo: encontrado real en OI-034
+  (`create_merchant_account` quedó alcanzable por `anon` pese a un `revoke ... from public`
+  explícito — no explotado porque la función validaba permiso por dentro, pero no era mínimo
+  privilegio). Ver `docs/OPEN_ISSUES.md` OI-031 para el detalle y `scripts/check-anon-grants.sql`
+  para la verificación automática que ahora corre en CI en vez de depender de acordarse.
 - **Auditoría obligatoria** (quién, cuándo, por qué) en: reembolso, anulación, cambio de precio,
   cierre manual, reapertura, impersonación.
 - **Tests** de todas las rutas críticas, con explicación en lenguaje simple de qué prueban.

@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/schema-reproducibility.yml"
       - "scripts/schema-manifest.sql"
+      - "scripts/check-anon-grants.sql"
       - "supabase/config.toml"
       - "supabase/migrations/**"
 
@@ -38,6 +39,26 @@ jobs:
             --file scripts/schema-manifest.sql \
             --output schema-manifest.csv
           sha256sum schema-manifest.csv > schema-manifest.sha256
+
+      # AGENTS.md §4 / OI-031: create_merchant_account quedó alcanzable por
+      # anon pese a un "revoke ... from public" explícito — este proyecto
+      # otorga EXECUTE a anon/authenticated por defecto a toda función
+      # nueva. Esta verificación falla el job si algo similar vuelve a
+      # pasar, en vez de depender de acordarse de correr los advisors.
+      - name: Check for unintended anonymous function access
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            --no-psqlrc \
+            --set ON_ERROR_STOP=1 \
+            --csv \
+            --file scripts/check-anon-grants.sql \
+            --output anon-grant-violations.csv
+          if [ "$(wc -l < anon-grant-violations.csv)" -gt 1 ]; then
+            echo "::error::Función(es) alcanzable(s) por anon sin estar en la lista revisada — ver scripts/check-anon-grants.sql"
+            cat anon-grant-violations.csv
+            exit 1
+          fi
+          echo "Sin funciones inesperadamente alcanzables por anon."
 
       - name: Upload clean-room schema evidence
         uses: actions/upload-artifact@v4
