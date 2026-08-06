@@ -5,10 +5,10 @@ de "Bar La Virgen", pides, pagas, y el pedido nace de verdad en la base y llega 
 real (OI-034 Incremento 5, 2026-08-05) — es la primera vez que esto es cierto. La confirmación del
 pago **nunca la decide tu teléfono**: llega por un webhook real, firmado, verificado en el
 servidor — el mismo camino que usaría una pasarela de verdad. Confirma en un par de segundos
-(el simulador avisa al servidor apenas tocas "Pagar", no espera a nada). Lo que sigue
-sin conectar es el lado del **staff**: Dueño, Mesas, Caja, Garzón y el KDS completo siguen sobre
-el demo simulado (sección 2); existe una vista mínima y a propósito provisional de comandas
-reales (`/kds-real`, ver abajo) sólo para comprobar que el pedido real efectivamente llega ahí.
+(el simulador avisa al servidor apenas tocas "Pagar", no espera a nada). **El KDS ya es real
+también** (2026-08-06) — el pedido que pagaste llega a `/kds-real` de verdad, se puede tomar,
+empezar, marcar lista y entregar, y se sincroniza solo. Lo que sigue sin conectar es Dueño,
+Mesas, Caja y Garzón (siguen sobre el demo simulado, sección 2).
 
 Ver `docs/BUILD_LOG.md` (entradas de OI-034) para el detalle técnico de qué se conectó y cómo se
 verificó cada incremento.
@@ -111,13 +111,13 @@ mesa, pérdida por crédito del mes y ventas por hora, para el rango de fechas q
 todavía ningún pedido real se registra en la base (los pedidos siguen haciéndose en el demo
 simulado). No es que el reporte esté roto; es que no hay ventas reales que reportar todavía.
 
-### Comandas reales — provisional, sólo para comprobar que llegan (OI-038)
+### KDS real — ya completo, no sólo una vista de comprobación (OI-038 cerrado)
 
 | Qué | Valor |
 | --- | --- |
 | URL | `/kds-real` (local) o `https://tabliocl.vercel.app/kds-real`, después de iniciar sesión |
-| Qué vas a ver | Cada comanda real que produjo un pago real, agrupada por estación, con la mesa, los productos y la hora. Se refresca sola cada 5 segundos. |
-| Qué NO es | El KDS real. No hay columnas por estación, no se puede reconocer/preparar/marcar lista una comanda, no usa datos en vivo (Realtime) — es deliberadamente el mínimo para demostrar que el pedido pagado llega a una comanda real, registrado así en OI-038 para que nadie lo confunda con la pantalla terminada. |
+| Qué vas a ver | Las comandas reales que produce cada pago real, con pestañas por estación (Barra/Cocina), temporizador que cambia de color según cuánto lleva esperando, y botones reales: "Tomar comanda" → "Empezar" → "Marcar lista" → "Entregada". Se sincroniza sola apenas algo cambia (Supabase Realtime), con un respaldo cada 45s por si acaso. |
+| Qué todavía no tiene | Reimprimir, marcar un producto agotado desde esta misma pantalla (ya se puede hacer real desde `/configuracion`), y el indicador de presencia/latencia que sí tiene el KDS demo — quedan para después, las RPC reales ya existen. |
 
 ### Cómo se ve el pago por dentro (para quien quiera mirar, no hace falta para probar)
 
@@ -133,9 +133,9 @@ verifica.
 
 Son las pantallas ya migradas visualmente (las 9 originales, incluida la PWA del comensal), pero
 corriendo sobre datos de ejemplo en memoria, no sobre `Bar La Virgen` ni sobre la base real.
-Visualmente son la versión final; los datos y las acciones son simuladas. Es la única forma de
-ver hoy el lado del **staff** completo (KDS con columnas y cambio de estado, Garzón, Caja, Dueño)
-— el camino del comensal real ya no necesita esto (sección 1), pero el staff sí.
+Visualmente son la versión final; los datos y las acciones son simuladas. Sigue siendo la única
+forma de ver hoy Dueño, Mesas, Caja y Garzón — el camino del comensal y el KDS ya no la
+necesitan (sección 1).
 
 Todas las URLs de abajo se acceden directo, sin credenciales (excepto donde se indica un PIN).
 Funcionan igual en local y en `https://tabliocl.vercel.app`.
@@ -157,9 +157,7 @@ La página de inicio (`/`) tiene enlaces directos a todas estas.
 ## Qué falta para que ambas cosas sean una sola
 
 El camino del comensal (OI-034, Incrementos 1 a 5) está completo: sesión, carta, carrito, quote
-inmutable y pago confirmado server-side, todos reales. Lo que sigue, según OI-033 en
-`docs/OPEN_ISSUES.md`, es el lado del **staff**: Dueño, Mesas, Caja, Garzón y el KDS completo
-siguen sobre *stores* en memoria, sin ninguna política RLS propia sobre las tablas de
-pedido/pago todavía. `/kds-real` (OI-038) es un puente mínimo y provisional, no esa reconexión.
-Tampoco hay pasarela de pago real conectada (el "proveedor" sigue siendo simulado) ni boleta
-electrónica automática — ambos quedan fuera de este tramo.
+inmutable y pago confirmado server-side, todos reales. El KDS también (2026-08-06, OI-038
+cerrado). Lo que sigue, en el orden que pediste: Caja, Garzón, y al final Dueño/Mesas — siguen
+sobre *stores* en memoria. Tampoco hay pasarela de pago real conectada (el "proveedor" sigue
+siendo simulado) ni boleta electrónica automática — ambos quedan fuera de este tramo.

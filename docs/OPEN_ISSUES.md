@@ -805,14 +805,23 @@ ahí antes del piloto.
   bloqueante antes del piloto igual que OI-033, no es un asunto aparte con calendario propio.
 - **Qué se encontró (2026-08-03), investigando qué falta para que la toma de pedidos escriba en
   la base real:** `cart_items`, `checkout_quotes`, `payment_intents`, `orders`, `order_items`,
-  `tickets` y las tablas asociadas tienen RLS activado y forzado, pero **cero políticas** — ni una
-  sola, para ningún rol. La única función pública relacionada con pago,
-  `worker_confirm_provider_payment_event`, está otorgada exclusivamente a `service_role` (nunca al
-  navegador). El único acceso público real es `diner_ordering_availability` (sólo lectura, sólo
-  dice si el local está recibiendo pedidos) y `verify_table_presence` (valida el código de la
-  mesa). Confirmado con `20260728212726_sprint_03_diner_pwa.sql:3`: *"The Data API remains closed
-  to anon; user routes use narrow server operations."* — es una decisión de diseño explícita, no
-  un olvido.
+  `tickets` y las tablas asociadas tienen RLS activado y forzado, sin ninguna política que
+  permita **escribir** desde `anon`/`authenticated` — todo cambio pasa por RPC `security
+  definer`. La única función pública relacionada con pago, `worker_confirm_provider_payment_event`,
+  está otorgada exclusivamente a `service_role` (nunca al navegador). El único acceso público
+  real es `diner_ordering_availability` (sólo lectura, sólo dice si el local está recibiendo
+  pedidos) y `verify_table_presence` (valida el código de la mesa). Confirmado con
+  `20260728212726_sprint_03_diner_pwa.sql:3`: *"The Data API remains closed to anon; user
+  routes use narrow server operations."* — es una decisión de diseño explícita, no un olvido.
+  - **Corrección (2026-08-06), encontrada diseñando la reconexión del KDS:** la afirmación
+    original de que estas tablas tenían "cero políticas — ni una sola, para ningún rol" era
+    inexacta incluso al momento de escribirla. Todas (`cart_items`, `checkout_quotes`,
+    `payment_intents`, `orders`, `order_items`, `tickets`, `ticket_items`, `ticket_state_events`)
+    sí tienen una política `tenant_orders_select`/`tenant_payments_select` de **lectura** para
+    `authenticated` con el permiso `orders.read`, desde Sprint 2/4 — confirmado en vivo contra
+    la base real (`pg_policies`). Lo que sí es cierto, y es lo que importaba para la conclusión
+    de este hallazgo, es que ninguna tiene política de **escritura** para `anon`/`authenticated`
+    — ese punto queda igual, sólo se corrige la generalización a "ninguna política en absoluto".
 - **Qué significa en la práctica:** reconectar la toma de pedidos a la base real no es "cambiar
   las pantallas para llamar a Supabase en vez del store" como fue Equipo o Configuración —
   requiere diseñar y construir toda una superficie de operaciones acotadas del lado servidor (RPC
@@ -831,10 +840,13 @@ El tramo de 5 incrementos (ver `docs/BUILD_LOG.md`, 2026-08-04 a 2026-08-05) con
 exactamente la superficie descrita arriba para el comensal: sesión real, carrito real, quote
 inmutable, pago confirmado server-side por webhook firmado (nunca desde el navegador, ni con el
 proveedor simulado), y comanda real resultante. Todo verificado de punta a punta contra la base
-real y en navegador real. **Lo que sigue abierto, sin cambios:** KDS/Garzón/Caja/Dueño siguen sin
-ninguna política RLS ni pantalla real sobre estas tablas — `/kds-real` (OI-038) es
-deliberadamente provisional y no cuenta como esa reconexión. El resto de OI-033 (las 8 pantallas
-sobre *stores* en memoria) tampoco cambió.
+real y en navegador real. **Lo que seguía abierto en ese momento:** Garzón/Caja/Dueño sin
+pantalla real; el KDS sólo tenía la vista provisional de `/kds-real` (OI-038).
+
+**Actualización (2026-08-06) — KDS completo, primero de los cuatro.** `/kds-real` ya no es
+provisional (OI-038 cerrado): tickets reales, transición de estado real con concurrencia
+optimista, Realtime real. Sigue abierto: Caja, Garzón, Dueño y Mesas (siguiente orden pedido por
+el fundador).
 
 ## OI-035 — `credit-owner.spec.ts` tiene una prueba sensible a la fecha real del sistema
 
@@ -911,24 +923,45 @@ sobre *stores* en memoria) tampoco cambió.
   (`supabase/migrations/20260805130000_sprint_14_diner_cart_reopens_on_expiry.sql`); verificado
   contra la base real en `docs/BUILD_LOG.md`.
 
-## OI-038 — La vista de KDS en `/kds-real` es PROVISIONAL, no la reconexión real
+## OI-038 — La vista de KDS en `/kds-real` era PROVISIONAL, ya se reemplazó
 
-- **Estado:** deuda reconocida a propósito, a reemplazar cuando llegue el incremento propio
-  del KDS. Condición explícita del fundador al aprobar el desglose del tramo de OI-034: "debe
-  quedar marcada como provisional... para que nadie la dé por definitiva."
-- **Qué es:** `/kds-real` (owner-only, `orders.read`) lista, en sólo lectura, las comandas
-  reales que produce `confirm_provider_payment_event` para Bar La Virgen — estación, mesa,
-  ítems, estado, hora. Se refresca con un `<meta http-equiv="refresh">` cada 5 segundos, no con
-  realtime. Existe únicamente para demostrar que un pago real produce una comanda real de punta
-  a punta — verificado así, con tres pedidos reales de esta sesión visibles ahí.
-- **Qué NO es — explícitamente:** no reemplaza a `/kds` (la pantalla completa ya migrada
-  visualmente sobre el store demo). No tiene columnas por estación, no permite cambiar el
-  estado de una comanda (reconocer/empezar a preparar/marcar lista), no usa Realtime — cuando
-  se reconstruya el KDS real, esa reconstrucción parte de cero sobre este mismo esquema
-  (`tickets`/`ticket_items`/`ticket_state_events`), no extiende esta vista.
-- **Referencia:** `public.owner_kds_tickets_minimal`
-  (`supabase/migrations/20260805143000_sprint_14_kds_minimal_provisional.sql`),
-  `apps/web/app/kds-real/page.tsx`.
+- **Estado: cerrado (2026-08-06).** La reconstrucción completa que este asunto anticipaba ya
+  existe en la misma URL.
+- **Qué era:** `/kds-real` listaba, en sólo lectura, las comandas reales — sin columnas por
+  estación, sin cambio de estado, sin Realtime, refrescada por `<meta http-equiv="refresh">`
+  cada 5s. Registrado a propósito como deuda, por condición explícita del fundador al aprobar
+  el tramo de OI-034: "debe quedar marcada como provisional... para que nadie la dé por
+  definitiva."
+- **Qué es ahora:** el backend real del KDS (tablas, `transition_ticket` con concurrencia
+  optimista, Realtime en dos capas, RLS de lectura) existía completo y probado por pgTAP desde
+  Sprint 4 — nunca conectado a ninguna pantalla real hasta ahora. Se agregó sólo la pieza que
+  faltaba (`public.kds_bootstrap()`, un viaje que arma tickets activos + ítems + estaciones +
+  umbrales de tiempo) y se reconstruyó `/kds-real` sobre datos y RPCs reales: pestañas por
+  estación, temporizador con los mismos colores/umbrales que la versión demo, botones que
+  transicionan de verdad (Tomar comanda → Empezar → Marcar lista → Entregada) con concurrencia
+  optimista real, y sincronización por Supabase Realtime (`postgres_changes` sobre `tickets`,
+  ya en la publicación desde Sprint 4) con barrido de respaldo cada 45s.
+- **Fuera de esta pasada, explícitamente, con las RPC reales ya listas para conectar sin
+  trabajo de base de datos nuevo:** reimpresión (`request_ticket_reprint`), panel de agotados
+  desde el KDS mismo (ya se puede hacer real desde Configuración), presencia por estación
+  (`kds_heartbeat`/`kds_disconnect`) y medición de latencia de entrega (`record_kds_visible`).
+- **Bug real encontrado y corregido en el camino — la primera vez que algo llamó a
+  `transition_ticket` contra la base real en toda la historia del proyecto:**
+  `private.protect_operational_financial_fields()` es un trigger compartido por `orders` y
+  `tickets`, escrito como una condición booleana combinada (`if A and (...) elsif B and
+  (...)`). Como `NEW`/`OLD` son de tipo `record` genérico, PL/pgSQL intenta resolver *todas*
+  las columnas referenciadas en la expresión al prepararla, sin importar el cortocircuito del
+  `and` — así que disparar sobre `tickets` fallaba con "record new has no field
+  checkout_quote_id" (una columna que sólo existe en `orders`). Nunca se detectó porque nada
+  había llamado a `transition_ticket` antes. Corregido separando en dos sentencias `if`
+  anidadas (cada una sólo se prepara si Postgres realmente entra a esa rama) — la lógica de
+  qué campos son inmutables en cada tabla no cambió. Verificado: secuencia completa de
+  transición en la base real, y que `orders` sigue protegido (intento de `UPDATE` directo
+  rechazado con el mismo mensaje de antes).
+- **Referencia:** `public.kds_bootstrap()`, `private.protect_operational_financial_fields()`
+  (`supabase/migrations/20260806100000_sprint_14_kds_real_bootstrap.sql`,
+  `20260806101000_sprint_14_fix_protect_operational_fields_trigger.sql`),
+  `apps/web/app/kds-real/`. Detalle completo en `docs/BUILD_LOG.md`.
 
 ### Nota de honestidad sobre la latencia del proveedor simulado (OI-034 Incremento 5, resuelta 2026-08-05)
 
@@ -988,4 +1021,4 @@ trigger) deja de existir — el proveedor llama al webhook directo, sin latencia
 | OI-035 | No bloqueante; test sensible a la fecha real, ajeno a este incremento         |
 | OI-036 | No bloqueante; límites de escala de cientos de locales, revisar con volumen real |
 | OI-037 | Cerrado 2026-08-05, ver evidencia en `docs/BUILD_LOG.md`                |
-| OI-038 | Deuda reconocida a propósito; reemplazar cuando exista el KDS real   |
+| OI-038 | Cerrado 2026-08-06, ver evidencia en `docs/BUILD_LOG.md`              |

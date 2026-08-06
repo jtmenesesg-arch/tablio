@@ -2,6 +2,82 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-06 — KDS completo, real (OI-038 cerrado)
+
+**Qué se hizo:** primero de los cuatro pedidos por el fundador para el lado del staff (KDS,
+Caja, Garzón, Dueño/Mesas, en ese orden). El backend del KDS real existía completo desde Sprint
+4 — tablas con `state_version` para concurrencia optimista, `transition_ticket` (RPC con
+concurrencia optimista real, ya otorgada al rol `kds`), `kds_heartbeat`/`kds_disconnect`,
+`set_product_availability`, Realtime en dos capas (Postgres Changes sobre `tickets`, ya en la
+publicación desde Sprint 4, más broadcast privado por topic), y RLS de lectura para
+`authenticated` con `orders.read` — nunca conectado a ninguna pantalla real. Se agregó sólo lo
+que faltaba:
+
+- `public.kds_bootstrap()`: arma en un viaje los tickets activos (no `completed`) con sus
+  ítems (vía `ticket_items`→`order_items`, incluida la nota del comensal, que viaja dentro de
+  `selected_modifiers` como `{type:"customer_note"}`), las estaciones activas y los umbrales de
+  tiempo (`tenant_kds_settings`). Reemplaza a `owner_kds_tickets_minimal` (OI-038, deliberadamente
+  mínima) como la base de la pantalla real.
+- `apps/web/app/kds-real/` reescrito: de RSC de sólo lectura con meta-refresh cada 5s, a
+  componente cliente con pestañas por estación, temporizador con los mismos colores/umbrales que
+  la versión demo, botones que llaman a `transition_ticket` de verdad (con `expected_state`/
+  `expected_version` — si alguien más ya movió el ticket, un código `40001` de conflicto se
+  resuelve con un refetch silencioso, nunca un error confuso), y sincronización por Supabase
+  Realtime (`postgres_changes` sobre `tickets`, refetch completo en cada evento — mismo patrón de
+  "la señal importa, no el payload parcial" que ya usaba el store demo) con barrido de respaldo
+  cada 45s.
+- Deliberadamente fuera de esta pasada, con las RPC reales ya listas para conectar después sin
+  trabajo de base de datos nuevo: reimpresión, panel de agotados desde el KDS mismo (ya se puede
+  hacer real desde Configuración), presencia por estación, medición de latencia de entrega.
+
+**Bug real encontrado y corregido — la primera vez que algo llamó a `transition_ticket` contra
+la base real en toda la historia del proyecto:** el primer intento de transición falló con
+`42703 record "new" has no field "checkout_quote_id"`. Causa: `private.protect_operational_
+financial_fields()` es un trigger compartido por `orders` y `tickets`, escrito como una
+condición booleana combinada (`if tg_table_name='orders' and (... or new.checkout_quote_id
+is distinct from old.checkout_quote_id or ...) elsif tg_table_name='tickets' and (...)`).
+`NEW`/`OLD` son de tipo `record` genérico en un trigger compartido — PL/pgSQL resuelve **todas**
+las columnas referenciadas en una expresión al prepararla, no sólo las que el cortocircuito del
+`and` terminaría evaluando en tiempo de ejecución. Como este disparo era sobre `tickets` (que no
+tiene `checkout_quote_id`), preparar la expresión fallaba antes de llegar a evaluar que
+`tg_table_name = 'orders'` era falso. Nunca se detectó porque nada había llamado a
+`transition_ticket` antes — ni siquiera pgTAP pudo correr en este entorno (sin Docker, ver
+OI-031). Corregido separando en dos sentencias `if` anidadas (cada una sólo se prepara si
+Postgres realmente entra a esa rama) — la lógica de qué campos son inmutables en cada tabla no
+cambió ni un carácter.
+
+**Verificación — contra la base real y en navegador real:**
+
+- RPC directo: secuencia completa `queued → acknowledged → in_preparation → ready → completed`
+  sobre un ticket real, cada paso devolviendo el `state_version` incrementado correctamente.
+- Confirmado que el arreglo no debilitó la protección de `orders`: un intento de `UPDATE`
+  directo a `orders.total_clp` sigue rechazado con el mismo mensaje de siempre
+  ("order financial fields are immutable").
+- Navegador real (Playwright), con sesión real de dueño: 6-7 comandas reales visibles
+  (acumuladas de las verificaciones de los incrementos anteriores), filtro por estación
+  funcionando, transición completa de un ticket de punta a punta con los botones reales, y el
+  ticket desaparece de la lista de activos al llegar a "Entregada" — exactamente el
+  comportamiento esperado (`current_state <> 'completed'` en el bootstrap).
+- Limpieza: las 5 comandas de prueba que quedaban activas de incrementos anteriores se llevaron
+  a `completed` con la misma RPC real, no se dejaron como residuo permanente en el KDS del dueño.
+- *Security* y *performance advisors* corridos sobre todo lo nuevo: `kds_bootstrap` aparece
+  correctamente sólo como "ejecutable por `authenticated`" (esperado, es una función de staff,
+  igual que sus hermanas ya explicadas en OI-031) — nunca alcanzable por `anon`. La verificación
+  automática de `scripts/check-anon-grants.sql` también corrió limpia.
+- Suite completa como puerta de no-regresión: `pnpm typecheck`/`pnpm lint` limpios, 149/149
+  Vitest, 46/46 Playwright e2e (incluidos los tests del KDS demo, que siguen intactos —
+  `/kds-real` es una pantalla nueva y separada, `/kds` sigue igual).
+
+**Corrección de documentación, encontrada en el camino:** OI-034 afirmaba que `orders`/`tickets`
+y tablas asociadas tenían "cero políticas — ni una sola, para ningún rol". Era inexacto incluso
+al momento de escribirlo: todas tienen una política de **lectura** para `authenticated` desde
+Sprint 2/4. Lo que sí era cierto (y sigue siéndolo) es que ninguna tiene política de
+**escritura** para un rol de cliente — corregido en `docs/OPEN_ISSUES.md` para no perpetuar la
+generalización incorrecta.
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (OI-038 cerrado, corrección de
+OI-034); `DEMO_ACCESS.md`.
+
 ## 2026-08-06 — Security y performance advisors sobre todo el tramo de OI-034
 
 **Qué se hizo:** el fundador reconectó el MCP de Supabase con la cuenta correcta (confirmado con
