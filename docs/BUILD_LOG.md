@@ -2,6 +2,49 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-06 — Security y performance advisors sobre todo el tramo de OI-034
+
+**Qué se hizo:** el fundador reconectó el MCP de Supabase con la cuenta correcta (confirmado con
+`list_projects`) y se corrieron por primera vez los *security* y *performance advisors* sobre
+los cinco incrementos del tramo (sesión, carrito, quote, pago, webhook) — hasta ahora sólo
+verificados por revisión manual de grants, según quedó registrado en OI-031.
+
+**Dos hallazgos reales, ninguno explotado, ambos corregidos:**
+
+1. `create_merchant_account` era alcanzable por `anon` a nivel de permiso de base de datos —
+   causa raíz: este proyecto otorga `EXECUTE` a `anon` automáticamente en toda función nueva del
+   esquema `public` (regla de privilegios por defecto), y `revoke ... from public` no alcanza a
+   revocar ese grant directo — hace falta `revoke ... from anon` explícito. Ya se había hecho
+   bien en dos funciones hermanas del mismo tramo (`configure_payment_worker_schedule`,
+   `owner_kds_tickets_minimal`); se me olvidó en ésta. No era explotable — la función exige
+   `payments.manage` por dentro — pero no era mínimo privilegio. Corregido y reverificado: `anon`
+   ahora recibe "permission denied" directo.
+2. `private.payment_worker_runtime` (singleton) tenía tres FK sin índice cubriente — impacto
+   real nulo, pero se agregaron por consistencia con su tabla hermana `tax_worker_runtime`
+   (Sprint 7), que ya los tenía.
+
+**Auditoría sistemática de permisos, no sólo el advisor:** se consultó `information_schema.
+routine_privileges` para las ~30 funciones nuevas del tramo, verificando función por función qué
+rol puede ejecutarla. Confirmado: toda función `private.*` es inalcanzable desde cualquier rol de
+cliente (sólo se llama internamente), toda función `worker_*` es `service_role`-only, y toda
+función `diner_*` pública es alcanzable por `anon` — intencional, es como el comensal (sin sesión
+de Supabase Auth) llega a ellas. Único hallazgo: el de arriba, ya corregido.
+
+**Lo demás — explicado en `docs/OPEN_ISSUES.md` (OI-031), no dejado como lista de códigos:** tres
+tablas de identidad del comensal con RLS sin política (mismo patrón ya aceptado en OI-023,
+Sprint 8), una función de disponibilidad intencionalmente pública, ocho funciones "ejecutables
+por cualquier autenticado" que en realidad exigen permiso interno que el linter no puede ver, la
+protección de contraseñas filtradas desactivada en Auth (config de proyecto, no de este tramo), y
+171 índices "sin uso" que en realidad son los índices correctos de FK para tablas con apenas dos
+días de tráfico real — no hay nada que borrar ahí.
+
+**Verificación:** `pnpm typecheck`/`pnpm lint` limpios, 149/149 Vitest, 46/46 Playwright e2e (un
+flake aislado de `credit-owner.spec.ts` en la corrida completa, confirmado no relacionado —
+4/4 en verde al aislarlo).
+
+**Docs actualizados:** este incremento; `docs/OPEN_ISSUES.md` (OI-031 cerrado, con la explicación
+completa en español simple pedida por el fundador).
+
 ## 2026-08-05 — La espera de pago baja de hasta 60s a menos de 3s (sin tocar el webhook)
 
 **Qué se hizo:** pedido del fundador tras el Incremento 5 — la latencia de hasta 60s del

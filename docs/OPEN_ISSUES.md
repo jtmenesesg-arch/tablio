@@ -658,20 +658,71 @@ que "se ve bien" pero nunca se ejecutó contra nada real. No basta con revisión
 incremento en particular, precisamente porque ya hubo un intento de revisión manual acá (esta
 misma prueba) que no reemplaza la ejecución.
 
-**⛔ Bloqueante obligatorio antes de cerrar el tramo de OI-034 (2026-08-05):** el MCP de Supabase
-conectado en este entorno no tiene acceso al proyecto real de Tablio (`list_projects` devuelve
-otros seis proyectos de otra cuenta; `get_advisors` contra `xmwewmukoxdeuilmkahr` responde
-"You do not have permission to perform this action"). Esto ya bloqueó los *security advisors*
-en el Incremento 3 y probablemente los siga bloqueando en los Incrementos 4 y 5, que tocan la
-parte más sensible del esquema (`checkout_quotes` inmutable, pago, stock). Se sustituyó por
-revisión manual de cada `grant`/`revoke` contra el patrón ya establecido — **esa revisión es un
-puente, no un reemplazo**: los *advisors* automáticos son parte del mismo estándar que se viene
-aplicando desde el Sprint 0 (ver `docs/OI-019-SECURITY-EXPLAINED.md`), y detectan clases de
-problema (política RLS faltante, función sin `search_path` fijo, extensión en el esquema
-equivocado) que una revisión manual línea por línea puede pasar por alto. **Antes de dar el
-tramo de OI-034 por cerrado:** reconectar el MCP con la cuenta dueña del proyecto de Tablio y
-correr `get_advisors` (`security` y `performance`) sobre todo lo construido en los cinco
-incrementos, no sólo sobre lo nuevo del último.
+**✅ Cerrado (2026-08-06):** el fundador reconectó el MCP con la cuenta correcta (confirmado con
+`list_projects`, ahora sí devuelve `xmwewmukoxdeuilmkahr` / "tablio") y se corrieron los
+*security* y *performance advisors* sobre todo el tramo de OI-034 (Incrementos 1 a 5, más el fix
+de latencia del pago). Resultado completo, en español simple:
+
+**Lo que se encontró y se corrigió (dos cosas reales, ninguna explotada):**
+
+1. **`create_merchant_account` era alcanzable por `anon` a nivel de permiso de base de datos**
+   (aunque no explotable — la función exige `require_tenant_context()` y el permiso
+   `payments.manage` por dentro, así que un anónimo siempre recibía "active tenant context is
+   required", nunca llegaba a hacer nada). Causa raíz: este proyecto tiene una regla de
+   privilegios por defecto que le da `EXECUTE` a `anon` automáticamente a toda función nueva del
+   esquema `public` — hace falta revocarlo explícitamente de `anon`, no alcanza con revocarlo de
+   `public` (son cosas distintas en Postgres). Ya se había hecho bien en
+   `configure_payment_worker_schedule` y `owner_kds_tickets_minimal` del mismo tramo — se me
+   olvidó en ésta. Corregido con un `revoke` explícito, reverificado: ahora `anon` recibe
+   "permission denied" directo, ni siquiera llega a la lógica interna.
+2. **`private.payment_worker_runtime` tenía tres claves foráneas (hacia `vault.secrets`) sin
+   índice cubriente** — impacto real prácticamente nulo (es una tabla *singleton*, sólo puede
+   tener una fila), pero su tabla hermana `tax_worker_runtime` (mismo patrón, Sprint 7) ya tenía
+   esos índices — se agregaron por consistencia, sin cambiar ningún comportamiento.
+
+**Auditoría de permisos pedida explícitamente (punto 4):** además de los advisors, se verificó
+por SQL directo, función por función, qué rol puede ejecutar cada una de las ~30 funciones
+nuevas de este tramo (`diner_*`, `worker_*`, `enter_table`, `create_merchant_account`,
+`configure_payment_worker_schedule`, `owner_kds_tickets_minimal`, el trigger de notificación).
+Resultado: todas las funciones `private.*` son correctamente inalcanzables desde cualquier rol
+del navegador (sólo se llaman entre sí, nunca desde afuera); todas las `worker_*` son
+correctamente `service_role`-only; todas las `diner_*` públicas son correctamente alcanzables por
+`anon` — es la intención (el comensal no tiene sesión de Supabase Auth). El único hallazgo fue el
+de `create_merchant_account`, ya corregido arriba.
+
+**Lo que queda como advertencia intencional — explicado, no una lista de códigos:**
+
+- **Tres tablas (`diner_identity_credentials`, `diner_profile_contacts`,
+  `diner_recovery_challenges`) tienen RLS activado pero cero políticas.** Qué significa: nadie,
+  ni siquiera un usuario autenticado, puede leerlas o escribirlas directo por la API — sólo
+  funciones internas del servidor pueden tocarlas. Por qué se deja así: es exactamente el mismo
+  patrón ya explicado y aceptado en OI-023 desde Sprint 8 — agregar una política, aunque sea
+  restrictiva, amplía la superficie de ataque en vez de reducirla. Riesgo real: ninguno mientras
+  se mantenga así; el riesgo aparecería si alguien agregara una política "de paso" sin pensarlo.
+- **`diner_ordering_availability` es alcanzable por cualquiera, sin sesión.** Qué es: sólo
+  responde si el local está recibiendo pedidos ahora mismo (sí/no), nada de datos de negocio. Por
+  qué se deja así: es una decisión de Sprint 8, necesaria para que la PWA sepa si mostrar la
+  carta antes de que exista ninguna sesión. Riesgo real: ninguno — no expone nada que no debiera
+  ser público.
+- **Ocho funciones son "ejecutables por cualquier usuario con sesión" (`authenticated`).** Son
+  todas funciones para el dueño o el superadmin (`create_merchant_account`,
+  `configure_payment_worker_schedule`, `owner_kds_tickets_minimal`, y cuatro de superadmin de
+  sprints anteriores). El *advisor* las marca así porque es un chequeo genérico que no puede ver
+  hacia adentro de la función — no sabe que cada una empieza validando `require_tenant_context()`
+  y el permiso específico que corresponde (`payments.manage`, `orders.read`, etc.), y rechaza a
+  cualquiera que no lo tenga. Riesgo real: ninguno mientras esa validación interna exista —
+  confirmado que existe en las tres nuevas de este tramo, verificado en vivo más arriba.
+- **La protección contra contraseñas filtradas (HaveIBeenPwned) está desactivada en Auth.** No es
+  parte de este tramo — es una casilla a nivel de todo el proyecto, no de código. Se puede
+  activar desde Configuración de Auth en el dashboard de Supabase cuando el fundador quiera; no
+  bloquea nada hoy porque sólo hay una cuenta de dueño con contraseña temporal ya conocida.
+- **171 índices marcados "sin uso".** No es una señal de que sobren — es que casi todos son los
+  índices que cubren las llaves foráneas de `checkout_quotes`, `checkout_quote_items`, `carts`,
+  `cart_items` y `diner_device_sessions`, tablas que llevan apenas dos días recibiendo tráfico
+  real (las pruebas de este tramo). Postgres cuenta uso desde que se crean; con un puñado de
+  transacciones de prueba, la mayoría todavía no se ha ejercitado ni una vez. Borrarlos ahora
+  sería optimizar para el volumen de hoy a costa del volumen real del piloto — exactamente el
+  error que ya se evitó a propósito en OI-036.
 
 ### Nota para cuando exista un ambiente con datos reales (punto 4 del fundador)
 
