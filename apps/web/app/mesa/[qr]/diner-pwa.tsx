@@ -1503,8 +1503,8 @@ export function DinerPwa({ qrToken }: { qrToken: string }) {
                   <div className="flex items-start gap-2 rounded-surface-md border border-border bg-card p-3">
                     <Icon name="shield" size={20} />
                     <span className="text-small text-muted-foreground">
-                      El pedido nace solo cuando el servidor confirma el pago. Puede
-                      tardar hasta un minuto — no es instantáneo.
+                      El pedido nace solo cuando el servidor confirma el pago. Toma unos
+                      segundos — no cierres esta pantalla.
                     </span>
                   </div>
                   <Button

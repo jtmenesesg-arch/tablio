@@ -879,16 +879,23 @@ sobre *stores* en memoria) tampoco cambió.
   (`supabase/migrations/20260805143000_sprint_14_kds_minimal_provisional.sql`),
   `apps/web/app/kds-real/page.tsx`.
 
-### Nota de honestidad sobre la latencia del proveedor simulado (OI-034 Incremento 5)
+### Nota de honestidad sobre la latencia del proveedor simulado (OI-034 Incremento 5, resuelta 2026-08-05)
 
-El "proveedor de pago" simulado (`supabase/functions/simulated-payment-provider`) lo dispara
-`pg_cron` cada 1 minuto — la granularidad más fina que soporta `pg_cron` en este proyecto (sintaxis
-estándar de 5 campos; el proyecto no tiene habilitada la variante de segundos). Esto significa que
-la confirmación real de un pago puede tardar hasta ~60 segundos, no es instantánea. Verificado en
-vivo: 20s y 40s en dos corridas reales. Es una latencia real y documentada, no oculta — y no es
-irrazonable: un proveedor real tampoco confirma siempre al instante. Cuando se conecte una pasarela
-real, este worker completo deja de existir (el proveedor llama al webhook directo) y esta latencia
-deja de aplicar — sólo afecta a la demo/piloto con el simulador.
+**Estado original:** el "proveedor de pago" simulado (`supabase/functions/simulated-payment-
+provider`) lo disparaba sólo `pg_cron` cada 1 minuto — la granularidad más fina que soporta
+`pg_cron` en este proyecto (sintaxis estándar de 5 campos). La confirmación real podía tardar
+hasta ~60 segundos. El fundador lo marcó como "problema de demo, no de arquitectura" — arruinaba
+el momento de mostrar el producto — y pidió acortarlo sin tocar el webhook ni la verificación de
+firma.
+
+**Corregido:** un trigger `after insert on payment_intents` dispara la misma función que ya usaba
+el cron (`private.invoke_simulated_payment_provider()`) apenas se crea la intención de pago, vía
+`net.http_post` asíncrono (no bloquea al comensal). El cron de 1 minuto queda como red de
+respaldo, no como único camino. **El webhook y la verificación de firma no cambiaron ni un
+carácter.** Verificado: confirmación en 819ms y 1.047ms (RPC directo, dos corridas), 2.839ms de
+punta a punta en navegador real incluido el sondeo propio de la PWA. Detalle en
+`docs/BUILD_LOG.md`. Cuando se conecte una pasarela real, este worker completo (incluido el
+trigger) deja de existir — el proveedor llama al webhook directo, sin latencia de ningún cron.
 
 ## Clasificación final de asuntos
 

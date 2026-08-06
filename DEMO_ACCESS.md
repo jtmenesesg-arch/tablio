@@ -4,9 +4,8 @@
 de "Bar La Virgen", pides, pagas, y el pedido nace de verdad en la base y llega a una comanda
 real (OI-034 Incremento 5, 2026-08-05) — es la primera vez que esto es cierto. La confirmación del
 pago **nunca la decide tu teléfono**: llega por un webhook real, firmado, verificado en el
-servidor — el mismo camino que usaría una pasarela de verdad. Como el proveedor todavía es
-simulado (no hay pasarela real conectada), puede tardar **hasta un minuto** en confirmar — la
-pantalla te avisa que eso es normal, no te quedes esperando pensando que se colgó. Lo que sigue
+servidor — el mismo camino que usaría una pasarela de verdad. Confirma en un par de segundos
+(el simulador avisa al servidor apenas tocas "Pagar", no espera a nada). Lo que sigue
 sin conectar es el lado del **staff**: Dueño, Mesas, Caja, Garzón y el KDS completo siguen sobre
 el demo simulado (sección 2); existe una vista mínima y a propósito provisional de comandas
 reales (`/kds-real`, ver abajo) sólo para comprobar que el pedido real efectivamente llega ahí.
@@ -44,7 +43,7 @@ Virgen) — es un cabo suelto conocido, no algo que rompiste tú (ver OI-032). "
 | Código de presencia | **8447** (Mesa 1, Terraza) |
 | Qué vas a ver | La carta real de Bar La Virgen — 20 productos, 6 categorías, con el Negroni marcado "Agotado" (sin botón de agregar) y Corona/Heineken con stock limitado mostrados normales. Es la misma pantalla, mismo diseño, que la del demo — la diferencia es que esto lee la base real. |
 | Qué SÍ puedes hacer ahora | El flujo completo: agregar productos al carrito de verdad, "Preparar pago" (total real y congelado), "Pagar" (pasarela simulada — no hay una real conectada todavía, ver más abajo) y ver la pantalla de "Estamos confirmando tu pago" cambiar sola, sin recargar ni hacer nada, a "Pago confirmado" con tu número de pedido real. El agotado y el stock limitado se validan en el servidor, el precio congelado no se puede alterar después (hay un candado real que lo impide), y la confirmación llega por un webhook firmado — nunca la aprueba tu navegador. |
-| Cuánto tarda en confirmar | Hasta 1 minuto — el "proveedor" simulado corre en un trabajo programado cada 1 minuto (no instantáneo como el demo). Es una espera real, no un error: la pantalla lo dice ("puede tardar hasta un minuto — no es instantáneo") y no necesitas hacer nada, se actualiza sola. |
+| Cuánto tarda en confirmar | Un par de segundos — el "proveedor" simulado se avisa apenas se crea el intento de pago, no espera a un trabajo programado. Sigue habiendo un barrido de respaldo cada 1 minuto por si ese aviso inmediato falla, pero en el camino normal no lo notas. |
 | Qué NO vas a poder hacer todavía | Ver el pedido avanzar de estado (aceptado → preparando → listo) — eso necesita el KDS real, todavía no conectado (OI-038). Tampoco hay boleta electrónica real todavía; la pantalla de confirmación lo dice ("Comprobante pendiente"). |
 | Si dejas pasar el tiempo sin pagar | Tu cotización vence (el mínimo son 5 minutos) — pero tu carrito **vuelve solo, con todo lo que tenías**, no hay que armarlo de nuevo. La pantalla te avisa: "Se venció el tiempo para pagar. Tu pedido sigue acá, revísalo y vuelve a pagar." — y si algo cambió de precio o se agotó mientras tanto, te dice exactamente qué (OI-037, corregido 2026-08-05). |
 

@@ -2,6 +2,40 @@
 
 Registro simple de qué cambió, por qué y cómo se verificó.
 
+## 2026-08-05 — La espera de pago baja de hasta 60s a menos de 3s (sin tocar el webhook)
+
+**Qué se hizo:** pedido del fundador tras el Incremento 5 — la latencia de hasta 60s del
+proveedor simulado (limitada por el mínimo de `pg_cron`) "es un problema de demo, no de
+arquitectura", pero arruina el momento al mostrarle el producto a un dueño de bar. Se agregó
+`private.notify_payment_intent_created()`, un trigger `after insert on payment_intents` que
+llama a `private.invoke_simulated_payment_provider()` — **la misma función que ya usaba el
+cron, sin duplicar nada** — apenas se crea la intención de pago, en vez de esperar el próximo
+tick del minuto. `net.http_post` es asíncrono (encola el request y sigue), así que
+`diner_start_payment` sigue devolviendo "pending" de inmediato, exactamente igual que antes — el
+comensal no nota ningún cambio en esa parte.
+
+El cron de 1 minuto **no se quitó** — queda como red de respaldo real: si el trigger falla en
+avisar (envuelto en `exception when others` para nunca romper la creación de la intención), el
+barrido periódico igual reclama el intento pendiente hasta 60s después. Es el patrón "intento
+inmediato + barrido de respaldo" que ya usan sistemas de colas reales, no un atajo.
+
+**Nada cambió en el webhook ni en la verificación de firma** — la condición explícita del
+fundador. `apps/web/app/api/payments/webhook/route.ts` es exactamente el mismo archivo que en el
+Incremento 5; el Edge Function `simulated-payment-provider` es exactamente el mismo código. Sólo
+cambió qué tan rápido algo lo invoca.
+
+**Verificado contra la base real, tres formas:**
+
+- RPC directo con medición de tiempo: `payment.start` → sondeo cada 500ms → confirmado en
+  819ms y 1.047ms en dos corridas separadas (antes: hasta 60.000ms).
+- Navegador real (Playwright), midiendo desde el clic en "Pagar" hasta que aparece "Tu pedido ya
+  está en la barra": **2.839ms** — incluye el intervalo de sondeo de la propia PWA (2.5s), no
+  sólo el tiempo del servidor.
+- Suite completa como puerta de no-regresión: `pnpm typecheck`/`pnpm lint` limpios, 149/149
+  Vitest, 46/46 Playwright e2e — el trigger nuevo no rompió nada del flujo existente.
+
+**Docs actualizados:** este incremento; `DEMO_ACCESS.md` (tiempo de espera corregido).
+
 ## 2026-08-05 — OI-034 Incremento 5: pago confirmado server-side, de punta a punta
 
 **Qué se hizo:** el incremento más sensible del tramo — cierra el ciclo completo: sesión →
